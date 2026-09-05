@@ -804,36 +804,50 @@
 .log-entry.success { color: var(--accent-emerald); }
 .log-entry.success .text { color: #6ee7b7; font-weight: 600; }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 20px;
+/* Modal Styles, Dialogs & Universal Fixed Overlay Rules */
+.modal-overlay,
+.modal,
+.modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(3, 7, 18, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 99999 !important;
+  padding: 16px !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
 }
 
-.modal-overlay.active {
-  display: flex;
+.modal-overlay.active,
+.modal.active,
+.modal-backdrop.active {
+  display: flex !important;
 }
 
-.modal-dialog {
+.modal-dialog,
+.modal-card,
+.modal-content {
   background: var(--bg-secondary);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-lg);
-  padding: 28px;
-  max-width: 600px;
+  padding: 24px;
+  max-width: 620px;
   width: 100%;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), var(--glow-cyan);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), var(--glow-cyan);
   max-height: 90vh;
   overflow-y: auto;
+  position: relative;
+  margin: auto;
 }
 
 .modal-dialog.wide {
@@ -3332,16 +3346,16 @@ body.view-mode-developer #compactMonitoringDashboard {
 
 .pwa-install-banner {
   position: fixed;
-  bottom: 24px;
+  bottom: 80px;
   right: 24px;
   max-width: 380px;
-  background: rgba(13, 21, 39, 0.94);
+  background: rgba(13, 21, 39, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(0, 242, 254, 0.35);
   border-radius: var(--radius-lg);
   padding: 14px 18px;
-  display: flex;
+  display: none !important;
   align-items: center;
   gap: 12px;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 242, 254, 0.15);
@@ -3353,6 +3367,7 @@ body.view-mode-developer #compactMonitoringDashboard {
 }
 
 .pwa-install-banner.visible {
+  display: flex !important;
   transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
