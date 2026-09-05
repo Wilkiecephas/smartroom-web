@@ -527,6 +527,13 @@ body {
     grid-column: span 2 !important;
   }
 
+  .compact-health-summary-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    box-sizing: border-box !important;
+  }
+
   /* 2-Column Command Layout Stacks Vertically on Mobile */
   .compact-command-layout {
     display: flex !important;

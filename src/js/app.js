@@ -71,6 +71,7 @@ class SmartRoomApp {
     this.initWirelessUi();
     this.initAboutTekstepUi();
     this.initTopMenuToggleUi();
+    this.initTopSubMenusUi();
     this.initDeviceRegistryUi();
     this.initBriefSummaryAndHealthUi();
     this.initCircuitBoardSchematics();
@@ -1944,6 +1945,72 @@ class SmartRoomApp {
         }
         localStorage.setItem('sr_top_menu_hidden', 'false');
         this.log('Top menu expanded and visible');
+      }
+    });
+  }
+
+  initTopSubMenusUi() {
+    const subGroups = document.querySelectorAll('.top-menu-subgroup');
+    if (!subGroups.length) return;
+
+    subGroups.forEach(group => {
+      const btn = group.querySelector('.top-sub-btn');
+      if (!btn) return;
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = group.classList.contains('open');
+        // Close other groups
+        subGroups.forEach(g => {
+          if (g !== group) {
+            g.classList.remove('open');
+            const b = g.querySelector('.top-sub-btn');
+            if (b) b.setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        // Toggle current group
+        if (isOpen) {
+          group.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+        } else {
+          group.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+
+    // Close all sub-menus when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.top-menu-subgroup')) {
+        subGroups.forEach(g => {
+          g.classList.remove('open');
+          const b = g.querySelector('.top-sub-btn');
+          if (b) b.setAttribute('aria-expanded', 'false');
+        });
+      }
+    });
+
+    // Close on action item click
+    const actionItems = document.querySelectorAll('.sub-menu-action-item');
+    actionItems.forEach(item => {
+      item.addEventListener('click', () => {
+        subGroups.forEach(g => {
+          g.classList.remove('open');
+          const b = g.querySelector('.top-sub-btn');
+          if (b) b.setAttribute('aria-expanded', 'false');
+        });
+      });
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        subGroups.forEach(g => {
+          g.classList.remove('open');
+          const b = g.querySelector('.top-sub-btn');
+          if (b) b.setAttribute('aria-expanded', 'false');
+        });
       }
     });
   }
