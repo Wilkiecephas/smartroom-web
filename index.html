@@ -642,9 +642,68 @@
       </div>
     </section>
 
-    <!-- Active Extensions & Peripherals Live Row -->
-    <section id="extensionsDashboardRow" class="extensions-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px;">
-      <!-- Dynamically rendered by extensionEngine.js -->
+    <!-- ==================================================================== -->
+    <!-- DEDICATED SENSOR HEALTH, BUS STATUS & DEVICE PINGS PART               -->
+    <!-- ==================================================================== -->
+    <section id="sensorHealthPart" class="glass-card sensor-health-part" style="margin-bottom: 24px;">
+      <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+        <div class="card-title" style="color: var(--accent-emerald); display: flex; align-items: center; gap: 10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span>SENSOR HEALTH, BUS STATUS &amp; DEVICE PINGS</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <button id="btnDedicatedTogglePing" class="btn-brief-ping" title="Toggle active sensor bus ping probe monitoring">
+            <span class="ping-dot"></span>
+            <span id="textDedicatedPingState">PINGS: ON</span>
+          </button>
+          <button id="btnDedicatedPingAll" class="btn-primary" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914;">
+            ⚡ Ping All Sensors Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div class="sensor-health-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 18px;">
+        <div class="ext-stat-box" style="padding: 12px;">
+          <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Target Controller</span>
+          <strong id="dedicatedDevName" style="color: var(--accent-cyan); font-size: 14px; margin-top: 2px;">Spark Core (STM32F103)</strong>
+          <span id="dedicatedDevStatusBadge" class="badge badge-normal" style="font-size: 9px; align-self: flex-start; margin-top: 4px;">ONLINE &bull; PARTICLE CLOUD</span>
+        </div>
+        <div class="ext-stat-box" style="padding: 12px;">
+          <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Overall Bus Health</span>
+          <strong id="dedicatedHealthScore" style="color: var(--accent-emerald); font-size: 14px; margin-top: 2px;">100% OPTIMAL</strong>
+          <span id="dedicatedHealthSubtext" style="color: var(--text-dim); font-size: 10px; margin-top: 4px;">All Channels Responding</span>
+        </div>
+        <div class="ext-stat-box" style="padding: 12px;">
+          <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Ping Latency</span>
+          <strong id="dedicatedPingLatency" style="color: #60a5fa; font-size: 14px; font-family: var(--font-mono); margin-top: 2px;">1.8 ms AVG</strong>
+          <span id="dedicatedPingStatsText" style="color: var(--accent-emerald); font-size: 10px; margin-top: 4px;">Pass: 7 &bull; Fail: 0</span>
+        </div>
+        <div class="ext-stat-box" style="padding: 12px;">
+          <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Active Humidity Source</span>
+          <strong id="dedicatedHumModeText" style="color: #f59e0b; font-size: 14px; margin-top: 2px;">SZ-HS100 Analog (A0)</strong>
+          <span style="color: var(--text-dim); font-size: 10px; margin-top: 4px;">Backup DHT11 on D4</span>
+        </div>
+      </div>
+
+      <!-- Sensor & Bus Health Table -->
+      <div style="overflow-x: auto; max-height: 380px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+        <table class="pin-matrix-table" style="font-size: 12px; width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.08);">
+              <th style="padding: 10px 14px; text-align: left;">Sensor Module</th>
+              <th style="padding: 10px 14px; text-align: left;">Pin / Interface</th>
+              <th style="padding: 10px 14px; text-align: left;">Target Controller</th>
+              <th style="padding: 10px 14px; text-align: left;">Bus State</th>
+              <th style="padding: 10px 14px; text-align: left;">Latency</th>
+              <th style="padding: 10px 14px; text-align: left;">Line Health</th>
+            </tr>
+          </thead>
+          <tbody id="dedicatedPingTableBody">
+            <!-- Dynamically populated from pinConfig & portPinger -->
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <!-- Main Interactive Grid -->
@@ -1587,12 +1646,27 @@
 
   <!-- Open-Source Community Footer -->
   <footer class="app-footer-credits">
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <span style="font-size: 18px;">🇺🇬</span>
-      <span><strong>SMART IOT HUB</strong> &bull; Open-Source Multi-Tech Telemetry & Drone Platform</span>
-    </div>
-    <div>
-      <span>Built with pride by <strong>TekStep Apps Uganda</strong> &bull; <a href="mailto:support@tekstepapps.ug" style="color: var(--accent-cyan); text-decoration: none;">support@tekstepapps.ug</a></span>
+    <div class="footer-credits-inner" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 14px; padding: 12px 18px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 22px;">🇺🇬</span>
+        <div>
+          <div style="font-weight: 700; color: var(--text-main); font-size: 13px; letter-spacing: 0.5px;">SMART IOT HUB &bull; CENTRAL TELEMETRY</div>
+          <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">Multi-Sensor Environmental Sentinel &bull; Spark Core STM32F103 &bull; SZ-HS100 + DHT11</div>
+        </div>
+      </div>
+      <div class="footer-powered-badge" style="display: flex; align-items: center; gap: 8px; background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.3); padding: 8px 18px; border-radius: 20px; box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);">
+        <span class="status-dot" style="width: 8px; height: 8px; background: var(--accent-cyan); border-radius: 50%; box-shadow: 0 0 10px var(--accent-cyan); display: inline-block;"></span>
+        <span style="font-size: 13px; font-weight: 600; color: var(--text-main);">
+          Powered by <a href="https://tekstepapps.org" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); font-weight: 800; text-decoration: underline; text-underline-offset: 3px;">teksteppapps.org</a>
+        </span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 10px;">
+        <span>TekStep Apps Uganda</span>
+        <span>&bull;</span>
+        <a href="mailto:support@tekstepapps.ug" style="color: var(--text-dim); text-decoration: none;">support@tekstepapps.ug</a>
+        <span>&bull;</span>
+        <span id="footerUptimeDisplay" style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight: 700;">UPTIME: 00:00:00</span>
+      </div>
     </div>
   </footer>
 

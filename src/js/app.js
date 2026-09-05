@@ -76,6 +76,8 @@ class SmartRoomApp {
     this.initViewModeUi();
     this.initSensorEditorModalUi();
     this.initAutoGatherSensorsUi();
+    this.renderPingDetailsTable();
+    this.updateBriefSummaryStats();
     homeConfig.applyBranding();
 
     // Start in Live mode by default
@@ -192,6 +194,21 @@ class SmartRoomApp {
     this.dom.modalPingUptimeText = document.getElementById('modalPingUptimeText');
     this.dom.btnModalPingAll = document.getElementById('btnModalPingAll');
     this.dom.pingDetailsTableBody = document.getElementById('pingDetailsTableBody');
+
+    // Dedicated Sensor Health Part Elements
+    this.dom.sensorHealthPart = document.getElementById('sensorHealthPart');
+    this.dom.dedicatedPingTableBody = document.getElementById('dedicatedPingTableBody');
+    this.dom.btnDedicatedPingAll = document.getElementById('btnDedicatedPingAll');
+    this.dom.btnDedicatedTogglePing = document.getElementById('btnDedicatedTogglePing');
+    this.dom.textDedicatedPingState = document.getElementById('textDedicatedPingState');
+    this.dom.dedicatedDevName = document.getElementById('dedicatedDevName');
+    this.dom.dedicatedDevStatusBadge = document.getElementById('dedicatedDevStatusBadge');
+    this.dom.dedicatedHealthScore = document.getElementById('dedicatedHealthScore');
+    this.dom.dedicatedHealthSubtext = document.getElementById('dedicatedHealthSubtext');
+    this.dom.dedicatedPingLatency = document.getElementById('dedicatedPingLatency');
+    this.dom.dedicatedPingStatsText = document.getElementById('dedicatedPingStatsText');
+    this.dom.dedicatedHumModeText = document.getElementById('dedicatedHumModeText');
+    this.dom.footerUptimeDisplay = document.getElementById('footerUptimeDisplay');
 
     // Radar
     this.dom.radarScope   = document.querySelector('.radar-scope');
@@ -551,6 +568,27 @@ class SmartRoomApp {
       const summary = portPinger.getPingSummary();
       this.log(`Port ping completed: ${summary.passed} Pass / ${summary.failed} Fault. Device Status: ${summary.activeDevice.name} (${summary.activeDevice.status.toUpperCase()})`, 'success');
     });
+
+    // 3b. Dedicated Sensor Health & Pings Part Buttons
+    if (this.dom.btnDedicatedPingAll) {
+      this.dom.btnDedicatedPingAll.addEventListener('click', () => {
+        if (this.dom.btnPingAllPorts) {
+          this.dom.btnPingAllPorts.click();
+        }
+      });
+    }
+
+    if (this.dom.btnDedicatedTogglePing) {
+      this.dom.btnDedicatedTogglePing.addEventListener('click', () => {
+        if (this.dom.btnToggleBriefPing) {
+          this.dom.btnToggleBriefPing.click();
+        }
+        const isOn = this.dom.textBriefPingState ? this.dom.textBriefPingState.textContent.includes('ON') : true;
+        if (this.dom.textDedicatedPingState) {
+          this.dom.textDedicatedPingState.textContent = isOn ? 'PINGS: ON' : 'PINGS: PAUSED';
+        }
+      });
+    }
 
     // 4. Individual Sensor On/Off Isolation Toggles
     document.querySelectorAll('.sensor-enable-toggle').forEach(toggle => {
@@ -3689,6 +3727,9 @@ class SmartRoomApp {
     if (this.dom.modalPingUptimeText) {
       this.dom.modalPingUptimeText.textContent = `Uptime: ${uptimeStr}`;
     }
+    if (this.dom.footerUptimeDisplay) {
+      this.dom.footerUptimeDisplay.textContent = `UPTIME: ${uptimeStr}`;
+    }
   }
 
   syncBriefDeviceStatus(activeDev) {
@@ -3704,6 +3745,12 @@ class SmartRoomApp {
     }
     if (this.dom.modalPingDevStatus) {
       this.dom.modalPingDevStatus.textContent = status;
+    }
+    if (this.dom.dedicatedDevName) {
+      this.dom.dedicatedDevName.textContent = `${activeDev.name || 'Spark Core'} (${activeDev.target || 'STM32F103'})`;
+    }
+    if (this.dom.dedicatedDevStatusBadge) {
+      this.dom.dedicatedDevStatusBadge.textContent = `${status} • ACTIVE BUS`;
     }
   }
 
@@ -3730,6 +3777,20 @@ class SmartRoomApp {
     }
     if (this.dom.modalPingHealthSubtext) {
       this.dom.modalPingHealthSubtext.textContent = `${summary.passed} Pass / ${summary.failed} Fault / ${summary.isolated} Isolated`;
+    }
+
+    // Dedicated Sensor Health Section Stats
+    if (this.dom.dedicatedHealthScore) {
+      this.dom.dedicatedHealthScore.textContent = `${summary.healthPercent}% (${summary.healthPercent >= 90 ? 'OPTIMAL' : 'ATTENTION'})`;
+    }
+    if (this.dom.dedicatedHealthSubtext) {
+      this.dom.dedicatedHealthSubtext.textContent = `${summary.passed} Pass / ${summary.failed} Fault / ${summary.isolated} Isolated`;
+    }
+    if (this.dom.dedicatedPingStatsText) {
+      this.dom.dedicatedPingStatsText.textContent = `Pass: ${summary.passed} • Fault: ${summary.failed}`;
+    }
+    if (this.dom.dedicatedPingLatency) {
+      this.dom.dedicatedPingLatency.textContent = `${summary.avgLatency || 1.8} ms AVG`;
     }
   }
 
@@ -3805,6 +3866,13 @@ class SmartRoomApp {
         </tr>
       `;
     }).join('');
+
+    if (this.dom.pingDetailsTableBody) {
+      this.dom.pingDetailsTableBody.innerHTML = rowsHtml;
+    }
+    if (this.dom.dedicatedPingTableBody) {
+      this.dom.dedicatedPingTableBody.innerHTML = rowsHtml;
+    }
   }
 
   log(msg, type = 'info') {
