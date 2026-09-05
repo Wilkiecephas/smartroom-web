@@ -1912,39 +1912,102 @@ class SmartRoomApp {
   initTopMenuToggleUi() {
     if (!this.dom.btnToggleTopMenu || !this.dom.topActionsToolbar) return;
 
-    const isHidden = localStorage.getItem('sr_top_menu_hidden') === 'true';
-    if (isHidden) {
-      this.dom.topActionsToolbar.classList.add('collapsed');
-      if (this.dom.textToggleMenu) this.dom.textToggleMenu.textContent = 'Show Menu';
-      if (this.dom.iconToggleMenu) {
-        this.dom.iconToggleMenu.innerHTML = '<polyline points="6 9 12 15 18 9"/>';
-      }
-    } else {
-      this.dom.topActionsToolbar.classList.remove('collapsed');
-      if (this.dom.textToggleMenu) this.dom.textToggleMenu.textContent = 'Hide Menu';
-      if (this.dom.iconToggleMenu) {
-        this.dom.iconToggleMenu.innerHTML = '<polyline points="18 15 12 9 6 15"/>';
-      }
-    }
-
-    this.dom.btnToggleTopMenu.addEventListener('click', () => {
-      const willCollapse = !this.dom.topActionsToolbar.classList.contains('collapsed');
-      if (willCollapse) {
-        this.dom.topActionsToolbar.classList.add('collapsed');
-        if (this.dom.textToggleMenu) this.dom.textToggleMenu.textContent = 'Show Menu';
-        if (this.dom.iconToggleMenu) {
-          this.dom.iconToggleMenu.innerHTML = '<polyline points="6 9 12 15 18 9"/>';
+    const syncUi = () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        const isOpen = this.dom.topActionsToolbar.classList.contains('mobile-active');
+        if (isOpen) {
+          if (this.dom.textToggleMenu) this.dom.textToggleMenu.textContent = 'Close';
+          if (this.dom.iconToggleMenu) {
+            this.dom.iconToggleMenu.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+          }
+          this.dom.btnToggleTopMenu.classList.add('menu-open');
+          this.dom.btnToggleTopMenu.setAttribute('aria-expanded', 'true');
+        } else {
+          if (this.dom.textToggleMenu) this.dom.textToggleMenu.textContent = 'Menu';
+          if (this.dom.iconToggleMenu) {
+            this.dom.iconToggleMenu.innerHTML = '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
+          }
+          this.dom.btnToggleTopMenu.classList.remove('menu-open');
+          this.dom.btnToggleTopMenu.setAttribute('aria-expanded', 'false');
         }
-        localStorage.setItem('sr_top_menu_hidden', 'true');
-        this.log('Top menu hidden (Live, Sim, Auto-Search, Camera, Exts, Wireless, Drivers, Flasher, etc.)');
       } else {
-        this.dom.topActionsToolbar.classList.remove('collapsed');
-        if (this.dom.textToggleMenu) this.dom.textToggleMenu.textContent = 'Hide Menu';
-        if (this.dom.iconToggleMenu) {
-          this.dom.iconToggleMenu.innerHTML = '<polyline points="18 15 12 9 6 15"/>';
+        const isHidden = localStorage.getItem('sr_top_menu_hidden') === 'true';
+        if (isHidden) {
+          this.dom.topActionsToolbar.classList.add('collapsed');
+          if (this.dom.textToggleMenu) this.dom.textToggleMenu.textContent = 'Show Menu';
+          if (this.dom.iconToggleMenu) {
+            this.dom.iconToggleMenu.innerHTML = '<polyline points="6 9 12 15 18 9"/>';
+          }
+          this.dom.btnToggleTopMenu.classList.add('menu-hidden');
+          this.dom.btnToggleTopMenu.setAttribute('aria-expanded', 'false');
+        } else {
+          this.dom.topActionsToolbar.classList.remove('collapsed');
+          if (this.dom.textToggleMenu) this.dom.textToggleMenu.textContent = 'Hide Menu';
+          if (this.dom.iconToggleMenu) {
+            this.dom.iconToggleMenu.innerHTML = '<polyline points="18 15 12 9 6 15"/>';
+          }
+          this.dom.btnToggleTopMenu.classList.remove('menu-hidden');
+          this.dom.btnToggleTopMenu.setAttribute('aria-expanded', 'true');
         }
-        localStorage.setItem('sr_top_menu_hidden', 'false');
-        this.log('Top menu expanded and visible');
+        this.dom.topActionsToolbar.classList.remove('mobile-active');
+        this.dom.btnToggleTopMenu.classList.remove('menu-open');
+      }
+    };
+
+    // Store helper on instance for sub-menus and outside click
+    this._syncTopMenuUi = syncUi;
+
+    // Initialize state
+    syncUi();
+
+    // Re-sync on viewport resize
+    window.addEventListener('resize', () => {
+      syncUi();
+    });
+
+    this.dom.btnToggleTopMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        const isOpen = this.dom.topActionsToolbar.classList.contains('mobile-active');
+        if (isOpen) {
+          this.dom.topActionsToolbar.classList.remove('mobile-active');
+        } else {
+          this.dom.topActionsToolbar.classList.add('mobile-active');
+          this.dom.topActionsToolbar.classList.remove('collapsed');
+        }
+        syncUi();
+      } else {
+        const willCollapse = !this.dom.topActionsToolbar.classList.contains('collapsed');
+        if (willCollapse) {
+          this.dom.topActionsToolbar.classList.add('collapsed');
+          localStorage.setItem('sr_top_menu_hidden', 'true');
+          this.log('Top menu hidden (Sensors, Hardware, Ecosystem & Tools)');
+        } else {
+          this.dom.topActionsToolbar.classList.remove('collapsed');
+          localStorage.setItem('sr_top_menu_hidden', 'false');
+          this.log('Top menu expanded and visible');
+        }
+        syncUi();
+      }
+    });
+
+    // Close mobile dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768 && this.dom.topActionsToolbar.classList.contains('mobile-active')) {
+        if (!e.target.closest('#topActionsToolbar') && !e.target.closest('#btnToggleTopMenu')) {
+          this.dom.topActionsToolbar.classList.remove('mobile-active');
+          syncUi();
+        }
+      }
+    });
+
+    // Close mobile dropdown on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && window.innerWidth <= 768 && this.dom.topActionsToolbar.classList.contains('mobile-active')) {
+        this.dom.topActionsToolbar.classList.remove('mobile-active');
+        syncUi();
       }
     });
   }
@@ -2000,6 +2063,10 @@ class SmartRoomApp {
           const b = g.querySelector('.top-sub-btn');
           if (b) b.setAttribute('aria-expanded', 'false');
         });
+        if (window.innerWidth <= 768 && this.dom.topActionsToolbar) {
+          this.dom.topActionsToolbar.classList.remove('mobile-active');
+          if (this._syncTopMenuUi) this._syncTopMenuUi();
+        }
       });
     });
 

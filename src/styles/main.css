@@ -375,6 +375,8 @@ body {
     border-radius: var(--radius-md) !important;
     border: 1px solid var(--border-subtle) !important;
     gap: 8px !important;
+    position: relative !important;
+    z-index: 100 !important;
   }
 
   .header-brand {
@@ -443,19 +445,161 @@ body {
     border-radius: 8px !important;
   }
 
-  /* In mobile view, hide heavy desktop dropdowns and developer toolbar from header */
+  /* In mobile view, hide heavy desktop dropdowns and raw badges from header */
   .header-actions > div:has(#selectThemeProfile),
   .header-actions > div:has(#selectBoardProfile),
   #selectThemeProfile,
   #selectBoardProfile,
-  #topActionsToolbar,
-  #btnToggleTopMenu,
   #btnHeaderAddDevice,
   #tsSyncIndicator,
   #deviceStatusBadge,
   #btnInstallPwa,
   .header-board-status-container {
     display: none !important;
+  }
+
+  /* Mobile Header Top Menu Toggle Button */
+  #btnToggleTopMenu {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 5px 9px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: var(--accent-cyan) !important;
+    background: rgba(0, 242, 254, 0.1) !important;
+    border: 1px solid rgba(0, 242, 254, 0.35) !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  #btnToggleTopMenu:hover,
+  #btnToggleTopMenu.menu-open {
+    background: rgba(0, 242, 254, 0.22) !important;
+    border-color: rgba(0, 242, 254, 0.6) !important;
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.35) !important;
+    color: #fff !important;
+  }
+
+  /* Mobile Top Actions Dropdown Menu Panel */
+  #topActionsToolbar {
+    display: none !important;
+  }
+
+  #topActionsToolbar.mobile-active {
+    display: flex !important;
+    position: absolute !important;
+    top: calc(100% + 6px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    z-index: 9999 !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    background: rgba(10, 15, 30, 0.98) !important;
+    border: 1px solid rgba(0, 242, 254, 0.45) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 14px !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.88), 0 0 24px rgba(0, 242, 254, 0.2) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  #topActionsToolbar.mobile-active .mode-selector {
+    display: flex !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    gap: 6px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    padding: 4px !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border-subtle) !important;
+  }
+
+  #topActionsToolbar.mobile-active .mode-btn {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-sm) !important;
+  }
+
+  #topActionsToolbar.mobile-active .top-menu-subgroup {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: static !important;
+  }
+
+  #topActionsToolbar.mobile-active .top-sub-btn {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 14px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--border-subtle) !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
+  }
+
+  #topActionsToolbar.mobile-active .top-sub-btn:hover,
+  #topActionsToolbar.mobile-active .top-menu-subgroup.open .top-sub-btn {
+    background: rgba(0, 242, 254, 0.12) !important;
+    border-color: rgba(0, 242, 254, 0.45) !important;
+    color: var(--accent-cyan) !important;
+  }
+
+  #topActionsToolbar.mobile-active .sub-menu-dropdown {
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-shadow: none !important;
+    margin-top: 6px !important;
+    background: rgba(6, 11, 25, 0.85) !important;
+    border: 1px solid rgba(0, 242, 254, 0.25) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  #topActionsToolbar.mobile-active .top-menu-subgroup:not(.open) .sub-menu-dropdown {
+    display: none !important;
+  }
+
+  #topActionsToolbar.mobile-active .top-menu-subgroup.open .sub-menu-dropdown {
+    display: flex !important;
+  }
+
+  #topActionsToolbar.mobile-active .sub-menu-action-item {
+    padding: 10px 12px !important;
+    gap: 12px !important;
+    min-height: 44px !important;
+    border-radius: var(--radius-sm) !important;
+  }
+
+  #topActionsToolbar.mobile-active .sub-item-text strong {
+    font-size: 12.5px !important;
+  }
+
+  #topActionsToolbar.mobile-active .sub-item-text span {
+    font-size: 10.5px !important;
   }
 
   /* Mobile Monitoring Dashboard Layout: Vertical Stack with Full Mobile Width */
@@ -776,11 +920,29 @@ body {
   }
 
   .brand-titles h1 {
-    font-size: 14px !important;
+    font-size: 13.5px !important;
   }
 
   .compact-main-val {
     font-size: 24px !important;
+  }
+
+  .silence-header-btn span {
+    display: none !important;
+  }
+
+  .silence-header-btn {
+    padding: 5px 6px !important;
+  }
+
+  .view-mode-btn {
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+  }
+
+  #btnToggleTopMenu {
+    padding: 4px 7px !important;
+    font-size: 10.5px !important;
   }
 }
 
