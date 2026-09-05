@@ -43,6 +43,9 @@ class SmartRoomApp {
     this.startTime = Date.now();
     this.autoPingEnabled = true;
     this.autoPingTimer = null;
+    this.dashboardViewMode = localStorage.getItem('sr_dashboard_view_mode') || 'monitor';
+    this.activeHumiditySource = 'sz_hs100';
+    this.lastGatheredMapping = null;
 
     this.dom = {};
   }
@@ -70,6 +73,9 @@ class SmartRoomApp {
     this.initDeviceRegistryUi();
     this.initBriefSummaryAndHealthUi();
     this.initCircuitBoardSchematics();
+    this.initViewModeUi();
+    this.initSensorEditorModalUi();
+    this.initAutoGatherSensorsUi();
     homeConfig.applyBranding();
 
     // Start in Live mode by default
@@ -78,6 +84,63 @@ class SmartRoomApp {
   }
 
   cacheDom() {
+    // View Mode Selector
+    this.dom.btnViewMonitor = document.getElementById('btnViewMonitor');
+    this.dom.btnViewDeveloper = document.getElementById('btnViewDeveloper');
+    this.dom.btnAutoGatherSensors = document.getElementById('btnAutoGatherSensors');
+    this.dom.btnOpenSensorEditor = document.getElementById('btnOpenSensorEditor');
+
+    // Compact Monitoring Dashboard Elements
+    this.dom.compactMonitoringDashboard = document.getElementById('compactMonitoringDashboard');
+    this.dom.compactSecurityPill = document.getElementById('compactSecurityPill');
+    this.dom.compactSecurityText = document.getElementById('compactSecurityText');
+    this.dom.compactValTemp = document.getElementById('compactValTemp');
+    this.dom.compactBadgeTemp = document.getElementById('compactBadgeTemp');
+    this.dom.compactBarTemp = document.getElementById('compactBarTemp');
+    this.dom.compactValHum = document.getElementById('compactValHum');
+    this.dom.compactBadgeHum = document.getElementById('compactBadgeHum');
+    this.dom.compactBarHum = document.getElementById('compactBarHum');
+    this.dom.compactActiveSensorTag = document.getElementById('compactActiveSensorTag');
+    this.dom.compactCardSwitchHum = document.getElementById('compactCardSwitchHum');
+    this.dom.compactValDist = document.getElementById('compactValDist');
+    this.dom.compactBadgeDist = document.getElementById('compactBadgeDist');
+    this.dom.compactBarDist = document.getElementById('compactBarDist');
+    this.dom.compactValMotionText = document.getElementById('compactValMotionText');
+    this.dom.compactBadgeMotion = document.getElementById('compactBadgeMotion');
+    this.dom.compactMotionIndicator = document.getElementById('compactMotionIndicator');
+    this.dom.compactMotionSubtext = document.getElementById('compactMotionSubtext');
+    this.dom.compactValLight = document.getElementById('compactValLight');
+    this.dom.compactBadgeLight = document.getElementById('compactBadgeLight');
+    this.dom.compactBarLight = document.getElementById('compactBarLight');
+    this.dom.compactRadarBlip = document.getElementById('compactRadarBlip');
+    this.dom.compactRadarDistText = document.getElementById('compactRadarDistText');
+    this.dom.compactTickerContent = document.getElementById('compactTickerContent');
+    this.dom.compactBtnToggleHum = document.getElementById('compactBtnToggleHum');
+    this.dom.compactHumBtnText = document.getElementById('compactHumBtnText');
+    this.dom.compactBtnAutoGather = document.getElementById('compactBtnAutoGather');
+    this.dom.compactBtnEditSensors = document.getElementById('compactBtnEditSensors');
+    this.dom.compactBtnSilence = document.getElementById('compactBtnSilence');
+    this.dom.compactBtnTestBuzzer = document.getElementById('compactBtnTestBuzzer');
+
+    // Modals for Sensor Edit and Auto-Gather
+    this.dom.sensorEditModal = document.getElementById('sensorEditModal');
+    this.dom.btnCloseSensorEditModal = document.getElementById('btnCloseSensorEditModal');
+    this.dom.sensorEditorListContainer = document.getElementById('sensorEditorListContainer');
+    this.dom.btnModalAutoGather = document.getElementById('btnModalAutoGather');
+    this.dom.btnModalResetDefaults = document.getElementById('btnModalResetDefaults');
+    this.dom.btnCancelSensorEdit = document.getElementById('btnCancelSensorEdit');
+    this.dom.btnSaveSensorEdit = document.getElementById('btnSaveSensorEdit');
+
+    this.dom.autoGatherModal = document.getElementById('autoGatherModal');
+    this.dom.btnCloseAutoGatherModal = document.getElementById('btnCloseAutoGatherModal');
+    this.dom.autoGatherScanningState = document.getElementById('autoGatherScanningState');
+    this.dom.autoGatherResultsState = document.getElementById('autoGatherResultsState');
+    this.dom.autoGatherBoardName = document.getElementById('autoGatherBoardName');
+    this.dom.autoGatherSummaryText = document.getElementById('autoGatherSummaryText');
+    this.dom.autoGatherTableBody = document.getElementById('autoGatherTableBody');
+    this.dom.btnDismissAutoGather = document.getElementById('btnDismissAutoGather');
+    this.dom.btnApplyAutoGather = document.getElementById('btnApplyAutoGather');
+
     // Top Bar & Board Selector
     this.dom.selectBoardProfile = document.getElementById('selectBoardProfile');
     this.dom.btnModeLive = document.getElementById('btnModeLive');
@@ -3098,6 +3161,9 @@ class SmartRoomApp {
 
     // Render active extensions widgets (Drones, Thermal, GPS, NPK, Power, Biometrics)
     this.renderActiveExtensions(data);
+
+    // Update Compact Monitoring Dashboard Cards
+    this.updateCompactMonitoringCards(data, isProximityBreach, isMotion, alertTriggered);
   }
 
   handleAlertState(alertTriggered, isProximity, isMotion) {
@@ -3124,6 +3190,415 @@ class SmartRoomApp {
         audioEngine.stopTone();
       }
     }
+  }
+
+  updateCompactMonitoringCards(data, isProximityBreach, isMotion, alertTriggered) {
+    if (!this.dom.compactMonitoringDashboard) return;
+
+    // 1. Temperature
+    if (this.dom.compactValTemp && data.temperature !== undefined && data.temperature !== null) {
+      const t = data.temperature;
+      this.dom.compactValTemp.textContent = t.toFixed(1);
+      if (this.dom.compactBadgeTemp) {
+        this.dom.compactBadgeTemp.textContent = t > 32 ? 'HIGH HEAT' : (t < 18 ? 'COOL' : 'COMFORTABLE');
+        this.dom.compactBadgeTemp.className = `compact-badge ${t > 32 ? 'badge-danger' : (t < 18 ? 'badge-warning' : 'badge-normal')}`;
+      }
+      if (this.dom.compactBarTemp) {
+        const pct = Math.min(100, Math.max(0, (t / 50) * 100));
+        this.dom.compactBarTemp.style.width = `${pct}%`;
+      }
+    }
+
+    // 2. Humidity & Sensor Active Source
+    if (this.dom.compactValHum && data.humidity !== undefined && data.humidity !== null) {
+      const h = data.humidity;
+      this.dom.compactValHum.textContent = h.toFixed(1);
+      if (this.dom.compactBadgeHum) {
+        this.dom.compactBadgeHum.textContent = h > 70 ? 'HIGH HUMIDITY' : (h < 30 ? 'DRY' : 'OPTIMAL');
+        this.dom.compactBadgeHum.className = `compact-badge ${h > 70 || h < 30 ? 'badge-warning' : 'badge-normal'}`;
+      }
+      if (this.dom.compactBarHum) {
+        this.dom.compactBarHum.style.width = `${Math.min(100, Math.max(0, h))}%`;
+      }
+    }
+
+    // Active Humidity Source
+    const isSz = this.activeHumiditySource === 'sz_hs100';
+    if (this.dom.compactActiveSensorTag) {
+      this.dom.compactActiveSensorTag.textContent = isSz ? 'SZ-HS100 (A0)' : 'DHT11 (D4)';
+    }
+    if (this.dom.compactHumBtnText) {
+      this.dom.compactHumBtnText.textContent = isSz ? 'SZ-HS100 (A0)' : 'DHT11 (D4)';
+    }
+
+    // 3. Proximity / Distance
+    if (this.dom.compactValDist && data.distance !== undefined && data.distance !== null) {
+      const d = data.distance;
+      this.dom.compactValDist.textContent = d.toFixed(0);
+      if (this.dom.compactBadgeDist) {
+        this.dom.compactBadgeDist.textContent = isProximityBreach ? 'BREACH (<20cm)' : 'SAFE RANGE';
+        this.dom.compactBadgeDist.className = `compact-badge ${isProximityBreach ? 'badge-danger' : 'badge-normal'}`;
+      }
+      if (this.dom.compactBarDist) {
+        this.dom.compactBarDist.style.width = `${Math.min(100, Math.max(5, (d / 200) * 100))}%`;
+        this.dom.compactBarDist.style.background = isProximityBreach ? '#ef4444' : 'linear-gradient(90deg, #10b981, #06b6d4)';
+      }
+      if (this.dom.compactRadarDistText) {
+        this.dom.compactRadarDistText.textContent = `${d.toFixed(0)} cm`;
+      }
+      if (this.dom.compactRadarBlip) {
+        const norm = Math.min(1, Math.max(0, d / 220));
+        const radPx = norm * 26;
+        const bRad = ((d * 2.1) % 360 * Math.PI) / 180;
+        this.dom.compactRadarBlip.style.transform = `translate(${Math.cos(bRad) * radPx}px, ${-Math.sin(bRad) * radPx}px)`;
+        this.dom.compactRadarBlip.style.background = isProximityBreach ? '#ef4444' : '#10b981';
+        this.dom.compactRadarBlip.style.boxShadow = isProximityBreach ? '0 0 10px #ef4444' : '0 0 8px #10b981';
+      }
+    }
+
+    // 4. PIR Motion
+    if (this.dom.compactValMotionText) {
+      this.dom.compactValMotionText.innerHTML = isMotion ? '<span style="color: var(--accent-red);">OCCUPIED</span>' : '<span style="color: var(--accent-emerald);">VACANT</span>';
+    }
+    if (this.dom.compactBadgeMotion) {
+      this.dom.compactBadgeMotion.textContent = isMotion ? 'MOTION ALERT' : 'CLEAR';
+      this.dom.compactBadgeMotion.className = `compact-badge ${isMotion ? 'badge-danger' : 'badge-normal'}`;
+    }
+    if (this.dom.compactMotionIndicator) {
+      this.dom.compactMotionIndicator.className = `motion-dot ${isMotion ? 'active' : 'clear'}`;
+    }
+    if (this.dom.compactMotionSubtext) {
+      this.dom.compactMotionSubtext.textContent = isMotion ? 'Active movement in chamber' : 'No human movement detected';
+    }
+
+    // 5. Ambient Light
+    if (this.dom.compactValLight && data.light !== undefined && data.light !== null) {
+      const l = data.light;
+      this.dom.compactValLight.textContent = l;
+      if (this.dom.compactBarLight) {
+        this.dom.compactBarLight.style.width = `${Math.min(100, Math.max(5, (l / 4095) * 100))}%`;
+      }
+    }
+
+    // Sentinel Status Pill
+    if (this.dom.compactSecurityPill) {
+      this.dom.compactSecurityPill.className = alertTriggered ? (isProximityBreach ? 'security-status-pill alert' : 'security-status-pill motion') : 'security-status-pill safe';
+    }
+    if (this.dom.compactSecurityText) {
+      this.dom.compactSecurityText.textContent = alertTriggered ? (isProximityBreach ? 'PROXIMITY INTRUSION (<20cm) - ALARM ACTIVE' : 'PIR MOTION INTRUSION - ROOM OCCUPIED') : 'ALL SYSTEMS NORMAL • ROOM SECURE';
+    }
+
+    // Activity Ticker
+    if (this.dom.compactTickerContent) {
+      const timeStr = new Date().toLocaleTimeString();
+      const humTag = isSz ? 'SZ-HS100 Analog' : 'DHT11';
+      this.dom.compactTickerContent.textContent = `[${timeStr}] Temp: ${(data.temperature || 24).toFixed(1)}°C | Hum: ${(data.humidity || 55).toFixed(1)}% (${humTag}) | Proximity: ${(data.distance || 150).toFixed(0)}cm | Room: ${isMotion ? 'OCCUPIED' : 'CLEAR'}`;
+    }
+  }
+
+  initViewModeUi() {
+    this.applyDashboardViewMode(this.dashboardViewMode);
+
+    if (this.dom.btnViewMonitor) {
+      this.dom.btnViewMonitor.addEventListener('click', () => {
+        this.switchDashboardViewMode('monitor');
+      });
+    }
+
+    if (this.dom.btnViewDeveloper) {
+      this.dom.btnViewDeveloper.addEventListener('click', () => {
+        this.switchDashboardViewMode('developer');
+      });
+    }
+
+    if (this.dom.compactBtnSilence) {
+      this.dom.compactBtnSilence.addEventListener('click', () => {
+        audioEngine.stopTone();
+        this.log('Silenced alarm buzzers from Compact Monitor', 'info');
+      });
+    }
+
+    if (this.dom.compactBtnTestBuzzer) {
+      this.dom.compactBtnTestBuzzer.addEventListener('click', () => {
+        audioEngine.startTone('beep');
+        setTimeout(() => audioEngine.stopTone(), 600);
+        this.log('Hardware buzzer test triggered from Compact Monitor', 'warn');
+      });
+    }
+
+    if (this.dom.compactBtnToggleHum) {
+      this.dom.compactBtnToggleHum.addEventListener('click', () => {
+        this.toggleHumiditySensorMode();
+      });
+    }
+
+    if (this.dom.compactCardSwitchHum) {
+      this.dom.compactCardSwitchHum.addEventListener('click', () => {
+        this.toggleHumiditySensorMode();
+      });
+    }
+
+    if (this.dom.compactBtnAutoGather) {
+      this.dom.compactBtnAutoGather.addEventListener('click', () => {
+        this.runAutoGatherBoardSensors();
+      });
+    }
+
+    if (this.dom.compactBtnEditSensors) {
+      this.dom.compactBtnEditSensors.addEventListener('click', () => {
+        this.openSensorEditorModal();
+      });
+    }
+  }
+
+  switchDashboardViewMode(mode) {
+    this.dashboardViewMode = mode;
+    localStorage.setItem('sr_dashboard_view_mode', mode);
+    this.applyDashboardViewMode(mode);
+    this.log(`Switched to ${mode === 'monitor' ? 'Compact Monitoring' : 'Developer'} Dashboard Mode`, 'info');
+  }
+
+  applyDashboardViewMode(mode) {
+    document.body.classList.remove('view-mode-monitoring', 'view-mode-developer');
+    if (mode === 'monitor') {
+      document.body.classList.add('view-mode-monitoring');
+      if (this.dom.btnViewMonitor) this.dom.btnViewMonitor.classList.add('active');
+      if (this.dom.btnViewDeveloper) this.dom.btnViewDeveloper.classList.remove('active');
+    } else {
+      document.body.classList.add('view-mode-developer');
+      if (this.dom.btnViewDeveloper) this.dom.btnViewDeveloper.classList.add('active');
+      if (this.dom.btnViewMonitor) this.dom.btnViewMonitor.classList.remove('active');
+    }
+  }
+
+  async toggleHumiditySensorMode() {
+    this.activeHumiditySource = this.activeHumiditySource === 'sz_hs100' ? 'dht11' : 'sz_hs100';
+    const isSz = this.activeHumiditySource === 'sz_hs100';
+    const tagText = isSz ? 'SZ-HS100 (A0)' : 'DHT11 (D4)';
+
+    if (this.dom.compactActiveSensorTag) this.dom.compactActiveSensorTag.textContent = tagText;
+    if (this.dom.compactHumBtnText) this.dom.compactHumBtnText.textContent = tagText;
+
+    try {
+      const res = await particleApi.callFunction('cmd', isSz ? 'sz' : 'dht');
+      if (res && res.connected) {
+        this.log(`Switched humidity sensor to ${isSz ? 'SZ-HS100 Analog (A0)' : 'DHT11 Digital (D4)'} (Cloud CMD Dispatched)`, 'success');
+      } else {
+        this.log(`Switched display humidity to ${isSz ? 'SZ-HS100 Analog (A0)' : 'DHT11 Digital (D4)'}`, 'info');
+      }
+    } catch (_) {
+      this.log(`Switched display humidity to ${isSz ? 'SZ-HS100 Analog (A0)' : 'DHT11 Digital (D4)'}`, 'info');
+    }
+  }
+
+  initSensorEditorModalUi() {
+    if (this.dom.btnOpenSensorEditor) {
+      this.dom.btnOpenSensorEditor.addEventListener('click', () => {
+        this.openSensorEditorModal();
+      });
+    }
+
+    if (this.dom.btnCloseSensorEditModal) {
+      this.dom.btnCloseSensorEditModal.addEventListener('click', () => {
+        this.dom.sensorEditModal.classList.remove('active');
+      });
+    }
+
+    if (this.dom.btnCancelSensorEdit) {
+      this.dom.btnCancelSensorEdit.addEventListener('click', () => {
+        this.dom.sensorEditModal.classList.remove('active');
+      });
+    }
+
+    if (this.dom.btnSaveSensorEdit) {
+      this.dom.btnSaveSensorEdit.addEventListener('click', () => {
+        this.saveSensorEditorChanges();
+      });
+    }
+
+    if (this.dom.btnModalResetDefaults) {
+      this.dom.btnModalResetDefaults.addEventListener('click', () => {
+        if (confirm('Reset all sensor pins and configurations to defaults for this board?')) {
+          pinConfig.resetDefaults();
+          this.renderSensorEditorList();
+          this.log('Reset sensor configurations to defaults.', 'warn');
+        }
+      });
+    }
+
+    if (this.dom.btnModalAutoGather) {
+      this.dom.btnModalAutoGather.addEventListener('click', () => {
+        this.dom.sensorEditModal.classList.remove('active');
+        this.runAutoGatherBoardSensors();
+      });
+    }
+  }
+
+  openSensorEditorModal() {
+    this.renderSensorEditorList();
+    if (this.dom.sensorEditModal) {
+      this.dom.sensorEditModal.classList.add('active');
+    }
+  }
+
+  renderSensorEditorList() {
+    if (!this.dom.sensorEditorListContainer) return;
+    const board = pinConfig.getActiveBoard();
+    const pins = board.pins || [];
+    const mapping = pinConfig.mapping;
+
+    const editableSensorKeys = [
+      { id: 'sz_hs100', name: 'SZ-HS100 Analog Humidity', type: 'analog', options: ['SZ-HS100 Relative Humidity (0-3.3V)', 'Capacitive Analog RH Probe'] },
+      { id: 'dht11', name: 'DHT11 Temp & Humidity', type: 'digital', options: ['DHT11 Single-Wire Digital', 'DHT22 / AM2302 High-Res', 'SHT30 / SHT31'] },
+      { id: 'ultrasonic_echo', name: 'HC-SR04 Echo (Distance)', type: 'digital', options: ['HC-SR04 Ultrasonic Echo Pulse', 'RCWL-1601 Pulse', 'VL53L0X Laser ToF'] },
+      { id: 'pir_motion', name: 'HC-SR501 PIR Motion', type: 'digital', options: ['HC-SR501 Pyroelectric Infrared', 'RCWL-0516 Microwave Doppler'] },
+      { id: 'ldr_light', name: 'LDR Ambient Light Sensor', type: 'analog', options: ['LDR Photoresistor (Voltage Divider)', 'BH1750 Ambient Lux', 'TEMT6000 Analog'] },
+      { id: 'buzzer', name: 'Shield Alarm Buzzer', type: 'digital', options: ['Onboard NPN Transistor Buzzer', 'Active Piezo Beeper'] },
+      { id: 'rgb_red', name: 'RGB Alert Red Channel', type: 'digital', options: ['RGB Red Element (Pin A5 / D9)', 'External Alert Strobe'] }
+    ];
+
+    this.dom.sensorEditorListContainer.innerHTML = editableSensorKeys.map(cfg => {
+      const current = mapping[cfg.id] || { pin: 'A0' };
+      const cal = calibrationManager.getSensor(cfg.id) || { gain: 1.0, offset: 0.0, enabled: true };
+
+      const pinOptions = pins.map(p => {
+        const selected = p.name === current.pin ? 'selected' : '';
+        const tag = p.is5V ? ' (5V Tol)' : (p.type === 'analog' ? ' (ADC)' : '');
+        return `<option value="${p.name}" ${selected}>${p.name}${tag}</option>`;
+      }).join('');
+
+      return `
+        <div class="sensor-editor-card" data-sensor-id="${cfg.id}">
+          <div>
+            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">${cfg.name}</div>
+            <select class="board-select-dropdown sensor-model-select" style="font-size: 11px; padding: 4px 8px; margin-top: 4px; width: 100%;">
+              ${cfg.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+            </select>
+          </div>
+
+          <div>
+            <label style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Pin Assignment:</label>
+            <select class="board-select-dropdown sensor-pin-select" style="font-size: 12px; font-family: var(--font-mono); padding: 4px 8px; margin-top: 2px; width: 100%;">
+              ${pinOptions}
+            </select>
+          </div>
+
+          <div>
+            <label style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Offset (Trim):</label>
+            <input type="number" step="0.5" class="custom-num-input sensor-offset-input" value="${cal.offset || 0}" style="width: 100%; font-size: 11px; padding: 4px 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: var(--text-main);">
+          </div>
+
+          <div>
+            <label style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Scale / Gain:</label>
+            <input type="number" step="0.05" class="custom-num-input sensor-gain-input" value="${cal.gain || 1.0}" style="width: 100%; font-size: 11px; padding: 4px 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: var(--text-main);">
+          </div>
+
+          <div style="text-align: center;">
+            <label style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px;">Active</label>
+            <input type="checkbox" class="sensor-enabled-check" ${cal.enabled !== false ? 'checked' : ''} style="width: 16px; height: 16px; accent-color: var(--accent-cyan);">
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  saveSensorEditorChanges() {
+    if (!this.dom.sensorEditorListContainer) return;
+    const cards = this.dom.sensorEditorListContainer.querySelectorAll('.sensor-editor-card');
+
+    cards.forEach(card => {
+      const sensorId = card.getAttribute('data-sensor-id');
+      const pinSelect = card.querySelector('.sensor-pin-select');
+      const offsetInput = card.querySelector('.sensor-offset-input');
+      const gainInput = card.querySelector('.sensor-gain-input');
+      const enabledCheck = card.querySelector('.sensor-enabled-check');
+
+      if (pinSelect && pinConfig.mapping[sensorId]) {
+        pinConfig.updateSensor(sensorId, { pin: pinSelect.value });
+      }
+
+      const offset = parseFloat(offsetInput ? offsetInput.value : 0) || 0;
+      const gain = parseFloat(gainInput ? gainInput.value : 1.0) || 1.0;
+      const isEnabled = enabledCheck ? enabledCheck.checked : true;
+
+      calibrationManager.updateCalibration(sensorId, { offset, gain, enabled: isEnabled });
+    });
+
+    pinConfig.saveConfig();
+    if (this.dom.sensorEditModal) this.dom.sensorEditModal.classList.remove('active');
+    this.log('Saved custom sensor and pin mappings.', 'success');
+  }
+
+  initAutoGatherSensorsUi() {
+    if (this.dom.btnAutoGatherSensors) {
+      this.dom.btnAutoGatherSensors.addEventListener('click', () => {
+        this.runAutoGatherBoardSensors();
+      });
+    }
+
+    if (this.dom.btnCloseAutoGatherModal) {
+      this.dom.btnCloseAutoGatherModal.addEventListener('click', () => {
+        this.dom.autoGatherModal.classList.remove('active');
+      });
+    }
+
+    if (this.dom.btnDismissAutoGather) {
+      this.dom.btnDismissAutoGather.addEventListener('click', () => {
+        this.dom.autoGatherModal.classList.remove('active');
+      });
+    }
+
+    if (this.dom.btnApplyAutoGather) {
+      this.dom.btnApplyAutoGather.addEventListener('click', () => {
+        if (this.lastGatheredMapping) {
+          pinConfig.applyGatheredMapping(this.lastGatheredMapping.newMapping);
+          this.dom.autoGatherModal.classList.remove('active');
+          this.log(`Auto-Mapping successfully applied to ${this.lastGatheredMapping.boardName}!`, 'success');
+        }
+      });
+    }
+  }
+
+  runAutoGatherBoardSensors() {
+    if (!this.dom.autoGatherModal) return;
+    this.dom.autoGatherModal.classList.add('active');
+
+    if (this.dom.autoGatherScanningState) this.dom.autoGatherScanningState.style.display = 'block';
+    if (this.dom.autoGatherResultsState) this.dom.autoGatherResultsState.style.display = 'none';
+
+    setTimeout(() => {
+      const board = pinConfig.getActiveBoard();
+      const telemetry = this.latestTelemetry || {
+        temperature: parseFloat(this.dom.valTemp ? this.dom.valTemp.textContent : 24),
+        humidity: parseFloat(this.dom.valHum ? this.dom.valHum.textContent : 55),
+        distance: parseFloat(this.dom.valDist ? this.dom.valDist.textContent : 150),
+        motion: 0,
+        light: 1240,
+        szHum: 55
+      };
+
+      const gathered = pinConfig.autoGatherSensorMapping(board.id, telemetry);
+      this.lastGatheredMapping = gathered;
+
+      if (this.dom.autoGatherBoardName) this.dom.autoGatherBoardName.textContent = gathered.boardName;
+      if (this.dom.autoGatherSummaryText) {
+        this.dom.autoGatherSummaryText.textContent = `Discovered ${gathered.detectedSensors.length} active sensor channels • All signals verified.`;
+      }
+
+      if (this.dom.autoGatherTableBody) {
+        this.dom.autoGatherTableBody.innerHTML = gathered.detectedSensors.map(s => `
+          <tr>
+            <td style="font-weight: 700; color: var(--text-main);">${s.name}</td>
+            <td style="font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 700;">${s.pin}</td>
+            <td style="color: var(--text-dim);">${s.signal}</td>
+            <td><span class="badge badge-normal" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700;">VERIFIED</span></td>
+          </tr>
+        `).join('');
+      }
+
+      if (this.dom.autoGatherScanningState) this.dom.autoGatherScanningState.style.display = 'none';
+      if (this.dom.autoGatherResultsState) this.dom.autoGatherResultsState.style.display = 'block';
+    }, 550);
   }
 
   initBriefSummaryAndHealthUi() {

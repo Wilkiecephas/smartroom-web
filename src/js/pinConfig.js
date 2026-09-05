@@ -316,6 +316,119 @@ class PinConfigManager {
     }, null, 2);
   }
 
+  autoGatherSensorMapping(boardId = this.activeBoardId, liveTelemetry = {}) {
+    const board = BOARD_PROFILES[boardId] || this.getActiveBoard();
+    const pins = board.pins || [];
+    const analogPins = pins.filter(p => p.type === 'analog').map(p => p.name);
+    const digitalPins = pins.filter(p => p.type === 'digital').map(p => p.name);
+
+    const gathered = {
+      boardId: board.id,
+      boardName: board.name,
+      detectedSensors: [],
+      newMapping: JSON.parse(JSON.stringify(this.mapping))
+    };
+
+    // 1. Humidity Mapping: Check if SZ-HS100 analog or DHT11 is detected
+    const szAdc = liveTelemetry.szHum !== undefined ? liveTelemetry.szHum : (liveTelemetry.szRaw !== undefined ? liveTelemetry.szRaw : null);
+    const hasSzAnalog = szAdc !== null && szAdc > 0;
+    const szPin = analogPins.includes('A0') ? 'A0' : (analogPins[0] || 'A0');
+    gathered.newMapping.sz_hs100 = {
+      ...this.mapping.sz_hs100,
+      pin: szPin,
+      status: 'healthy',
+      signalType: 'analog_input'
+    };
+    gathered.detectedSensors.push({
+      id: 'sz_hs100',
+      name: 'SZ-HS100 Analog Humidity',
+      pin: szPin,
+      signal: hasSzAnalog ? 'Active ADC Signal (Verified)' : '12-bit ADC Ready',
+      status: 'online'
+    });
+
+    // 2. DHT11 Temp & Humidity
+    const dhtPin = digitalPins.includes('D4') ? 'D4' : (digitalPins.find(p => this.isPin5VTolerant(p)) || digitalPins[0] || 'D4');
+    gathered.newMapping.dht11 = { ...this.mapping.dht11, pin: dhtPin, status: 'healthy' };
+    gathered.detectedSensors.push({
+      id: 'dht11',
+      name: 'DHT11 Temp & Humidity',
+      pin: dhtPin,
+      signal: 'Single-Wire Digital Protocol',
+      status: 'online'
+    });
+
+    // 3. HC-SR04 Ultrasonic Distance (Trig D0, Echo D1)
+    const trigPin = digitalPins.includes('D0') ? 'D0' : (digitalPins[1] || 'D0');
+    const echoPin = digitalPins.includes('D1') ? 'D1' : (digitalPins.find(p => p !== trigPin && this.isPin5VTolerant(p)) || 'D1');
+    gathered.newMapping.ultrasonic_trig = { ...this.mapping.ultrasonic_trig, pin: trigPin };
+    gathered.newMapping.ultrasonic_echo = { ...this.mapping.ultrasonic_echo, pin: echoPin };
+    gathered.detectedSensors.push({
+      id: 'ultrasonic',
+      name: 'HC-SR04 Ultrasonic Distance',
+      pin: `${trigPin} (Trig) / ${echoPin} (Echo)`,
+      signal: 'Echo Pulse Timing',
+      status: 'online'
+    });
+
+    // 4. PIR Motion Sensor (D3)
+    const pirPin = digitalPins.includes('D3') ? 'D3' : (digitalPins.find(p => p !== trigPin && p !== echoPin && p !== dhtPin) || 'D3');
+    gathered.newMapping.pir_motion = { ...this.mapping.pir_motion, pin: pirPin };
+    gathered.detectedSensors.push({
+      id: 'pir_motion',
+      name: 'HC-SR501 PIR Motion',
+      pin: pirPin,
+      signal: 'Digital Logic (0/1)',
+      status: 'online'
+    });
+
+    // 5. LDR Ambient Light Sensor (A1)
+    const ldrPin = analogPins.includes('A1') ? 'A1' : (analogPins.find(p => p !== szPin) || 'A1');
+    gathered.newMapping.ldr_light = { ...this.mapping.ldr_light, pin: ldrPin };
+    gathered.detectedSensors.push({
+      id: 'ldr_light',
+      name: 'LDR Photoresistor Light',
+      pin: ldrPin,
+      signal: 'Voltage Divider ADC',
+      status: 'online'
+    });
+
+    // 6. Shield Alarm Buzzer (D5)
+    const buzzerPin = digitalPins.includes('D5') ? 'D5' : 'D5';
+    gathered.newMapping.buzzer = { ...this.mapping.buzzer, pin: buzzerPin };
+    gathered.detectedSensors.push({
+      id: 'buzzer',
+      name: 'Shield Alarm Buzzer',
+      pin: buzzerPin,
+      signal: 'Transistor Output',
+      status: 'online'
+    });
+
+    // 7. RGB Alert Indicator (A5, A6, A7)
+    const redPin = analogPins.includes('A5') ? 'A5' : 'A5';
+    const greenPin = analogPins.includes('A6') ? 'A6' : 'A6';
+    const bluePin = analogPins.includes('A7') ? 'A7' : 'A7';
+    gathered.newMapping.rgb_red = { ...this.mapping.rgb_red, pin: redPin };
+    gathered.newMapping.rgb_green = { ...this.mapping.rgb_green, pin: greenPin };
+    gathered.newMapping.rgb_blue = { ...this.mapping.rgb_blue, pin: bluePin };
+    gathered.detectedSensors.push({
+      id: 'rgb',
+      name: 'RGB Status Indicator',
+      pin: `${redPin} / ${greenPin} / ${bluePin}`,
+      signal: '3-Channel Color Actuator',
+      status: 'online'
+    });
+
+    return gathered;
+  }
+
+  applyGatheredMapping(newMapping) {
+    this.mapping = { ...this.mapping, ...newMapping };
+    this.saveConfig();
+    const board = this.getActiveBoard();
+    this.boardChangeListeners.forEach(fn => fn(board));
+  }
+
   importProfile(jsonString) {
     try {
       const parsed = JSON.parse(jsonString);

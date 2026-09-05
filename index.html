@@ -40,6 +40,18 @@
       </div>
 
       <div class="header-actions">
+        <!-- View Mode: Monitoring vs Developer -->
+        <div class="view-mode-selector" id="dashboardViewModeGroup" title="Switch between Compact Monitoring and Developer Mode">
+          <button id="btnViewMonitor" class="view-mode-btn active" title="Clean, Compact Telemetry Monitoring Dashboard">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span>Monitor</span>
+          </button>
+          <button id="btnViewDeveloper" class="view-mode-btn" title="Full Engineering Tools, Circuit Schematics & Diagnostics">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            <span>Developer</span>
+          </button>
+        </div>
+
         <!-- Environment Design Theme Selector -->
         <div style="display: flex; align-items: center; gap: 6px;">
           <label style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Theme:</label>
@@ -109,10 +121,22 @@
             </button>
           </div>
 
+          <!-- Auto-Gather Sensors Button -->
+          <button id="btnAutoGatherSensors" class="btn-primary" style="padding: 6px 12px; font-size: 13px; background: linear-gradient(135deg, #10b981, #06b6d4); color: #040914; font-weight: 700;" title="Auto-gather board sensor information and create optimal mapping">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Auto-Gather
+          </button>
+
+          <!-- Edit Sensors Button -->
+          <button id="btnOpenSensorEditor" class="btn-outline" style="padding: 6px 12px; font-size: 13px; border-color: rgba(168, 85, 247, 0.4); color: var(--accent-purple);" title="Edit sensor hardware models, pins & calibration">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Edit Sensors
+          </button>
+
           <!-- Auto-Search Sensors Bus Scanner Button -->
-          <button id="btnOpenSensorScan" class="btn-primary" style="padding: 6px 12px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914; font-weight: 700;" title="Auto-Search Connected Sensors on Bus">
+          <button id="btnOpenSensorScan" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Auto-Search Connected Sensors on Bus">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
-            Auto-Search
+            Bus Scan
           </button>
 
           <!-- Live Camera View Button -->
@@ -212,6 +236,196 @@
         </button>
       </div>
     </header>
+
+    <!-- ==================================================================== -->
+    <!-- COMPACT MONITORING DASHBOARD (Clean, high-visibility monitoring mode)-->
+    <!-- ==================================================================== -->
+    <section id="compactMonitoringDashboard" class="compact-monitoring-section">
+      <!-- Top Monitoring Status & Quick Control Strip -->
+      <div class="compact-sentinel-bar">
+        <div class="compact-sentinel-left">
+          <div id="compactSecurityPill" class="security-status-pill safe">
+            <span class="pulse-beacon"></span>
+            <span id="compactSecurityText">ALL SYSTEMS NORMAL &bull; ROOM SECURE</span>
+          </div>
+          <div class="compact-cloud-status">
+            <span class="cloud-pill online"><span class="dot"></span> Particle: Online</span>
+            <span class="cloud-pill online"><span class="dot"></span> ThingSpeak: OK</span>
+          </div>
+        </div>
+        <div class="compact-sentinel-actions">
+          <button id="compactBtnToggleHum" class="btn-compact-action hum-switch-btn" title="Toggle active humidity sensor between SZ-HS100 Analog and DHT11 Digital">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+            <span id="compactHumBtnText">SZ-HS100 (A0)</span>
+          </button>
+          <button id="compactBtnAutoGather" class="btn-compact-action auto-gather-btn" title="Auto-detect connected sensors and create pin mapping">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>Auto-Gather</span>
+          </button>
+          <button id="compactBtnEditSensors" class="btn-compact-action edit-sensors-btn" title="Edit sensor models, pin mapping & calibration">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span>Edit Sensors</span>
+          </button>
+          <button id="compactBtnSilence" class="btn-compact-action silence-btn" title="Silence active alarm buzzer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            <span>Silence</span>
+          </button>
+          <button id="compactBtnTestBuzzer" class="btn-compact-action test-buzzer-btn" title="Test shield hardware buzzer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+            <span>Test Sound</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Compact 6-Card High-Visibility Metric Grid -->
+      <div class="compact-cards-grid">
+        <!-- 1. Temperature Card -->
+        <div class="compact-card temp-card">
+          <div class="compact-card-header">
+            <div class="card-tag">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+              <span>TEMPERATURE</span>
+            </div>
+            <span id="compactBadgeTemp" class="compact-badge badge-normal">COMFORTABLE</span>
+          </div>
+          <div class="compact-card-body">
+            <div class="compact-main-val">
+              <span id="compactValTemp">24.0</span>
+              <span class="unit">°C</span>
+            </div>
+            <div class="compact-subtext">DHT11 Digital (D4) &bull; Range: 0-50°C</div>
+            <div class="compact-progress-track">
+              <div id="compactBarTemp" class="compact-progress-fill" style="width: 48%; background: linear-gradient(90deg, #06b6d4, #f59e0b);"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Humidity Card with Sensor Switch & Edit Option -->
+        <div class="compact-card hum-card">
+          <div class="compact-card-header">
+            <div class="card-tag">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              <span>HUMIDITY</span>
+            </div>
+            <span id="compactBadgeHum" class="compact-badge badge-normal">OPTIMAL</span>
+          </div>
+          <div class="compact-card-body">
+            <div class="compact-main-val">
+              <span id="compactValHum">55.0</span>
+              <span class="unit">% RH</span>
+            </div>
+            <div class="compact-sensor-switcher-row">
+              <span id="compactActiveSensorTag" class="active-sensor-chip">SZ-HS100 (A0)</span>
+              <button id="compactCardSwitchHum" class="btn-micro-switch" title="Toggle between SZ-HS100 and DHT11">
+                🔄 Toggle Sensor
+              </button>
+            </div>
+            <div class="compact-progress-track">
+              <div id="compactBarHum" class="compact-progress-fill" style="width: 55%; background: linear-gradient(90deg, #3b82f6, #06b6d4);"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Ultrasonic Distance Card -->
+        <div class="compact-card dist-card">
+          <div class="compact-card-header">
+            <div class="card-tag">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span>PROXIMITY RADAR</span>
+            </div>
+            <span id="compactBadgeDist" class="compact-badge badge-normal">SAFE RANGE</span>
+          </div>
+          <div class="compact-card-body">
+            <div class="compact-main-val">
+              <span id="compactValDist">150</span>
+              <span class="unit">cm</span>
+            </div>
+            <div class="compact-subtext">Alert Threshold: &lt; 20 cm &bull; HC-SR04</div>
+            <div class="compact-progress-track">
+              <div id="compactBarDist" class="compact-progress-fill" style="width: 75%; background: linear-gradient(90deg, #10b981, #06b6d4);"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. PIR Motion Detection Card -->
+        <div class="compact-card motion-card">
+          <div class="compact-card-header">
+            <div class="card-tag">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>ROOM OCCUPANCY</span>
+            </div>
+            <span id="compactBadgeMotion" class="compact-badge badge-normal">CLEAR</span>
+          </div>
+          <div class="compact-card-body">
+            <div class="compact-main-val" id="compactValMotionText">
+              <span style="color: var(--accent-emerald);">VACANT</span>
+            </div>
+            <div class="compact-subtext">HC-SR501 Infrared Motion Sensor (D3)</div>
+            <div class="motion-pulse-container">
+              <div id="compactMotionIndicator" class="motion-dot clear"></div>
+              <span id="compactMotionSubtext" style="font-size: 11px; color: var(--text-dim);">No human movement detected</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Ambient Light Sensor Card -->
+        <div class="compact-card light-card">
+          <div class="compact-card-header">
+            <div class="card-tag">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              <span>AMBIENT LIGHT</span>
+            </div>
+            <span id="compactBadgeLight" class="compact-badge badge-normal">DAYLIGHT</span>
+          </div>
+          <div class="compact-card-body">
+            <div class="compact-main-val">
+              <span id="compactValLight">1240</span>
+              <span class="unit">ADC</span>
+            </div>
+            <div class="compact-subtext">Shield LDR Photoresistor (A1)</div>
+            <div class="compact-progress-track">
+              <div id="compactBarLight" class="compact-progress-fill" style="width: 60%; background: linear-gradient(90deg, #f59e0b, #eab308);"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Compact Radar Sonar Scope -->
+        <div class="compact-card radar-card">
+          <div class="compact-card-header">
+            <div class="card-tag">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+              <span>FIELD SONAR RADAR</span>
+            </div>
+            <span class="compact-badge badge-normal" style="font-size: 10px;">ACTIVE SWEEP</span>
+          </div>
+          <div class="compact-radar-wrapper">
+            <div class="compact-radar-scope">
+              <div class="compact-radar-sweep"></div>
+              <div class="compact-radar-ring ring-1"></div>
+              <div class="compact-radar-ring ring-2"></div>
+              <div class="compact-radar-cross-h"></div>
+              <div class="compact-radar-cross-v"></div>
+              <div id="compactRadarBlip" class="compact-radar-blip"></div>
+            </div>
+            <div class="compact-radar-meta">
+              <span id="compactRadarDistText" style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan);">150 cm</span>
+              <span style="font-size: 10px; color: var(--text-dim);">Live Target Track</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compact Live Activity Ticker -->
+      <div class="compact-activity-ticker">
+        <div class="ticker-label">
+          <span class="ticker-live-dot"></span>
+          <span>LIVE STREAM:</span>
+        </div>
+        <div id="compactTickerContent" class="ticker-text">
+          Telemetry active &bull; System streaming nominal readings...
+        </div>
+      </div>
+    </section>
 
     <!-- Telemetry & Event Stream Bar (Area Directly After Settings, Divided with a Column) -->
     <section id="telemetryStreamBar" class="telemetry-stream-bar">
@@ -1948,6 +2162,98 @@
               <!-- Dynamically rendered by app.js -->
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SENSOR CONFIGURATION & MAPPING EDITOR MODAL -->
+  <div id="sensorEditModal" class="modal">
+    <div class="modal-content" style="max-width: 780px;">
+      <div class="modal-header">
+        <div class="modal-title" style="color: var(--accent-cyan); display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          SENSOR &amp; PIN CONFIGURATION MANAGER
+        </div>
+        <button id="btnCloseSensorEditModal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 18px;">
+        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5;">
+          Easily modify sensor hardware types, assigned MCU pins, and calibration profiles. Changes update in real-time across telemetry, alarms, and 2D schematics.
+        </div>
+
+        <div class="sensor-editor-list" id="sensorEditorListContainer">
+          <!-- Dynamically populated rows with sensor selector, pin dropdown, gain, offset, and active checkbox -->
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 8px;">
+            <button id="btnModalAutoGather" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #06b6d4); color: #040914; font-weight: 700; font-size: 12px; padding: 7px 14px;">
+              ⚡ Auto-Gather Board Sensors
+            </button>
+            <button id="btnModalResetDefaults" class="btn-outline" style="font-size: 12px; padding: 7px 14px;">
+              Reset Defaults
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btnCancelSensorEdit" class="btn-outline" style="font-size: 12px; padding: 7px 14px;">Cancel</button>
+            <button id="btnSaveSensorEdit" class="btn-primary" style="font-size: 12px; padding: 7px 16px; font-weight: 700;">
+              💾 Save &amp; Apply Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTO-GATHER BOARD SENSOR INFORMATION MODAL -->
+  <div id="autoGatherModal" class="modal">
+    <div class="modal-content" style="max-width: 680px;">
+      <div class="modal-header">
+        <div class="modal-title" style="color: #10b981; display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          AUTO-GATHERED BOARD SENSOR MAPPING
+        </div>
+        <button id="btnCloseAutoGatherModal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 18px;">
+        <div id="autoGatherScanningState" style="text-align: center; padding: 24px; display: none;">
+          <div class="loading-spinner" style="margin: 0 auto 16px;"></div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--accent-cyan);">Scanning Board Hardware &amp; Active Busses...</div>
+          <div style="font-size: 12px; color: var(--text-dim); margin-top: 6px;">Interrogating ADC channels, digital lines, and cloud variables...</div>
+        </div>
+
+        <div id="autoGatherResultsState">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: #10b981;">Target Board: <span id="autoGatherBoardName">Spark Core (STM32F103)</span></div>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;" id="autoGatherSummaryText">Discovered 7 active sensor lines &bull; All signals verified healthy.</div>
+            </div>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 700;">AUTO-DETECTED</span>
+          </div>
+
+          <div style="overflow-x: auto; max-height: 320px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; margin-bottom: 16px;">
+            <table class="pin-matrix-table" style="width: 100%; font-size: 11px;">
+              <thead>
+                <tr>
+                  <th>Sensor Module</th>
+                  <th>Auto-Mapped Pin</th>
+                  <th>Signal / Protocol</th>
+                  <th>Detection Status</th>
+                </tr>
+              </thead>
+              <tbody id="autoGatherTableBody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button id="btnDismissAutoGather" class="btn-outline" style="font-size: 12px; padding: 7px 16px;">Cancel</button>
+            <button id="btnApplyAutoGather" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #06b6d4); color: #040914; font-weight: 700; font-size: 12px; padding: 7px 18px;">
+              ✅ Apply Auto-Mapping to Board
+            </button>
+          </div>
         </div>
       </div>
     </div>
