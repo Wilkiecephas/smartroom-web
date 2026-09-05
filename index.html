@@ -66,6 +66,12 @@
           <span>Install App</span>
         </button>
 
+        <!-- Universal Silence Alarms Header Button -->
+        <button id="btnHeaderSilence" class="btn-compact-action silence-header-btn" title="Silence All Alarms & Mute Buzzer Immediately">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+          <span id="headerSilenceBtnText">Silence</span>
+        </button>
+
         <!-- Environment Design Theme Selector -->
         <div style="display: flex; align-items: center; gap: 6px;">
           <label style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Theme:</label>
@@ -119,6 +125,19 @@
               <option value="attiny85_dip">ATtiny85 8-Pin DIP IC</option>
             </optgroup>
           </select>
+        </div>
+
+        <!-- Live Board Online Status Badge & Quick Ping -->
+        <div class="header-board-status-container" style="display: flex; align-items: center; gap: 6px;">
+          <div id="headerBoardStatusBadge" class="header-board-status-badge online" title="Current Controller Online Status & Ping Latency">
+            <span class="status-dot"></span>
+            <span id="headerBoardStatusText">Spark Core: ONLINE</span>
+            <span id="headerBoardLatencyText" class="header-latency-pill">988ms</span>
+          </div>
+          <button id="btnHeaderPingBoard" class="btn-compact-action ping-btn" style="padding: 5px 9px; font-size: 11px;" title="Ping Active Controller Latency">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <span>Ping</span>
+          </button>
         </div>
 
         <!-- Top Collapsible Actions Toolbar (Show/Hide Controlled) -->
@@ -704,6 +723,22 @@
         </div>
       </div>
 
+      <!-- Microcontroller Boards Online Status & Latency Matrix -->
+      <div id="boardPingMatrixSection" style="margin-bottom: 20px; background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            <span>CONTROLLER BOARDS ONLINE STATUS &amp; PING LATENCY</span>
+          </div>
+          <button id="btnPingAllBoardsMatrix" class="btn-primary" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914;">
+            ⚡ Ping All Boards Now
+          </button>
+        </div>
+        <div id="boardPingCardsGrid" class="board-ping-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
+          <!-- Dynamically populated cards for Spark Core, Arduino Uno, ESP32, Virtual Sentinel -->
+        </div>
+      </div>
+
       <!-- Sensor & Bus Health Table -->
       <div style="overflow-x: auto; max-height: 380px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
         <table class="pin-matrix-table" style="font-size: 12px; width: 100%; border-collapse: collapse;">
@@ -1090,7 +1125,8 @@
               </div>
               <div class="module-value-row">
                 <span class="module-value-num" id="modLdrVal">620</span> <span style="color: var(--text-muted);">ADC</span>
-                <span style="font-size: 12px; color: var(--accent-cyan); margin-left: 8px;">(~310 Lux)</span>
+                <span style="font-size: 12px; color: var(--accent-cyan); margin-left: 8px;">(~<span id="valLight">310</span> Lux)</span>
+                <span id="badgeLight" class="metric-badge badge-normal" style="font-size: 9px; margin-left: 8px;">AMBIENT</span>
               </div>
               <div class="module-instruction-preview" id="instPreviewLdr">
                 Measures light via voltage divider on analog ADC pin (0 - 4095).
@@ -2017,11 +2053,11 @@
         <div class="two-point-grid" style="gap: 12px; margin-bottom: 12px;">
           <div class="form-group">
             <label class="form-label">Particle Device ID:</label>
-            <input type="text" id="inputAddSparkId" class="form-input" value="53ff6e066667574849402567" style="font-family: var(--font-mono); font-size: 12px;">
+            <input type="text" id="inputAddSparkId" class="form-input" value="54ff74066678574924331067" style="font-family: var(--font-mono); font-size: 12px;">
           </div>
           <div class="form-group">
             <label class="form-label">Access Token:</label>
-            <input type="password" id="inputAddSparkToken" class="form-input" value="2bb1082c94a974b77f88427f7fb28469ad46dc75" style="font-family: var(--font-mono); font-size: 12px;">
+            <input type="password" id="inputAddSparkToken" class="form-input" value="a0797b36a33322a66526d0580e6fe270a5ade86f" style="font-family: var(--font-mono); font-size: 12px;">
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 /**
  * Connected Devices & Peripherals Registry Subsystem
- * Manages registered physical microcontrollers (Spark Core, USB Serial, WiFi)
+ * Manages registered physical microcontrollers (Spark Core, Arduino Uno, ESP32)
  * and Virtual Simulation devices. Supports attaching/detaching sensors per device.
  * 
  * Part of SMART IOT HUB &bull; Built by TekStep Apps Uganda (tekstepapps.org)
@@ -15,8 +15,8 @@ export const PRESET_DEVICES = [
     connectionMethod: 'particle_cloud',
     status: 'online',
     credentials: {
-      deviceId: '53ff6e066667574849402567',
-      token: '2bb1082c94a974b77f88427f7fb28469ad46dc75'
+      deviceId: '54ff74066678574924331067',
+      token: 'a0797b36a33322a66526d0580e6fe270a5ade86f'
     },
     attachedSensors: [
       'dht11',
@@ -29,6 +29,50 @@ export const PRESET_DEVICES = [
       'rgb_led'
     ],
     zone: 'Master Lab / Chamber',
+    lastSeen: new Date().toISOString()
+  },
+  {
+    id: 'dev_arduino_uno_primary',
+    name: 'Arduino Uno R3 (9-in-1 Shield)',
+    type: 'arduino_uno',
+    boardProfileId: 'arduino_uno',
+    connectionMethod: 'web_serial',
+    status: 'ready',
+    credentials: {
+      baudRate: 115200,
+      voltage: '5V'
+    },
+    attachedSensors: [
+      'dht11',
+      'ultrasonic',
+      'pir_motion',
+      'ldr_light',
+      'lm35_temp',
+      'potentiometer',
+      'buzzer',
+      'rgb_led'
+    ],
+    zone: 'Hardware Electronics Bench',
+    lastSeen: new Date().toISOString()
+  },
+  {
+    id: 'dev_esp32_primary',
+    name: 'ESP32 NodeMCU (Wi-Fi / BLE)',
+    type: 'esp32',
+    boardProfileId: 'esp32',
+    connectionMethod: 'wifi',
+    status: 'online',
+    credentials: {
+      ip: '192.168.1.145'
+    },
+    attachedSensors: [
+      'dht11',
+      'ultrasonic',
+      'pir_motion',
+      'ldr_light',
+      'buzzer'
+    ],
+    zone: 'Perimeter Node 1',
     lastSeen: new Date().toISOString()
   },
   {
@@ -92,7 +136,30 @@ class DeviceRegistry {
         const saved = localStorage.getItem(this.storageKey);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            let modified = false;
+            // Self-heal: update any stale Spark Core device credentials
+            parsed.forEach(dev => {
+              if (dev.type === 'spark_core') {
+                if (!dev.credentials || dev.credentials.deviceId === '53ff6e066667574849402567' || !dev.credentials.deviceId) {
+                  dev.credentials = {
+                    deviceId: '54ff74066678574924331067',
+                    token: 'a0797b36a33322a66526d0580e6fe270a5ade86f'
+                  };
+                  modified = true;
+                }
+              }
+            });
+
+            // Ensure Arduino Uno is present
+            if (!parsed.some(d => d.id === 'dev_arduino_uno_primary' || d.type === 'arduino_uno')) {
+              parsed.push(PRESET_DEVICES[1]);
+              modified = true;
+            }
+
+            if (modified) {
+              localStorage.setItem(this.storageKey, JSON.stringify(parsed));
+            }
             return parsed;
           }
         }
@@ -110,7 +177,6 @@ class DeviceRegistry {
         }
       }
     } catch (_) {}
-    // Default to the user's Spark Core if present, else first device
     const hasSpark = this.devices.some(d => d.id === 'dev_spark_core_primary');
     return hasSpark ? 'dev_spark_core_primary' : (this.devices[0] ? this.devices[0].id : null);
   }
@@ -122,7 +188,7 @@ class DeviceRegistry {
         if (saved) return saved;
       }
     } catch (_) {}
-    return 'Spark Core Sentinel Project';
+    return 'SmartRoom IoT Sentinel Multi-Board Project';
   }
 
   save() {
@@ -156,7 +222,7 @@ class DeviceRegistry {
   }
 
   getProjectName() {
-    return this.projectName || 'Spark Core Sentinel Project';
+    return this.projectName || 'SmartRoom IoT Sentinel Multi-Board Project';
   }
 
   startNewProject(name = 'Clean Slate IoT Project') {
@@ -221,7 +287,6 @@ class DeviceRegistry {
       lastSeen: new Date().toISOString()
     };
 
-    // Replace if exists, or append
     const idx = this.devices.findIndex(d => d.id === id);
     if (idx >= 0) {
       this.devices[idx] = newDev;
@@ -237,7 +302,7 @@ class DeviceRegistry {
 
   removeDevice(id) {
     if (this.devices.length <= 1) {
-      return false; // Preserve at least one device
+      return false;
     }
     this.devices = this.devices.filter(d => d.id !== id);
     if (this.activeDeviceId === id) {

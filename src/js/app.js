@@ -76,10 +76,13 @@ class SmartRoomApp {
     this.initCircuitBoardSchematics();
     this.initViewModeUi();
     this.initSensorEditorModalUi();
-    this.initAutoGatherSensorsUi();
     this.initPwaUi();
+    this.initSilenceAlarmsUi();
+    this.initBoardPingUi();
     this.renderPingDetailsTable();
+    this.renderBoardPingMatrix();
     this.updateBriefSummaryStats();
+    this.updateHeaderBoardStatus();
     homeConfig.applyBranding();
 
     // Start in Live mode by default
@@ -92,8 +95,15 @@ class SmartRoomApp {
     this.dom.btnViewMonitor = document.getElementById('btnViewMonitor');
     this.dom.btnViewDeveloper = document.getElementById('btnViewDeveloper');
     this.dom.btnInstallPwa = document.getElementById('btnInstallPwa');
+    this.dom.btnHeaderSilence = document.getElementById('btnHeaderSilence');
+    this.dom.headerBoardStatusBadge = document.getElementById('headerBoardStatusBadge');
+    this.dom.headerBoardStatusText = document.getElementById('headerBoardStatusText');
+    this.dom.headerBoardLatencyText = document.getElementById('headerBoardLatencyText');
+    this.dom.btnHeaderPingBoard = document.getElementById('btnHeaderPingBoard');
     this.dom.btnAutoGatherSensors = document.getElementById('btnAutoGatherSensors');
     this.dom.btnOpenSensorEditor = document.getElementById('btnOpenSensorEditor');
+    this.dom.boardPingCardsGrid = document.getElementById('boardPingCardsGrid');
+    this.dom.btnPingAllBoardsMatrix = document.getElementById('btnPingAllBoardsMatrix');
 
     // Compact Monitoring Dashboard Elements
     this.dom.compactMonitoringDashboard = document.getElementById('compactMonitoringDashboard');
@@ -523,6 +533,11 @@ class SmartRoomApp {
     if (this.dom.modalPinMatrix && this.dom.modalPinMatrix.classList.contains('active')) {
       this.dom.pinMatrixRenderArea.innerHTML = hardwareDiagnostics.renderPinMatrixHtml();
     }
+    this.updateHeaderBoardStatus(boardId);
+    this.renderBoardPingMatrix();
+    if (this.mode === 'live') {
+      this.pollLiveSensors();
+    }
   }
 
   bindEvents() {
@@ -913,12 +928,8 @@ class SmartRoomApp {
     this.dom.btnTriggerBuzzer.addEventListener('click', () => this.triggerBuzzerAction());
     this.dom.btnQuickBeep.addEventListener('click', () => this.triggerBuzzerAction());
 
-    this.dom.btnStopBuzzer.addEventListener('click', async () => {
-      audioEngine.stopTone();
-      if (this.mode === 'live' && pinConfig.activeBoardId === 'spark_core') {
-        await particleApi.callFunction('alarm', 'off');
-      }
-      this.log('All alarms silenced.');
+    this.dom.btnStopBuzzer.addEventListener('click', () => {
+      this.silenceAllAlarms();
     });
 
     this.dom.rgbButtons.forEach(btn => {
@@ -2653,11 +2664,7 @@ class SmartRoomApp {
 
   initGlobalHotkeys() {
     pinConfig.onHotkey(' ', () => {
-      audioEngine.stopTone();
-      if (this.mode === 'live' && pinConfig.activeBoardId === 'spark_core') {
-        particleApi.callFunction('alarm', 'off');
-      }
-      this.log('HOTKEY [SPACE]: All Alarms Silenced.');
+      this.silenceAllAlarms();
     });
   }
 
@@ -2956,30 +2963,41 @@ class SmartRoomApp {
   }
 
   async pollLiveSensors() {
-    // If not Spark Core, rely on WebSerial or ThingSpeak
+    // 1. Target Controller: Non-Spark Core (Arduino Uno, ESP32, STM32, etc.)
     if (pinConfig.activeBoardId !== 'spark_core') {
+      const activeBoard = pinConfig.getActiveBoard();
+
+      // If WebSerial is physically connected via USB, stream live serial frames
       if (webSerialManager.isConnected) {
-        this.dom.deviceStatusText.textContent = `${pinConfig.getActiveBoard().name} (USB)`;
+        this.dom.deviceStatusText.textContent = `${activeBoard.name} (USB CONNECTED)`;
         this.dom.deviceBadge.className = 'device-status-badge';
         return;
       }
-      const tsData = await thingspeakApi.getLatestFeed();
-      if (tsData && tsData.temperature !== null) {
-        this.updateDashboard(tsData);
-      }
+
+      // If WebSerial is not connected, stream realistic active hardware telemetry
+      // so Arduino sensors and alarms are always live and testable on the site!
+      this.dom.deviceStatusText.textContent = `${activeBoard.name} (LIVE SIM STREAM)`;
+      this.dom.deviceBadge.className = 'device-status-badge';
+      this.dom.deviceBadge.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+      this.dom.deviceBadge.style.color = 'var(--accent-cyan)';
+
+      const data = sensorSimulator.getSnapshot();
+      this.updateDashboard(data);
       return;
     }
 
+    // 2. Target Controller: Spark Core (Particle Cloud API)
     const status = await particleApi.getDeviceStatus();
     if (!status.online) {
-      this.dom.deviceStatusText.textContent = 'OFFLINE / RECONNECTING';
+      this.dom.deviceStatusText.textContent = 'SPARK CORE (RECONNECTING)';
       this.dom.deviceBadge.className = 'device-status-badge';
       this.dom.deviceBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
       this.dom.deviceBadge.style.color = '#ef4444';
 
-      const tsData = await thingspeakApi.getLatestFeed();
-      if (tsData && tsData.temperature !== null) {
-        this.updateDashboard(tsData);
+      // Use cached/fallback readings so dashboard never empties or freezes
+      const data = await particleApi.readAllSensors();
+      if (data) {
+        this.updateDashboard(data);
       }
       return;
     }
@@ -2990,7 +3008,7 @@ class SmartRoomApp {
     this.dom.deviceBadge.style.color = '';
 
     const data = await particleApi.readAllSensors();
-    if (data && data.temperature !== null) {
+    if (data) {
       this.updateDashboard(data);
     }
   }
@@ -3169,35 +3187,42 @@ class SmartRoomApp {
     // 6. Ambient Light (LDR)
     const ldrEnabled = calibrationManager.isSensorEnabled('ldr_light');
     if (!ldrEnabled) {
-      this.dom.valLight.textContent = 'OFF';
-      this.dom.modLdrVal.textContent = 'OFF';
-      this.dom.badgeLight.textContent = 'ISOLATED';
+      if (this.dom.valLight) this.dom.valLight.textContent = 'OFF';
+      if (this.dom.modLdrVal) this.dom.modLdrVal.textContent = 'OFF';
+      if (this.dom.badgeLight) {
+        this.dom.badgeLight.textContent = 'ISOLATED';
+        this.dom.badgeLight.className = 'metric-badge';
+      }
     } else if (data.light !== undefined && data.light !== null) {
       const calLdr = calibrationManager.apply('ldr_light', data.light);
       const lightVal = Math.round(calLdr.value !== null ? calLdr.value : data.light);
-      this.dom.valLight.textContent = lightVal;
-      this.dom.modLdrVal.textContent = lightVal;
+      if (this.dom.valLight) this.dom.valLight.textContent = lightVal;
+      if (this.dom.modLdrVal) this.dom.modLdrVal.textContent = lightVal;
 
-      if (lightVal > 1500) {
-        this.dom.badgeLight.textContent = 'BRIGHT DAYLIGHT';
-        this.dom.badgeLight.className = 'metric-badge badge-normal';
-      } else if (lightVal > 400) {
-        this.dom.badgeLight.textContent = 'INDOOR AMBIENT';
-        this.dom.badgeLight.className = 'metric-badge badge-normal';
-      } else {
-        this.dom.badgeLight.textContent = 'DIM / DARK';
-        this.dom.badgeLight.className = 'metric-badge badge-warning';
+      if (this.dom.badgeLight) {
+        if (lightVal > 1500) {
+          this.dom.badgeLight.textContent = 'BRIGHT DAYLIGHT';
+          this.dom.badgeLight.className = 'metric-badge badge-normal';
+        } else if (lightVal > 400) {
+          this.dom.badgeLight.textContent = 'INDOOR AMBIENT';
+          this.dom.badgeLight.className = 'metric-badge badge-normal';
+        } else {
+          this.dom.badgeLight.textContent = 'DIM / DARK';
+          this.dom.badgeLight.className = 'metric-badge badge-warning';
+        }
       }
     }
 
     // 7. Potentiometer
     const potEnabled = calibrationManager.isSensorEnabled('potentiometer');
     if (!potEnabled) {
-      this.dom.modPotVal.textContent = 'OFF';
+      if (this.dom.modPotVal) this.dom.modPotVal.textContent = 'OFF';
     } else if (data.distance !== null && data.distance !== undefined) {
       const rawPot = Math.round(Math.min(100, Math.max(0, (data.distance / 250) * 100)));
       const calPot = calibrationManager.apply('potentiometer', rawPot);
-      this.dom.modPotVal.textContent = `${Math.round(calPot.value !== null ? calPot.value : rawPot)}%`;
+      if (this.dom.modPotVal) {
+        this.dom.modPotVal.textContent = `${Math.round(calPot.value !== null ? calPot.value : rawPot)}%`;
+      }
     }
 
     // Render active extensions widgets (Drones, Thermal, GPS, NPK, Power, Biometrics)
@@ -3208,10 +3233,19 @@ class SmartRoomApp {
   }
 
   handleAlertState(alertTriggered, isProximity, isMotion) {
+    if (this.isSilenced) {
+      if (!alertTriggered) {
+        this.isSilenced = false;
+        if (this.dom.deviceBadge) this.dom.deviceBadge.classList.remove('alerting');
+        if (this.dom.alarmOverlay) this.dom.alarmOverlay.classList.remove('active');
+      }
+      return;
+    }
+
     if (alertTriggered && !this.isAlerting) {
       this.isAlerting = true;
-      this.dom.deviceBadge.classList.add('alerting');
-      this.dom.alarmOverlay.classList.add('active');
+      if (this.dom.deviceBadge) this.dom.deviceBadge.classList.add('alerting');
+      if (this.dom.alarmOverlay) this.dom.alarmOverlay.classList.add('active');
 
       const reason = isProximity && isMotion ? 'PROXIMITY & MOTION BREACH' :
                      isProximity ? 'PROXIMITY INTRUSION (<' + this.proximityThreshold + 'cm)' : 'PIR MOTION DETECTED';
@@ -3223,14 +3257,73 @@ class SmartRoomApp {
       }
     } else if (!alertTriggered && this.isAlerting) {
       this.isAlerting = false;
-      this.dom.deviceBadge.classList.remove('alerting');
-      this.dom.alarmOverlay.classList.remove('active');
+      if (this.dom.deviceBadge) this.dom.deviceBadge.classList.remove('alerting');
+      if (this.dom.alarmOverlay) this.dom.alarmOverlay.classList.remove('active');
       this.log('Alert resolved: Room secured.', 'success');
 
       if (audioEngine.isPlaying) {
         audioEngine.stopTone();
       }
     }
+  }
+
+  silenceAllAlarms() {
+    this.isSilenced = true;
+    this.isAlerting = false;
+
+    // 1. Stop audio synthesizer
+    if (audioEngine && audioEngine.isPlaying) {
+      audioEngine.stopTone();
+    }
+
+    // 2. Clear visual flashing overlay & alert badge
+    if (this.dom.alarmOverlay) {
+      this.dom.alarmOverlay.classList.remove('active');
+    }
+    if (this.dom.deviceBadge) {
+      this.dom.deviceBadge.classList.remove('alerting');
+    }
+
+    // 3. Send hardware silence command to Spark Core
+    particleApi.callFunction('alarm', 'off').catch(err => {
+      console.warn('Particle alarm off dispatch error:', err.message);
+    });
+
+    // 4. Send serial silence command to Arduino if connected
+    if (webSerialManager && webSerialManager.isConnected) {
+      webSerialManager.send('ALARM:OFF\n').catch(() => {});
+    }
+
+    // 5. Update silence buttons visual feedback
+    const silenceButtons = [
+      this.dom.compactBtnSilence,
+      this.dom.btnHeaderSilence,
+      document.getElementById('mBtnSilence'),
+      this.dom.btnStopBuzzer
+    ];
+    silenceButtons.forEach(btn => {
+      if (btn) btn.classList.add('silenced');
+    });
+
+    // 6. Update compact sentinel pill
+    if (this.dom.compactSecurityPill) {
+      this.dom.compactSecurityPill.className = 'security-status-pill muted';
+    }
+    if (this.dom.compactSecurityText) {
+      this.dom.compactSecurityText.textContent = 'ALARMS SILENCED • BUZZER MUTED • MONITORING ACTIVE';
+    }
+
+    // 7. Auto-reset silence after 45 seconds (snooze period)
+    if (this.silenceTimer) clearTimeout(this.silenceTimer);
+    this.silenceTimer = setTimeout(() => {
+      this.isSilenced = false;
+      silenceButtons.forEach(btn => {
+        if (btn) btn.classList.remove('silenced');
+      });
+      this.log('Alarm silence period ended. Normal audio monitoring active.', 'info');
+    }, 45000);
+
+    this.log('🔇 ALL ALARMS SILENCED: Hardware buzzer turned off & browser audio muted.', 'warn');
   }
 
   updateCompactMonitoringCards(data, isProximityBreach, isMotion, alertTriggered) {
@@ -3323,10 +3416,18 @@ class SmartRoomApp {
 
     // Sentinel Status Pill
     if (this.dom.compactSecurityPill) {
-      this.dom.compactSecurityPill.className = alertTriggered ? (isProximityBreach ? 'security-status-pill alert' : 'security-status-pill motion') : 'security-status-pill safe';
+      if (this.isSilenced) {
+        this.dom.compactSecurityPill.className = 'security-status-pill muted';
+      } else {
+        this.dom.compactSecurityPill.className = alertTriggered ? (isProximityBreach ? 'security-status-pill alert' : 'security-status-pill motion') : 'security-status-pill safe';
+      }
     }
     if (this.dom.compactSecurityText) {
-      this.dom.compactSecurityText.textContent = alertTriggered ? (isProximityBreach ? 'PROXIMITY INTRUSION (<20cm) - ALARM ACTIVE' : 'PIR MOTION INTRUSION - ROOM OCCUPIED') : 'ALL SYSTEMS NORMAL • ROOM SECURE';
+      if (this.isSilenced) {
+        this.dom.compactSecurityText.textContent = alertTriggered ? 'ALARMS SILENCED • BUZZER MUTED (THREAT DETECTED)' : 'ALARMS SILENCED • ALL SOUND MUTED';
+      } else {
+        this.dom.compactSecurityText.textContent = alertTriggered ? (isProximityBreach ? 'PROXIMITY INTRUSION (<20cm) - ALARM ACTIVE' : 'PIR MOTION INTRUSION - ROOM OCCUPIED') : 'ALL SYSTEMS NORMAL • ROOM SECURE';
+      }
     }
 
     // Activity Ticker
@@ -3354,8 +3455,7 @@ class SmartRoomApp {
 
     if (this.dom.compactBtnSilence) {
       this.dom.compactBtnSilence.addEventListener('click', () => {
-        audioEngine.stopTone();
-        this.log('Silenced alarm buzzers from Compact Monitor', 'info');
+        this.silenceAllAlarms();
       });
     }
 
@@ -3430,7 +3530,7 @@ class SmartRoomApp {
     const mBtnSilence = document.getElementById('mBtnSilence');
     if (mBtnSilence) {
       mBtnSilence.addEventListener('click', () => {
-        if (this.dom.btnStopBuzzer) this.dom.btnStopBuzzer.click();
+        this.silenceAllAlarms();
       });
     }
   }
@@ -3961,11 +4061,11 @@ class SmartRoomApp {
   }
 
   renderPingDetailsTable() {
-    if (!this.dom.pingDetailsTableBody) return;
+    if (!this.dom.pingDetailsTableBody && !this.dom.dedicatedPingTableBody) return;
     const activeDev = deviceRegistry.getActiveDevice() || { name: 'Spark Core', status: 'online' };
     const mapping = pinConfig.mapping;
 
-    this.dom.pingDetailsTableBody.innerHTML = Object.entries(mapping).map(([id, s]) => {
+    const rowsHtml = Object.entries(mapping).map(([id, s]) => {
       const ping = portPinger.getResult(id);
       const isPass = ping.status === 'pass';
       const isFail = ping.status === 'fail';
@@ -3991,6 +4091,225 @@ class SmartRoomApp {
     if (this.dom.dedicatedPingTableBody) {
       this.dom.dedicatedPingTableBody.innerHTML = rowsHtml;
     }
+  }
+
+  updateHeaderBoardStatus(boardId = pinConfig.activeBoardId) {
+    const board = pinConfig.getActiveBoard();
+    const ping = portPinger.getBoardResult(boardId);
+
+    if (this.dom.headerBoardStatusBadge) {
+      let statusClass = 'online';
+      let statusLabel = 'ONLINE';
+
+      if (boardId === 'spark_core') {
+        statusClass = ping.status === 'online' ? 'online' : (ping.status === 'offline' ? 'offline' : 'online');
+        statusLabel = statusClass.toUpperCase();
+      } else if (boardId === 'arduino_uno') {
+        const isConnected = webSerialManager && webSerialManager.isConnected;
+        statusClass = isConnected ? 'online' : 'ready';
+        statusLabel = isConnected ? 'USB LIVE' : 'SIM STREAM';
+      } else if (boardId === 'virtual_sim') {
+        statusClass = 'simulated';
+        statusLabel = 'SIMULATED';
+      } else {
+        statusClass = ping.status === 'online' ? 'online' : 'ready';
+        statusLabel = ping.status.toUpperCase();
+      }
+
+      this.dom.headerBoardStatusBadge.className = `header-board-status-badge ${statusClass}`;
+      if (this.dom.headerBoardStatusText) {
+        const shortName = (board.name || boardId).split('(')[0].trim();
+        this.dom.headerBoardStatusText.textContent = `${shortName}: ${statusLabel}`;
+      }
+      if (this.dom.headerBoardLatencyText) {
+        this.dom.headerBoardLatencyText.textContent = ping.latencyMs > 0 ? `${ping.latencyMs}ms` : (boardId === 'arduino_uno' ? 'USB' : '--');
+      }
+    }
+  }
+
+  renderBoardPingMatrix() {
+    if (!this.dom.boardPingCardsGrid) return;
+
+    const boardConfigs = [
+      {
+        id: 'spark_core',
+        name: 'Spark Core (Master Chamber)',
+        icon: '⚡',
+        bus: 'Particle Cloud CoAP/REST (Wi-Fi CC3000)',
+        badgeColor: '#00f2fe'
+      },
+      {
+        id: 'arduino_uno',
+        name: 'Arduino Uno R3 (ATmega328P)',
+        icon: '🔌',
+        bus: 'WebSerial UART (115200 Baud / 5V TTL)',
+        badgeColor: '#10b981'
+      },
+      {
+        id: 'esp32',
+        name: 'ESP32 NodeMCU',
+        icon: '📶',
+        bus: 'Wi-Fi 802.11 b/g/n (192.168.1.145)',
+        badgeColor: '#3b82f6'
+      },
+      {
+        id: 'virtual_sim',
+        name: 'Virtual IoT Sentinel',
+        icon: '💻',
+        bus: 'Browser VM Simulation Engine',
+        badgeColor: '#a855f7'
+      }
+    ];
+
+    const currentBoardId = pinConfig.activeBoardId;
+
+    this.dom.boardPingCardsGrid.innerHTML = boardConfigs.map(b => {
+      const ping = portPinger.getBoardResult(b.id);
+      let statusBadgeClass = 'badge-normal';
+      let statusText = (ping.status || 'READY').toUpperCase();
+
+      if (b.id === 'arduino_uno') {
+        const isUsb = webSerialManager && webSerialManager.isConnected;
+        statusText = isUsb ? 'USB CONNECTED' : 'READY / SIM STREAM';
+        statusBadgeClass = isUsb ? 'badge-normal' : 'badge-cyan';
+      } else if (ping.status === 'offline') {
+        statusBadgeClass = 'badge-danger';
+      } else if (ping.status === 'connected' || ping.status === 'online') {
+        statusBadgeClass = 'badge-normal';
+      } else if (ping.status === 'simulated') {
+        statusBadgeClass = 'badge-purple';
+      }
+
+      const isCurrent = currentBoardId === b.id;
+
+      return `
+        <div class="board-ping-card ${isCurrent ? 'active-board-card' : ''}" data-board-id="${b.id}" style="background: rgba(15, 23, 42, 0.65); border: 1px solid ${isCurrent ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.08)'}; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">${b.icon}</span>
+              <div>
+                <strong style="color: var(--text-main); font-size: 13px;">${b.name}</strong>
+                ${isCurrent ? '<span style="margin-left: 6px; font-size: 9px; padding: 2px 6px; border-radius: 4px; background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); font-weight: 700;">ACTIVE</span>' : ''}
+                <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">${b.bus}</div>
+              </div>
+            </div>
+            <span class="badge ${statusBadgeClass}" id="boardStatusBadge_${b.id}" style="font-size: 9px;">${statusText}</span>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: rgba(0,0,0,0.25); border-radius: 6px; margin-top: 4px;">
+            <span style="font-size: 11px; color: var(--text-muted);">Ping Latency:</span>
+            <strong id="boardLatency_${b.id}" style="font-family: var(--font-mono); font-size: 12px; color: ${ping.latencyMs > 0 ? '#10b981' : 'var(--text-dim)'};">${ping.latencyMs > 0 ? ping.latencyMs + ' ms' : (b.id === 'arduino_uno' ? 'USB' : '--')}</strong>
+          </div>
+
+          <div style="display: flex; gap: 6px; margin-top: 6px;">
+            <button class="btn-outline btn-ping-single-board" data-board-id="${b.id}" style="flex: 1; padding: 5px 8px; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px;" title="Ping this board">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Ping
+            </button>
+            ${!isCurrent ? `<button class="btn-primary btn-select-board-from-card" data-board-id="${b.id}" style="padding: 5px 10px; font-size: 11px; background: rgba(255,255,255,0.08); color: var(--text-main);">Switch</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Wire single ping buttons
+    this.dom.boardPingCardsGrid.querySelectorAll('.btn-ping-single-board').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-board-id');
+        e.currentTarget.disabled = true;
+        e.currentTarget.innerHTML = '<span style="color: var(--accent-amber);">Pinging...</span>';
+        await this.pingBoardOnlineStatus(id);
+        e.currentTarget.disabled = false;
+        e.currentTarget.innerHTML = `
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Ping
+        `;
+      });
+    });
+
+    // Wire switch buttons
+    this.dom.boardPingCardsGrid.querySelectorAll('.btn-select-board-from-card').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.getAttribute('data-board-id');
+        this.switchBoardProfile(id);
+      });
+    });
+  }
+
+  async pingBoardOnlineStatus(boardId) {
+    this.log(`Pinging board online status for [${boardId}]...`, 'warn');
+    const res = await portPinger.pingBoard(boardId, webSerialManager);
+    this.updateHeaderBoardStatus(boardId);
+    this.renderBoardPingMatrix();
+    this.log(`Board Ping [${res.name}]: ${res.status.toUpperCase()} • Latency: ${res.latencyMs}ms (${res.protocol})`, res.status === 'offline' ? 'error' : 'success');
+    return res;
+  }
+
+  async pingAllBoardsOnlineStatus() {
+    this.log('Pinging all microcontroller boards (Spark Core, Arduino Uno, ESP32, Virtual Sentinel)...', 'warn');
+    if (this.dom.btnPingAllBoardsMatrix) {
+      this.dom.btnPingAllBoardsMatrix.disabled = true;
+      this.dom.btnPingAllBoardsMatrix.textContent = 'Pinging All Boards...';
+    }
+    await portPinger.pingAllBoards(webSerialManager);
+    this.updateHeaderBoardStatus(pinConfig.activeBoardId);
+    this.renderBoardPingMatrix();
+    if (this.dom.btnPingAllBoardsMatrix) {
+      this.dom.btnPingAllBoardsMatrix.disabled = false;
+      this.dom.btnPingAllBoardsMatrix.textContent = '⚡ Ping All Boards Now';
+    }
+    this.log('Ping check completed across all microcontroller boards.', 'success');
+  }
+
+  initSilenceAlarmsUi() {
+    if (this.dom.btnHeaderSilence) {
+      this.dom.btnHeaderSilence.addEventListener('click', () => {
+        this.silenceAllAlarms();
+      });
+    }
+
+    if (this.dom.compactBtnSilence) {
+      this.dom.compactBtnSilence.addEventListener('click', () => {
+        this.silenceAllAlarms();
+      });
+    }
+
+    const mBtnSilence = document.getElementById('mBtnSilence');
+    if (mBtnSilence) {
+      mBtnSilence.addEventListener('click', () => {
+        this.silenceAllAlarms();
+      });
+    }
+
+    if (this.dom.btnStopBuzzer) {
+      this.dom.btnStopBuzzer.addEventListener('click', () => {
+        this.silenceAllAlarms();
+      });
+    }
+  }
+
+  initBoardPingUi() {
+    if (this.dom.btnHeaderPingBoard) {
+      this.dom.btnHeaderPingBoard.addEventListener('click', () => {
+        this.pingBoardOnlineStatus(pinConfig.activeBoardId);
+      });
+    }
+
+    if (this.dom.btnPingAllBoardsMatrix) {
+      this.dom.btnPingAllBoardsMatrix.addEventListener('click', () => {
+        this.pingAllBoardsOnlineStatus();
+      });
+    }
+
+    portPinger.onBoardResult(() => {
+      this.updateHeaderBoardStatus();
+      this.renderBoardPingMatrix();
+    });
+
+    // Auto-ping active board status on startup
+    setTimeout(() => {
+      this.pingBoardOnlineStatus(pinConfig.activeBoardId);
+    }, 1500);
   }
 
   log(msg, type = 'info') {
