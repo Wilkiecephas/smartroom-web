@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMART IOT HUB - Universal Multi-Domain Telemetry Platform</title>
+  <meta name="description" content="Open-source Smart IoT Hub with multi-protocol connectors for microcontrollers, UAV drones, robotics, agriculture, camera vision, auto bus scanning, and extensions ecosystem.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/src/styles/main.css">
+  <link rel="stylesheet" href="/src/styles/components.css">
+  <link rel="stylesheet" href="/src/styles/animations.css">
+</head>
+<body>
+  <!-- Ambient Alert Overlay for Proximity / Motion Breach -->
+  <div id="alarmOverlay" class="alarm-overlay"></div>
+
+  <div class="app-container">
+    <!-- Top Header Navigation Bar -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <h1 id="appMainTitle">SMART IOT HUB</h1>
+          <div class="brand-subtitle">
+            <span id="brandZoneSubtitle">Central Command &bull; <span style="color: var(--accent-cyan); font-weight: 600;">Field Telemetry &amp; Multi-Domain Ops</span></span>
+            <span class="badge" id="brandTsBadge">THINGSPEAK #3475948</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Environment Design Theme Selector -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Theme:</label>
+          <select id="selectThemeProfile" class="board-select-dropdown" title="Select Environment Design Theme">
+            <option value="cyber-home">⚡ Cyber Home</option>
+            <option value="modern-home">🏡 Modern Home</option>
+            <option value="luxury-villa">🏛️ Luxury Villa</option>
+            <option value="corporate-office">🏢 Corporate Office</option>
+            <option value="heavy-factory">🏭 Industrial Factory</option>
+            <option value="smart-warehouse">📦 Smart Warehouse</option>
+            <option value="neon-nightclub">🔮 Neon Nightclub</option>
+            <option value="space-station">🚀 Space Station</option>
+            <option value="cleanroom-lab">🔬 Cleanroom Lab</option>
+            <option value="matrix-datacenter">💾 Matrix Datacenter</option>
+          </select>
+        </div>
+
+        <!-- Target Microcontroller & IoT Technology Selector -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Device / Tech:</label>
+          <select id="selectBoardProfile" class="board-select-dropdown" title="Select Connected Hardware, Drone or Controller Profile">
+            <optgroup label="Particle / Spark">
+              <option value="spark_core" selected>Spark Core (STM32F103)</option>
+            </optgroup>
+            <optgroup label="Drones, Robotics & Industry">
+              <option value="drone_mavlink">🛸 Drone Autopilot (PX4 / ArduPilot / MAVLink)</option>
+              <option value="robotics_rover">🤖 Robotics Mobile Rover & AGV (ROS2 / ESP32)</option>
+              <option value="smart_agriculture">🌱 Smart Agriculture 7-in-1 Soil Station</option>
+              <option value="industrial_plc">🏭 Industrial PLC & Modbus RTU Station</option>
+              <option value="cellular_gateway">📶 Cellular SIM / 4G LTE Gateway</option>
+            </optgroup>
+            <optgroup label="Arduino Family">
+              <option value="arduino_uno">Arduino Uno R3 (ATmega328P)</option>
+              <option value="arduino_nano">Arduino Nano V3 (ATmega328P)</option>
+              <option value="arduino_mega">Arduino Mega 2560 (ATmega2560)</option>
+            </optgroup>
+            <optgroup label="ESP Family">
+              <option value="esp32">ESP32 NodeMCU (WROOM-32)</option>
+              <option value="esp8266">ESP8266 NodeMCU (ESP-12E)</option>
+            </optgroup>
+            <optgroup label="STM32 Family">
+              <option value="stm32_bluepill">STM32F103 "Blue Pill"</option>
+              <option value="stm32_blackpill">STM32F401 "Black Pill"</option>
+            </optgroup>
+            <optgroup label="Raspberry Pi Family">
+              <option value="raspberry_pi_pico">Raspberry Pi Pico (RP2040)</option>
+              <option value="raspberry_pi_gpio">Raspberry Pi 3/4/5 (40-Pin GPIO)</option>
+            </optgroup>
+            <optgroup label="Standalone DIP / ATmega">
+              <option value="atmega328p_dip">ATmega328P 28-Pin DIP IC</option>
+              <option value="attiny85_dip">ATtiny85 8-Pin DIP IC</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Top Collapsible Actions Toolbar (Show/Hide Controlled) -->
+        <div id="topActionsToolbar" class="top-actions-toolbar">
+          <!-- Mode Switch: Live vs Simulation -->
+          <div class="mode-selector">
+            <button id="btnModeLive" class="mode-btn active" title="Connect to physical hardware">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+              Live
+            </button>
+            <button id="btnModeSim" class="mode-btn" title="Simulate & stress-test sensors">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Sim
+            </button>
+          </div>
+
+          <!-- Auto-Search Sensors Bus Scanner Button -->
+          <button id="btnOpenSensorScan" class="btn-primary" style="padding: 6px 12px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914; font-weight: 700;" title="Auto-Search Connected Sensors on Bus">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
+            Auto-Search
+          </button>
+
+          <!-- Live Camera View Button -->
+          <button id="btnToggleCameraView" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Live Vision & ESP32-CAM Peripheral View">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Camera
+          </button>
+
+          <!-- Extensions Marketplace Button -->
+          <button id="btnOpenExtensions" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Extensions Studio & Community Marketplace">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            Extensions
+          </button>
+
+          <!-- Multi-Protocol Wireless Monitoring Button -->
+          <button id="btnOpenWireless" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="WiFi, Web Bluetooth (BLE) & Cellular SIM Monitor">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+            Wireless
+          </button>
+
+          <!-- Home & Cloud Setup Button -->
+          <button id="btnOpenHomeSetup" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Configure Facility Information & Rebrand App">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Facility Info
+          </button>
+
+          <!-- Driver & USB Connection Helper Button -->
+          <button id="btnOpenDriverHelp" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Hardware Drivers & USB Troubleshooting Guide">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Driver Help
+          </button>
+
+          <!-- WebUSB / Web Serial Connect Button -->
+          <button id="btnWebSerialConnect" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Connect USB COM Port">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span id="serialBtnText">USB Serial</span>
+          </button>
+
+          <!-- Ping All Ports Diagnostic Button -->
+          <button id="btnPingAllPorts" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Ping & diagnose all sensor lines">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Ping Ports
+          </button>
+
+          <!-- Firmware Flasher Button -->
+          <button id="btnOpenFlasher" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Universal Firmware & WebUSB Flasher">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Flasher
+          </button>
+
+          <!-- Pin Setup & Hotkeys Button -->
+          <button id="btnOpenPinSetup" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Configure Sensor Pins & Hotkeys">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Pin Setup
+          </button>
+
+          <!-- Hardware Pin Matrix Button -->
+          <button id="btnOpenPinMatrix" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Inspect Microcontroller DIP Pinout">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            Pin Matrix
+          </button>
+
+          <!-- TekStep Apps Uganda Information & Contact Button -->
+          <button id="btnOpenAboutTekstep" class="btn-outline" style="padding: 6px 12px; font-size: 13px; border-color: rgba(0, 242, 254, 0.4); color: var(--accent-cyan);" title="About TekStep Apps Uganda, Open-Source License & Contacts">
+            <span style="font-size: 14px;">🇺🇬</span>
+            TekStep Info
+          </button>
+        </div>
+
+        <!-- Show / Hide Top Menu Toggle Button -->
+        <button id="btnToggleTopMenu" class="btn-toggle-top-menu" title="Show or Hide Top Toolbar Menu">
+          <svg id="iconToggleMenu" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+          <span id="textToggleMenu">Hide Menu</span>
+        </button>
+
+        <!-- Prominent Add Device Button -->
+        <button id="btnHeaderAddDevice" class="btn-header-add-device" title="Add or Connect New Hardware / Virtual Device">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          <span>Add Device</span>
+        </button>
+
+        <!-- ThingSpeak Rate-Limit Sync Badge -->
+        <div id="tsSyncIndicator" class="metric-badge badge-normal" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 5px 10px; cursor: pointer;" title="ThingSpeak 15s Cloud Sync Countdown">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <span id="tsSyncCountdown">TS: Ready</span>
+        </div>
+
+        <!-- Live Device Status Badge -->
+        <div id="deviceStatusBadge" class="device-status-badge">
+          <span class="status-dot"></span>
+          <span id="deviceStatusText">HARDWARE READY</span>
+        </div>
+
+        <!-- Settings Button -->
+        <button id="btnOpenSettings" class="btn-icon" title="Cloud API Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Telemetry & Event Stream Bar (Area Directly After Settings, Divided with a Column) -->
+    <section id="telemetryStreamBar" class="telemetry-stream-bar">
+      <!-- Column 1: Live Security & Event Stream -->
+      <div class="telemetry-col-left">
+        <div class="telemetry-header">
+          <span class="telemetry-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            SECURITY &amp; SYSTEM EVENT STREAM
+          </span>
+          <span class="telemetry-subtext">AUTO-SCROLL LIVE</span>
+        </div>
+        <div id="logTerminal" class="log-terminal telemetry-terminal-compact"></div>
+      </div>
+
+      <!-- Column 2: Bus Telemetry & Real-Time Sensor Packets -->
+      <div class="telemetry-col-right">
+        <div class="telemetry-header">
+          <span class="telemetry-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            BUS TELEMETRY &amp; PACKET MONITOR
+          </span>
+          <span id="telemetryPacketRate" class="telemetry-subtext">2.0 pkt/s &bull; OK</span>
+        </div>
+        <div id="telemetryPacketGrid" class="telemetry-packet-grid">
+          <div class="telemetry-packet-cell">
+            <span class="telemetry-cell-label">PACKET RATE</span>
+            <span id="telCellPktRate" class="telemetry-cell-val">2.0 pkt/s</span>
+          </div>
+          <div class="telemetry-packet-cell">
+            <span class="telemetry-cell-label">BUS LATENCY</span>
+            <span id="telCellLatency" class="telemetry-cell-val">42 ms</span>
+          </div>
+          <div class="telemetry-packet-cell">
+            <span class="telemetry-cell-label">CRC CHECKSUM</span>
+            <span id="telCellCrc" class="telemetry-cell-val" style="color: var(--accent-emerald);">0x9A4F (PASS)</span>
+          </div>
+          <div class="telemetry-packet-cell">
+            <span class="telemetry-cell-label">ACTIVE SENSORS</span>
+            <span id="telCellActiveSensors" class="telemetry-cell-val">9 / 9 Online</span>
+          </div>
+          <div class="telemetry-packet-cell">
+            <span class="telemetry-cell-label">THINGSPEAK SYNC</span>
+            <span id="telCellTsSync" class="telemetry-cell-val">Field 1-8 OK</span>
+          </div>
+          <div class="telemetry-packet-cell">
+            <span class="telemetry-cell-label">FRAME SEQ</span>
+            <span id="telCellFrameSeq" class="telemetry-cell-val">#00148</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Active Connected Hardware Device Status Banner -->
+    <section id="activeDeviceBanner" class="active-device-banner">
+      <div class="active-device-info">
+        <div class="device-avatar" id="deviceAvatarIcon">⚡</div>
+        <div>
+          <!-- Project Identity & New Project Option -->
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+            <span class="active-project-tag" style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--accent-cyan); background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.25); padding: 2px 8px; border-radius: 4px;">
+              <span>📁 Project:</span>
+              <span id="activeProjectName">Spark Core Sentinel Project</span>
+            </span>
+            <button id="btnStartNewProject" class="btn-mini-tool" style="font-size: 11px; padding: 2px 8px; color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); cursor: pointer;" title="Clear all boards and devices to start a clean new project">
+              + New Project
+            </button>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span class="active-device-name" id="activeDeviceName">Spark Core (Master Chamber)</span>
+            <span class="active-device-status-badge online" id="activeDeviceStatusBadge">CONNECTED &bull; LIVE STREAM</span>
+            <span class="active-device-type-tag" id="activeDeviceTypeTag">Particle Cloud</span>
+          </div>
+          <div class="active-device-sensors-row" id="activeDeviceSensorsRow">
+            <!-- Populated dynamically by deviceRegistry -->
+          </div>
+        </div>
+      </div>
+      <div class="active-device-actions">
+        <button id="btnAddSensorToDevice" class="btn-outline btn-device-action" title="Attach new sensor or extension to this device">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Add Sensor to Device
+        </button>
+        <button id="btnOpenDeviceManager" class="btn-outline btn-device-action" title="Switch or manage connected devices">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          Switch Device
+        </button>
+        <button id="btnOpenAddDeviceModal" class="btn-primary btn-device-action" style="background: linear-gradient(135deg, #10b981, #06b6d4); color: #040914; font-weight: 700;" title="Register new hardware device">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Add Device
+        </button>
+      </div>
+    </section>
+
+    <!-- Simulation Studio Quick Scenarios (Shown when in Simulation Mode) -->
+    <section id="scenarioBar" class="scenario-bar" style="display: none;">
+      <div class="scenario-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Testing Scenarios:
+      </div>
+      <div class="scenario-buttons">
+        <button id="btnScenIntruder" class="btn-scenario">⚠️ Intruder Approach (&lt;20cm)</button>
+        <button id="btnScenOverheat" class="btn-scenario">🔥 Temperature Spike (38°C)</button>
+        <button id="btnScenNormal"   class="btn-scenario">✅ Reset to Safe Normal</button>
+      </div>
+    </section>
+
+    <!-- Master Metrics Row -->
+    <section class="metrics-row">
+      <!-- Temperature Metric Card -->
+      <div class="metric-card">
+        <div class="metric-label">
+          <span>TEMPERATURE</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+        </div>
+        <div class="metric-value-container">
+          <span id="valTemp" class="metric-value">24.0</span>
+          <span class="metric-unit">°C</span>
+        </div>
+        <span id="badgeTemp" class="metric-badge badge-normal">COMFORTABLE</span>
+      </div>
+
+      <!-- Humidity Metric Card -->
+      <div class="metric-card">
+        <div class="metric-label">
+          <span>HUMIDITY</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        </div>
+        <div class="metric-value-container">
+          <span id="valHum" class="metric-value">55.0</span>
+          <span class="metric-unit">%</span>
+        </div>
+        <span id="badgeHum" class="metric-badge badge-normal">IDEAL</span>
+      </div>
+
+      <!-- Ultrasonic Proximity Distance -->
+      <div class="metric-card">
+        <div class="metric-label">
+          <span>DISTANCE (HC-SR04)</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M7 7l-5 5 5 5M17 7l5 5-5 5"/></svg>
+        </div>
+        <div class="metric-value-container">
+          <span id="valDist" class="metric-value">178.0</span>
+          <span class="metric-unit">cm</span>
+        </div>
+        <span id="badgeDist" class="metric-badge badge-normal">NORMAL</span>
+      </div>
+
+      <!-- PIR Motion Detection Status -->
+      <div class="metric-card">
+        <div class="metric-label">
+          <span>PIR MOTION</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="metric-value-container">
+          <span id="valMotion" class="metric-value">CLEAR</span>
+        </div>
+        <span id="badgeMotion" class="metric-badge badge-normal">AREA SECURE</span>
+      </div>
+
+      <!-- Sonar Radar Brief Menu Card (Pure Visual Scope & Target Location: No Numbers, No Words) -->
+      <div class="metric-card brief-sonar-card" id="cardBriefSonar">
+        <div class="brief-radar-wrapper">
+          <div class="brief-radar-scope" id="briefRadarScope">
+            <div class="brief-radar-ring ring-1"></div>
+            <div class="brief-radar-ring ring-2"></div>
+            <div class="brief-radar-ring ring-3"></div>
+            <div class="brief-radar-crosshair-h"></div>
+            <div class="brief-radar-crosshair-v"></div>
+            <div class="brief-radar-sweep"></div>
+            <div class="brief-radar-blip" id="briefRadarBlip">
+              <span class="brief-blip-pulse"></span>
+            </div>
+            <div class="brief-radar-center"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensor Summary & Health Brief Tab -->
+      <div class="metric-card brief-summary-tab" id="cardBriefSummary">
+        <div class="metric-label" style="margin-bottom: 2px;">
+          <span style="display: flex; align-items: center; gap: 5px; font-weight: 700; color: var(--accent-cyan); font-size: 11px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            HEALTH &amp; SUMMARY
+          </span>
+          <span id="briefHealthBadge" class="metric-badge badge-normal" style="font-size: 9px; padding: 2px 6px;">100% HEALTH</span>
+        </div>
+        <div class="brief-summary-content">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+            <span style="color: var(--text-dim);">Device:</span>
+            <span id="briefDevStatus" style="font-weight: 600; color: var(--accent-emerald); font-family: var(--font-mono); font-size: 10px;">Spark Core (ONLINE)</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+            <span style="color: var(--text-dim);">Pings:</span>
+            <button id="btnToggleBriefPing" class="btn-brief-ping" title="Toggle Active Sensor Ping Monitoring On/Off">
+              <span class="ping-dot"></span>
+              <span id="textBriefPingState">PINGS: ON</span>
+            </button>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+            <span style="color: var(--text-dim);">Uptime:</span>
+            <span id="briefUptime" style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan); font-size: 11px;">00:00:00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 3px; margin-top: 2px; font-size: 10px;">
+            <span style="color: var(--text-dim);">Status:</span>
+            <span id="briefPingStats" style="font-family: var(--font-mono); color: var(--accent-emerald);">9 Pass / 0 Fail</span>
+          </div>
+          <button id="btnOpenPingDetailsModal" class="btn-brief-details-link" title="Open Full Sensor Health &amp; Device Ping Breakdown">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Sensor Details &amp; Health Map
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Active Extensions & Peripherals Live Row -->
+    <section id="extensionsDashboardRow" class="extensions-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <!-- Dynamically rendered by extensionEngine.js -->
+    </section>
+
+    <!-- Main Interactive Grid -->
+    <div class="dashboard-grid">
+      <!-- Column 1: Actuator Hardware Controls -->
+      <div class="col-6">
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              HARDWARE ACTUATORS (SPARK CORE)
+            </div>
+          </div>
+
+          <!-- Buzzer Hardware Test -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Shield Buzzer (Pin D5)</div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button id="btnTriggerBuzzer" class="btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+                Trigger Hardware Buzzer
+              </button>
+              <button id="btnStopBuzzer" class="btn-outline" style="border-color: rgba(239, 68, 68, 0.4); color: var(--accent-rose);">
+                Silence All Alarms
+              </button>
+            </div>
+          </div>
+
+          <!-- RGB LED Remote Palette -->
+          <div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">RGB Status Light (Pins D9, D10, D11)</div>
+            <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 8px;">Select color or leave in Auto Security mode (Green=Secure, Blue=Motion, Red=Breach).</div>
+            <div class="rgb-palette">
+              <button class="rgb-color-btn c-red" data-color="red" title="Red (Alert)"></button>
+              <button class="rgb-color-btn c-green active" data-color="green" title="Green (Secure)"></button>
+              <button class="rgb-color-btn c-blue" data-color="blue" title="Blue (Motion)"></button>
+              <button class="rgb-color-btn c-purple" data-color="purple" title="Purple"></button>
+              <button class="rgb-color-btn c-cyan" data-color="cyan" title="Cyan"></button>
+              <button class="rgb-color-btn c-off" data-color="off" title="Off"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 4: Manual Simulation Sliders (Shown when Simulation mode is on) -->
+      <div id="simControls" class="col-6" style="display: none;">
+        <div class="glass-card" style="border-color: rgba(168, 85, 247, 0.4);">
+          <div class="card-header">
+            <div class="card-title" style="color: var(--accent-purple);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              MANUAL SENSOR OVERRIDES
+            </div>
+          </div>
+
+          <div class="slider-control-group">
+            <div class="slider-item">
+              <div class="slider-label-row">
+                <span>Simulated Distance:</span>
+                <span class="slider-val">5cm - 250cm</span>
+              </div>
+              <input type="range" id="simDist" class="custom-range" min="5" max="250" value="165" step="1">
+            </div>
+
+            <div class="slider-item">
+              <div class="slider-label-row">
+                <span>Simulated Temperature:</span>
+                <span class="slider-val">15°C - 45°C</span>
+              </div>
+              <input type="range" id="simTemp" class="custom-range" min="15" max="45" value="24" step="0.5">
+            </div>
+
+            <div style="margin-top: 10px;">
+              <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                <input type="checkbox" id="simMotion" style="width: 18px; height: 18px; accent-color: var(--accent-red);">
+                Trigger PIR Motion Detection (HIGH)
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 4b: Interactive Circuit Board Schematics & Pin Matrix (Directly After Hardware Actuators, Before Workbench) -->
+      <div class="col-12" id="circuitBoardSchematicSection"></div>
+
+      <!-- Column 5: 9-in-1 Sensor & Module Diagnostics Workbench -->
+      <div class="col-12">
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              SENSOR MODULES, SONAR RADAR &amp; AUDIO WORKBENCH
+            </div>
+            <div style="font-size: 12px; color: var(--text-dim); display: flex; gap: 12px; align-items: center;">
+              <span>Total Sensors &amp; Modules: <strong style="color: var(--accent-cyan);">11 Integrated</strong></span>
+              <span>Health: <strong style="color: var(--accent-emerald);">Optimal (100%)</strong></span>
+            </div>
+          </div>
+
+          <div id="modulesGrid" class="modules-grid">
+            <!-- Sonar Radar Scope Card (Compact Sensor Card) -->
+            <div class="module-card radar-compact-card" id="cardModuleRadar">
+              <div class="module-header">
+                <div class="module-name" style="display: flex; align-items: center; gap: 6px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+                  Sonar Radar Proximity
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_sonar_radar">ACTIVE</span>
+                  <span class="module-pin-chip">HC-SR04</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px; margin: 8px 0;">
+                <div class="radar-scope compact" style="flex-shrink: 0;">
+                  <div class="radar-ring r1"></div>
+                  <div class="radar-ring r2"></div>
+                  <div class="radar-ring r3"></div>
+                  <div class="radar-crosshair-h"></div>
+                  <div class="radar-crosshair-v"></div>
+                  <div class="radar-sweep"></div>
+                  <div id="radarBlip" class="radar-blip"></div>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div id="radarReadout" class="radar-distance-readout" style="margin-top: 0; text-align: left;">
+                    <div class="dist-val" style="font-size: 26px;"><span id="radarDistNum">178.0</span> <span style="font-size: 13px; color: var(--text-muted);">cm</span></div>
+                    <div style="font-size: 11px; color: var(--text-dim);">Target Vector</div>
+                  </div>
+                  <div class="slider-item" style="margin-top: 6px;">
+                    <div class="slider-label-row" style="font-size: 11px; margin-bottom: 2px;">
+                      <span>Threshold:</span>
+                      <span id="valThreshold" class="slider-val" style="font-size: 11px;">20 cm</span>
+                    </div>
+                    <input type="range" id="sliderThreshold" class="custom-range" min="5" max="100" value="20" step="1">
+                  </div>
+                </div>
+              </div>
+              <div class="module-instruction-preview">
+                Acoustic sweep tracking. Alerts when target &lt; threshold.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-cal-sensor" data-sensor-id="ultrasonic" title="Calibrate distance offset/gain">
+                  Calibrate
+                </button>
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="ultrasonic_echo" title="Ping echo line">
+                  Ping Line
+                </button>
+              </div>
+            </div>
+
+            <!-- Audio Synthesizer & Alarm Tone Studio Card (Compact Sensor Card) -->
+            <div class="module-card synth-compact-card" id="cardModuleSynth">
+              <div class="module-header">
+                <div class="module-name" style="display: flex; align-items: center; gap: 6px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                  Audio Synth &amp; Tone Studio
+                </div>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                  <input type="checkbox" id="chkAudioAlarm" checked style="accent-color: var(--accent-cyan);">
+                  <span>Audio Alert</span>
+                </label>
+              </div>
+              <div class="audio-visualizer-container" style="height: 60px; margin-bottom: 8px;">
+                <canvas id="audioVisualizer" class="audio-canvas" width="360" height="60" style="height: 60px;"></canvas>
+              </div>
+              <div class="tone-selector-grid" style="grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 8px;">
+                <button class="tone-pill-btn active" data-tone="siren" style="padding: 4px 6px;">
+                  <span class="name" style="font-size: 10px;">🚨 Siren</span>
+                </button>
+                <button class="tone-pill-btn" data-tone="strobe" style="padding: 4px 6px;">
+                  <span class="name" style="font-size: 10px;">⚡ Strobe</span>
+                </button>
+                <button class="tone-pill-btn" data-tone="cyber" style="padding: 4px 6px;">
+                  <span class="name" style="font-size: 10px;">🔮 Laser</span>
+                </button>
+                <button class="tone-pill-btn" data-tone="retro" style="padding: 4px 6px;">
+                  <span class="name" style="font-size: 10px;">👾 8-Bit</span>
+                </button>
+                <button class="tone-pill-btn" data-tone="chime" style="padding: 4px 6px;">
+                  <span class="name" style="font-size: 10px;">🔔 Chime</span>
+                </button>
+              </div>
+              <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <div class="slider-item" style="flex: 1;">
+                  <div class="slider-label-row" style="font-size: 10px; margin-bottom: 2px;">
+                    <span>Pitch:</span>
+                    <span id="valPitch" class="slider-val" style="font-size: 10px;">1.0x</span>
+                  </div>
+                  <input type="range" id="sliderPitch" class="custom-range" min="0.4" max="2.4" value="1.0" step="0.1">
+                </div>
+                <div class="slider-item" style="flex: 1;">
+                  <div class="slider-label-row" style="font-size: 10px; margin-bottom: 2px;">
+                    <span>Volume:</span>
+                    <span id="valVolume" class="slider-val" style="font-size: 10px;">50%</span>
+                  </div>
+                  <input type="range" id="sliderVolume" class="custom-range" min="0" max="100" value="50" step="5">
+                </div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button id="btnTestSound" class="btn-primary" style="padding: 5px 10px; font-size: 11px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Play Tone
+                </button>
+                <button id="btnStopSound" class="btn-danger" style="padding: 5px 10px; font-size: 11px; display: none; flex: 1; align-items: center; justify-content: center; gap: 4px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+                  Stop
+                </button>
+              </div>
+            </div>
+            <!-- DHT11 Card -->
+            <div class="module-card" id="cardModuleDht">
+              <div class="module-header">
+                <div class="module-name">DHT11 Temp & Humidity</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_dht11">PASS</span>
+                  <span class="module-pin-chip" id="chipPinDht">Pin D4</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="dht11" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span class="module-value-num" id="modDhtTemp">24.0</span> <span style="color: var(--text-muted);">°C</span>
+                <span style="color: var(--text-dim); margin: 0 6px;">|</span>
+                <span class="module-value-num" id="modDhtHum">55.0</span> <span style="color: var(--text-muted);">%</span>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewDht">
+                Single-wire digital bus. Internal pull-up enabled.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-cal-sensor" data-sensor-id="dht11_temp" title="Calibrate temperature/humidity">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  Calibrate
+                </button>
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="dht11" title="Ping line port">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+
+            <!-- HC-SR04 Ultrasonic Card -->
+            <div class="module-card" id="cardModuleDist">
+              <div class="module-header">
+                <div class="module-name">HC-SR04 Ultrasonic</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_ultrasonic_echo">PASS</span>
+                  <span class="module-pin-chip" id="chipPinEcho">T:D0 | E:D1</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="ultrasonic" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span class="module-value-num" id="modDistVal">178.0</span> <span style="color: var(--text-muted);">cm</span>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewDist">
+                Trig & Echo duration calculation. 5V tolerant Echo line.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-cal-sensor" data-sensor-id="ultrasonic" title="Calibrate distance offset/gain">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  Calibrate
+                </button>
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="ultrasonic_echo" title="Ping echo line">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+
+            <!-- PIR Motion Card -->
+            <div class="module-card" id="cardModulePir">
+              <div class="module-header">
+                <div class="module-name">HC-SR501 PIR Motion</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_pir_motion">PASS</span>
+                  <span class="module-pin-chip" id="chipPinPir">Pin D3</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="pir_motion" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span class="module-value-num" id="modPirState" style="color: var(--accent-emerald);">CLEAR</span>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewPir">
+                Infrared pyroelectric sensor. Outputs 3.3V HIGH on motion detection.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="pir_motion" title="Ping PIR line">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+
+            <!-- Buzzer Card -->
+            <div class="module-card" id="cardModuleBuzzer">
+              <div class="module-header">
+                <div class="module-name">Shield Alarm Buzzer</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_buzzer">PASS</span>
+                  <span class="module-pin-chip" id="chipPinBuzzer">Pin D5</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="buzzer" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span class="module-value-num" id="modBuzzerState" style="font-size: 18px; color: var(--accent-cyan);">READY</span>
+                <button id="btnQuickBeep" class="btn-outline" style="padding: 4px 10px; font-size: 11px; margin-left: auto;">Test Beep</button>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewBuzzer">
+                Driven by S8050 NPN transistor switch on D5. Multi-tone capable.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="buzzer" title="Ping Buzzer port">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+
+            <!-- RGB Status LED Card -->
+            <div class="module-card" id="cardModuleRgb">
+              <div class="module-header">
+                <div class="module-name">RGB Multi-Color LED</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_rgb_red">PASS</span>
+                  <span class="module-pin-chip" id="chipPinRgb">D9,D10,D11</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="rgb" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span class="module-value-num" id="modRgbState" style="font-size: 18px; color: #10b981;">GREEN (NORMAL)</span>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewRgb">
+                Red, Green, Blue channels. Auto Security mode active.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="rgb_red" title="Ping RGB lines">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+
+            <!-- LDR Light Sensor Card -->
+            <div class="module-card" id="cardModuleLdr">
+              <div class="module-header">
+                <div class="module-name">LDR Photoresistor</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_ldr_light">PASS</span>
+                  <span class="module-pin-chip" id="chipPinLdr">Pin A1</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="ldr_light" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span class="module-value-num" id="modLdrVal">620</span> <span style="color: var(--text-muted);">ADC</span>
+                <span style="font-size: 12px; color: var(--accent-cyan); margin-left: 8px;">(~310 Lux)</span>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewLdr">
+                Measures light via voltage divider on analog ADC pin (0 - 4095).
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-cal-sensor" data-sensor-id="ldr_light" title="Calibrate light Lux curve">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  Calibrate
+                </button>
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="ldr_light" title="Ping ADC line">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+
+            <!-- LM35 Temperature Card -->
+            <div class="module-card" id="cardModuleLm35">
+              <div class="module-header">
+                <div class="module-name">LM35 Analog Temp</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_lm35_temp">PASS</span>
+                  <span class="module-pin-chip" id="chipPinLm35">Pin A2</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="lm35_temp" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span class="module-value-num" id="modLm35Val">23.8</span> <span style="color: var(--text-muted);">°C</span>
+                <span style="font-size: 11px; color: var(--text-dim); margin-left: 8px;">(238 mV)</span>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewLm35">
+                Precision Celsius sensor. Produces linear 10mV/°C on analog pin.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-cal-sensor" data-sensor-id="lm35_temp" title="Calibrate LM35 baseline/slope">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  Calibrate
+                </button>
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="lm35_temp" title="Ping LM35 line">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+
+            <!-- Rotary Potentiometer Card -->
+            <div class="module-card" id="cardModulePot">
+              <div class="module-header">
+                <div class="module-name">Rotary Potentiometer</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_potentiometer">PASS</span>
+                  <span class="module-pin-chip" id="chipPinPot">Pin A0</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="potentiometer" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span class="module-value-num" id="modPotVal">48%</span>
+                <span style="font-size: 12px; color: var(--text-dim); margin-left: 8px;">Angle: ~144°</span>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewPot">
+                10k potentiometer on pin A0 for threshold tuning.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-cal-sensor" data-sensor-id="potentiometer" title="Calibrate Pot min/max range">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  Calibrate
+                </button>
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="potentiometer" title="Ping wiper line">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+
+            <!-- Push Buttons (Key 1 & Key 2) Card -->
+            <div class="module-card" id="cardModuleBtns">
+              <div class="module-header">
+                <div class="module-name">Push Buttons (Key 1 & 2)</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_btn_key1">PASS</span>
+                  <span class="module-pin-chip" id="chipPinBtns">D2 & D3/D6</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="buttons" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span style="font-size: 13px; color: var(--text-muted);">Key 1:</span>
+                <span id="modKey1State" style="font-weight: 700; color: var(--text-main); font-family: var(--font-mono);">IDLE</span>
+                <span style="font-size: 13px; color: var(--text-muted); margin-left: 12px;">Key 2:</span>
+                <span id="modKey2State" style="font-weight: 700; color: var(--text-main); font-family: var(--font-mono);">IDLE</span>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewBtns">
+                Tactile momentary push buttons with pull-down resistors on shield.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="btn_key1" title="Ping Key 1/2 inputs">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Column 7: Web USB & Web Serial Terminal Drawer -->
+      <div class="col-12" id="serialDrawerContainer">
+        <div class="glass-card" style="border-color: rgba(0, 242, 254, 0.3);">
+          <div class="card-header">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              WEB USB & WEB SERIAL HARDWARE TERMINAL
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div class="serial-status-indicator">
+                <span class="serial-indicator-dot" id="serialIndicatorDot"></span>
+                <span id="serialIndicatorText" style="color: var(--text-dim);">DISCONNECTED</span>
+              </div>
+              <select id="selectBaudRate" class="board-select-dropdown" style="padding: 4px 8px; font-size: 11px;">
+                <option value="9600">9600 Baud</option>
+                <option value="14400">14400 (DFU/Spark)</option>
+                <option value="57600">57600 Baud</option>
+                <option value="115200" selected>115200 Baud</option>
+              </select>
+              <button id="btnToggleSerialPort" class="btn-primary" style="padding: 5px 12px; font-size: 12px;">Connect USB Port</button>
+              <button id="btnDfuTrigger" class="btn-outline" style="padding: 5px 10px; font-size: 12px;" title="Reset MCU into bootloader mode">DFU 1200 Touch</button>
+            </div>
+          </div>
+          <div id="serialTerminalOutput" class="log-terminal" style="height: 140px; font-family: var(--font-mono); font-size: 12px;">
+            <div style="color: var(--text-dim); font-style: italic;">[Ready] Click "Connect USB Port" to open Chrome/Edge Web Serial picker and stream live bi-directional data...</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+            <input type="text" id="inputSerialSend" class="form-input" placeholder="Type serial command (e.g. PING:ALL, READ, CAL, REBOOT)..." style="flex: 1; padding: 6px 12px; font-size: 12px; font-family: var(--font-mono); min-width: 200px;">
+            <button id="btnSerialSend" class="btn-outline" style="padding: 6px 14px; font-size: 12px;">Send</button>
+            <button id="btnQuickCmdPing" class="btn-mini-tool">PING:ALL</button>
+            <button id="btnQuickCmdReset" class="btn-mini-tool">RESET</button>
+            <button id="btnClearSerialLog" class="btn-mini-tool" style="margin-left: auto;">Clear Terminal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Pin & Sensor Setup Studio -->
+  <div id="modalPinSetup" class="modal-overlay">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Sensor & Pin Configuration Studio
+        </div>
+        <button id="btnClosePinSetup" class="btn-icon">✕</button>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="tabPins">Pin Assignments</button>
+        <button class="modal-tab-btn" data-tab="tabInstructions">Sensor Instructions & Notes</button>
+        <button class="modal-tab-btn" data-tab="tabHotkeys">Keyboard Hotkeys</button>
+        <button class="modal-tab-btn" data-tab="tabProfiles">Profiles & JSON</button>
+      </div>
+
+      <!-- TAB 1: Pin Assignments -->
+      <div id="tabPins" class="tab-content-pane active">
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+          Assign physical Spark Core / Shield pins to each sensor module. Pins with green <strong>5V</strong> badges can safely accept 5V inputs.
+        </div>
+        <table class="pin-setup-table">
+          <thead>
+            <tr>
+              <th>Sensor Module</th>
+              <th>Assigned Pin</th>
+              <th>Tolerance</th>
+              <th>Signal Type</th>
+            </tr>
+          </thead>
+          <tbody id="pinSetupTableBody">
+            <!-- Dynamically populated by app.js -->
+          </tbody>
+        </table>
+        <div id="pinWarningBox" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius-sm); color: var(--accent-rose); font-size: 12px; margin-bottom: 16px;"></div>
+      </div>
+
+      <!-- TAB 2: Sensor Instructions & Notes -->
+      <div id="tabInstructions" class="tab-content-pane">
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+          Edit and save custom wiring instructions, bench notes, or calibration formulas for each sensor module:
+        </div>
+        <div id="instructionsList" style="display: flex; flex-direction: column; gap: 14px; max-height: 400px; overflow-y: auto; padding-right: 6px;">
+          <!-- Dynamically populated by app.js -->
+        </div>
+      </div>
+
+      <!-- TAB 3: Keyboard Hotkeys -->
+      <div id="tabHotkeys" class="tab-content-pane">
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+          Click any badge to rebind keyboard shortcut keys to trigger or inspect that sensor from your keyboard:
+        </div>
+        <table class="pin-setup-table">
+          <thead>
+            <tr>
+              <th>Sensor / Action</th>
+              <th>Current Hotkey</th>
+              <th>Action Description</th>
+            </tr>
+          </thead>
+          <tbody id="hotkeysTableBody">
+            <!-- Dynamically populated by app.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 4: Profiles & JSON -->
+      <div id="tabProfiles" class="tab-content-pane">
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+          Export your pinout and instructions profile as JSON, or paste an existing profile to restore:
+        </div>
+        <textarea id="txtProfileJson" class="instruction-textarea" style="height: 180px; font-family: var(--font-mono); font-size: 11px;"></textarea>
+        <div style="display: flex; gap: 10px; margin-top: 12px;">
+          <button id="btnExportProfile" class="btn-outline">Copy JSON Profile</button>
+          <button id="btnImportProfile" class="btn-primary">Apply JSON Profile</button>
+          <button id="btnResetDefaults" class="btn-outline" style="color: var(--accent-rose); margin-left: auto;">Reset to 9-in-1 Defaults</button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+        <button id="btnSavePinSetup" class="btn-primary">Save & Apply Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Spark Core 24-Pin DIP Matrix Inspector -->
+  <div id="modalPinMatrix" class="modal-overlay">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/></svg>
+          Spark Core 24-Pin Hardware Matrix & Connection Inspector
+        </div>
+        <button id="btnClosePinMatrix" class="btn-icon">✕</button>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Real-time physical DIP pinout of the Spark Core (STM32F103CB). Shows live voltage tolerance, signal states, and mapped sensor modules:
+      </div>
+
+      <div id="pinMatrixRenderArea">
+        <!-- Dynamically rendered by diagnostics.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Cloud Settings Modal -->
+  <div id="modalSettings" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">Cloud Configuration</div>
+        <button id="btnCloseSettings" class="btn-icon">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Particle Device ID:</label>
+        <input type="text" id="inputDeviceId" class="form-input" placeholder="e.g. 54ff74066678574924331067">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Particle Access Token:</label>
+        <input type="password" id="inputToken" class="form-input" placeholder="Access Token">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ThingSpeak Read API Key (Optional):</label>
+        <input type="text" id="inputTsKey" class="form-input" placeholder="ThingSpeak Read Key">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button id="btnSaveSettings" class="btn-primary">Save & Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: One-by-One Sensor Calibration Studio -->
+  <div id="modalCalibration" class="modal-overlay">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Sensor Calibration Studio & Precision Tuning
+        </div>
+        <button id="btnCloseCalibration" class="btn-icon">✕</button>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+        <label style="font-size: 12px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Select Sensor:</label>
+        <select id="selectCalSensor" class="board-select-dropdown" style="flex: 1; min-width: 220px;">
+          <option value="dht11_temp">DHT11 Temperature (°C)</option>
+          <option value="dht11_hum">DHT11 Humidity (%)</option>
+          <option value="ultrasonic">HC-SR04 Ultrasonic Distance (cm)</option>
+          <option value="ldr_light">LDR Ambient Light (ADC / Lux)</option>
+          <option value="lm35_temp">LM35 Precision Temperature (°C)</option>
+          <option value="potentiometer">Rotary Potentiometer (%)</option>
+        </select>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; color: var(--text-muted);">Sensor Power:</span>
+          <label class="switch-toggle" title="Toggle Sensor On/Off">
+            <input type="checkbox" id="calSensorEnabled" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Real-time Live Raw vs Calibrated Comparison -->
+      <div class="cal-compare-box">
+        <div class="cal-val-display" style="border: 1px solid rgba(255, 255, 255, 0.1);">
+          <span style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Raw Hardware Input</span>
+          <div class="cal-val-number" style="color: var(--text-muted);"><span id="calRawVal">24.0</span> <span id="calUnitRaw" style="font-size: 16px;">°C</span></div>
+        </div>
+        <div class="cal-val-display" style="border: 1px solid rgba(0, 242, 254, 0.4); background: rgba(0, 242, 254, 0.05);">
+          <span style="font-size: 11px; color: var(--accent-cyan); text-transform: uppercase; font-weight: 700;">Calibrated Real-World Output</span>
+          <div class="cal-val-number" style="color: var(--accent-cyan);"><span id="calOutputVal">24.0</span> <span id="calUnitOutput" style="font-size: 16px;">°C</span></div>
+        </div>
+      </div>
+
+      <!-- Offset & Gain Sliders -->
+      <div class="slider-control-group">
+        <div class="slider-item">
+          <div class="slider-label-row">
+            <span>Zero / Baseline Offset:</span>
+            <span id="calOffsetNum" class="slider-val">0.0</span>
+          </div>
+          <input type="range" id="calOffsetSlider" class="custom-range" min="-20" max="20" value="0" step="0.1">
+          <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Added directly to raw value (e.g. ±2.5°C compensation).</div>
+        </div>
+
+        <div class="slider-item">
+          <div class="slider-label-row">
+            <span>Scale Multiplier / Gain:</span>
+            <span id="calGainNum" class="slider-val">1.000x</span>
+          </div>
+          <input type="range" id="calGainSlider" class="custom-range" min="0.5" max="2.0" value="1.0" step="0.01">
+          <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Slope scaling factor (e.g. speed of sound adjustment).</div>
+        </div>
+      </div>
+
+      <!-- Two-Point Reference Calibration -->
+      <div class="two-point-grid">
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">Reference Point 1 (Low)</div>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="twoPtRaw1" class="form-input" placeholder="Raw 1 (e.g. 0)" style="font-size: 12px; padding: 6px;">
+            <input type="number" id="twoPtAct1" class="form-input" placeholder="Actual 1 (e.g. 0°C)" style="font-size: 12px; padding: 6px;">
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">Reference Point 2 (High)</div>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="twoPtRaw2" class="form-input" placeholder="Raw 2 (e.g. 100)" style="font-size: 12px; padding: 6px;">
+            <input type="number" id="twoPtAct2" class="form-input" placeholder="Actual 2 (e.g. 100°C)" style="font-size: 12px; padding: 6px;">
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 8px; display: flex; justify-content: flex-end;">
+        <button id="btnComputeTwoPoint" class="btn-outline" style="padding: 4px 12px; font-size: 11px;">Calculate 2-Point Curve</button>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+        <button id="btnResetSensorCal" class="btn-outline" style="color: var(--accent-rose);">Reset Calibration</button>
+        <button id="btnSaveCalibration" class="btn-primary">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Universal Firmware Flasher & Code Generator -->
+  <div id="modalFlasher" class="modal-overlay">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Universal Firmware Flasher & Code Generator
+        </div>
+        <button id="btnCloseFlasher" class="btn-icon">✕</button>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="tabFlasherCode">Universal Firmware Sketch</button>
+        <button class="modal-tab-btn" data-tab="tabFlasherWebUsb">Browser WebUSB / WebSerial Flasher</button>
+      </div>
+
+      <!-- TAB 1: Code Generator -->
+      <div id="tabFlasherCode" class="tab-content-pane active">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div id="flasherBoardBanner" style="font-size: 13px; color: var(--accent-cyan); font-weight: 600;">
+            Target: Arduino Uno R3 (ATmega328P) &bull; 5V Native Logic
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btnCopyGeneratedCode" class="btn-outline" style="padding: 4px 10px; font-size: 11px;">Copy Code</button>
+            <button id="btnDownloadSketch" class="btn-primary" style="padding: 4px 10px; font-size: 11px;">Download Sketch (.ino / .py)</button>
+          </div>
+        </div>
+        <textarea id="txtGeneratedFirmware" class="instruction-textarea" style="height: 320px; font-family: var(--font-mono); font-size: 11px; white-space: pre;" readonly></textarea>
+      </div>
+
+      <!-- TAB 2: WebUSB Flasher -->
+      <div id="tabFlasherWebUsb" class="tab-content-pane">
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+          Directly flash pre-compiled <code>.bin</code> or <code>.hex</code> firmware files to your microcontroller over WebUSB / WebSerial without installing Arduino IDE!
+        </div>
+
+        <div id="flashDropZone" class="flash-drop-zone">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-cyan); margin-bottom: 10px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Drag & Drop .bin / .hex Firmware File Here</div>
+          <div style="font-size: 12px; color: var(--text-dim);">or click to select file from your computer</div>
+          <input type="file" id="inputFileFirmware" accept=".bin,.hex" style="display: none;">
+        </div>
+
+        <div id="flashFileInfo" style="display: none; margin-top: 12px; padding: 10px; background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12px;"></div>
+
+        <div class="progress-bar-container" id="flashProgressBox" style="display: none;">
+          <div class="progress-bar-fill" id="flashProgressBar"></div>
+        </div>
+        <div id="flashProgressText" style="display: none; font-size: 11px; font-family: var(--font-mono); color: var(--accent-cyan); margin-top: 6px; text-align: center;">0% Complete</div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button id="btnStartFlashUsb" class="btn-primary" disabled>Flash Firmware over WebUSB</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Home & Facility Information Setup (Rebranding & Cloud) -->
+  <div id="modalHomeSetup" class="modal-overlay">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Facility Branding & ThingSpeak Cloud Configuration
+        </div>
+        <button id="btnCloseHomeSetup" class="btn-icon">✕</button>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Personalize your monitoring station. Changing the Facility Name immediately rebrands the dashboard header, browser tab, and telemetry feeds.
+      </div>
+
+      <div class="two-point-grid" style="gap: 16px; margin-bottom: 16px;">
+        <div>
+          <label class="form-label">Facility / Home Name (Rebrands App Title):</label>
+          <input type="text" id="inputHomeName" class="form-input" placeholder="e.g. SKYLINE CYBER LOFT" value="SMART ROOM SENTINEL">
+        </div>
+        <div>
+          <label class="form-label">Zone / Room Designation:</label>
+          <input type="text" id="inputZoneName" class="form-input" placeholder="e.g. Zone 1 - Master Chamber" value="Zone 1 - Master Chamber">
+        </div>
+      </div>
+
+      <div class="two-point-grid" style="gap: 16px; margin-bottom: 16px;">
+        <div>
+          <label class="form-label">Location / Building Tag:</label>
+          <input type="text" id="inputLocationTag" class="form-input" placeholder="e.g. Sector 7G / Tokyo Alpha" value="Facility Alpha">
+        </div>
+        <div>
+          <label class="form-label">Owner / Operator Name:</label>
+          <input type="text" id="inputOwnerName" class="form-input" placeholder="e.g. Commander Alex" value="Commander">
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 14px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="font-weight: 700; font-size: 14px; color: var(--accent-cyan); display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            ThingSpeak IoT Cloud Integration
+          </div>
+          <span class="badge" style="background: rgba(0, 242, 254, 0.15); color: var(--accent-cyan); border: 1px solid rgba(0, 242, 254, 0.3);">15s Rate Limited</span>
+        </div>
+
+        <div class="two-point-grid" style="gap: 16px; margin-bottom: 14px;">
+          <div>
+            <label class="form-label">ThingSpeak Channel ID:</label>
+            <input type="text" id="inputTsChannelId" class="form-input" placeholder="e.g. 3475948" value="3475948">
+          </div>
+          <div>
+            <label class="form-label">ThingSpeak Write API Key:</label>
+            <input type="password" id="inputTsWriteKey" class="form-input" placeholder="Write API Key (16 characters)" value="2W20O13FTT3CIUD3">
+          </div>
+        </div>
+
+        <div class="two-point-grid" style="gap: 16px; margin-bottom: 14px;">
+          <div>
+            <label class="form-label">ThingSpeak Read API Key (Optional for private channels):</label>
+            <input type="password" id="inputTsReadKey" class="form-input" placeholder="Read API Key">
+          </div>
+          <div style="display: flex; flex-direction: column; justify-content: center;">
+            <label class="form-label">Auto-Telemetry Sync:</label>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+              <label class="switch-toggle">
+                <input type="checkbox" id="checkTsAutoPublish" checked>
+                <span class="slider"></span>
+              </label>
+              <span style="font-size: 13px; color: var(--text-muted);">Sync live sensor data every 15 seconds</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ThingSpeak Status Message -->
+        <div id="tsStatusAlert" style="display: none; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12px; font-family: var(--font-mono); margin-bottom: 14px;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 10px;">
+        <button id="btnResetHomeSetup" class="btn-outline" style="color: var(--accent-rose);">Reset to Defaults</button>
+        <div style="display: flex; gap: 10px;">
+          <button id="btnTestTsSync" class="btn-outline">Test Cloud Sync</button>
+          <button id="btnSaveHomeSetup" class="btn-primary">Save & Rebrand App</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Hardware Driver Assistant & Connection Guide -->
+  <div id="modalDriverHelp" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 820px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Hardware Driver Assistant & Connection Troubleshooting
+        </div>
+        <button id="btnCloseDriverHelp" class="btn-icon">✕</button>
+      </div>
+
+      <!-- Live USB Device Detection Banner -->
+      <div id="driverUsbDetectBanner" style="margin-bottom: 16px; padding: 14px; background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.25); border-radius: var(--radius-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="font-size: 11px; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Auto-Detected USB Hardware</div>
+            <div id="driverDetectedHardwareText" style="font-size: 14px; font-weight: 600; color: var(--text-main); margin-top: 2px;">No USB device currently connected. Click "USB Serial" to test.</div>
+          </div>
+          <button id="btnDriverAutoSwitchBoard" class="btn-primary" style="display: none; padding: 6px 14px; font-size: 12px;">Switch to Recommended Board</button>
+        </div>
+      </div>
+
+      <!-- Modal Tabs: Drivers vs Troubleshooting -->
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="tabDriverDownloads">Driver Downloads & Guides</button>
+        <button class="modal-tab-btn" data-tab="tabTroubleshooting">Connection Troubleshooting</button>
+      </div>
+
+      <!-- TAB 1: Drivers List -->
+      <div id="tabDriverDownloads" class="tab-content-pane active">
+        <div id="driverCardsList" style="display: flex; flex-direction: column; gap: 14px; max-height: 420px; overflow-y: auto; padding-right: 6px;">
+          <!-- Dynamically populated by app.js from DRIVER_DATABASE -->
+        </div>
+      </div>
+
+      <!-- TAB 2: Troubleshooting Checklist -->
+      <div id="tabTroubleshooting" class="tab-content-pane">
+        <div id="troubleshootingList" style="display: flex; flex-direction: column; gap: 12px; max-height: 420px; overflow-y: auto; padding-right: 6px;">
+          <!-- Dynamically populated by app.js from driverHelper.getTroubleshootingChecklist() -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Open-Source Community Footer -->
+  <footer class="app-footer-credits">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 18px;">🇺🇬</span>
+      <span><strong>SMART IOT HUB</strong> &bull; Open-Source Multi-Tech Telemetry & Drone Platform</span>
+    </div>
+    <div>
+      <span>Built with pride by <strong>TekStep Apps Uganda</strong> &bull; <a href="mailto:support@tekstepapps.ug" style="color: var(--accent-cyan); text-decoration: none;">support@tekstepapps.ug</a></span>
+    </div>
+  </footer>
+
+  <!-- MODAL: Automated Sensor Bus Scanner & Auto-Detection -->
+  <div id="modalSensorScan" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 840px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
+          Hardware Sensor Auto-Search & Bus Probe Engine
+        </div>
+        <button id="btnCloseSensorScan" class="btn-icon">✕</button>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+        Automatically probes connected I2C bus addresses (<code>0x08</code> to <code>0x77</code>), 1-Wire pulse lines, analog impedance signatures, and serial NMEA/MAVLink telemetry packets.
+      </div>
+
+      <!-- Scan Progress Bar -->
+      <div style="margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; margin-bottom: 6px;">
+          <span id="scanStatusText">Status: Ready to Probe Bus</span>
+          <span id="scanProgressText">0%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="scanProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- I2C Address Hex Matrix Grid -->
+      <div style="margin-bottom: 14px;">
+        <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700; margin-bottom: 6px;">
+          I2C Address Matrix (0x08 - 0x77):
+        </div>
+        <div id="busScanMatrix" class="bus-scan-matrix">
+          <!-- Populated dynamically by sensorScanner.js -->
+        </div>
+      </div>
+
+      <!-- Detected Sensors List -->
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 11px; color: var(--accent-cyan); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">
+          Detected Hardware Sensors & Peripherals (<span id="detectedCount">0</span> Found):
+        </div>
+        <div id="detectedSensorsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 6px;">
+          <div style="padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); text-align: center; color: var(--text-dim); font-size: 12px;">
+            Click "Start Hardware Auto-Search" below to probe connected buses.
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 14px; flex-wrap: wrap; gap: 10px;">
+        <div style="font-size: 11px; color: var(--text-dim);">
+          Supports standard I2C, 1-Wire, ADC, MAVLink, NMEA GPS & RS485.
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button id="btnStartAutoScan" class="btn-primary">Start Hardware Auto-Search</button>
+          <button id="btnApplyAutoConfig" class="btn-outline" style="display: none; border-color: var(--accent-emerald); color: var(--accent-emerald);">Auto-Configure Dashboard</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Peripheral Vision & Live Camera HUD -->
+  <div id="modalCameraView" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 860px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Peripheral Vision & Camera View Sentinel
+        </div>
+        <button id="btnCloseCameraView" class="btn-icon">✕</button>
+      </div>
+
+      <!-- Video Feed Canvas -->
+      <div style="position: relative; width: 100%; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glow); background: #000; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);">
+        <video id="cameraHiddenVideo" autoplay playsinline muted style="display: none;"></video>
+        <canvas id="cameraRenderCanvas" width="800" height="450" style="width: 100%; height: auto; display: block;"></canvas>
+      </div>
+
+      <!-- Vision Controls Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px;">
+        <!-- Stream Source -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Source:</label>
+          <select id="selectCameraSource" class="board-select-dropdown" style="font-size: 12px; padding: 4px 8px;">
+            <option value="webcam">Local Camera / Webcam</option>
+            <option value="ip_stream">ESP32-CAM (Network MJPEG)</option>
+            <option value="test_pattern">Simulated Vision HUD</option>
+          </select>
+        </div>
+
+        <!-- Filters -->
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <label style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Filter:</label>
+          <button class="btn-outline camera-filter-btn active" data-filter="normal" style="padding: 4px 8px; font-size: 11px;">Normal</button>
+          <button class="btn-outline camera-filter-btn" data-filter="thermal" style="padding: 4px 8px; font-size: 11px; color: var(--accent-rose);">Thermal</button>
+          <button class="btn-outline camera-filter-btn" data-filter="nightvision" style="padding: 4px 8px; font-size: 11px; color: var(--accent-emerald);">Night-Vision</button>
+          <button class="btn-outline camera-filter-btn" data-filter="mono" style="padding: 4px 8px; font-size: 11px;">Mono</button>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; gap: 8px;">
+          <button id="btnToggleHudOverlay" class="btn-outline" style="padding: 6px 12px; font-size: 12px;">Toggle HUD</button>
+          <button id="btnCaptureSnapshot" class="btn-primary" style="padding: 6px 14px; font-size: 12px;">Capture Snapshot</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Extensions Studio & Community Marketplace -->
+  <div id="modalExtensions" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 900px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          Open-Source Extensions Studio & Community Marketplace
+        </div>
+        <button id="btnCloseExtensions" class="btn-icon">✕</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="tabExtMarketplace">Community Marketplace</button>
+        <button class="modal-tab-btn" data-tab="tabExtInstalled">Installed Extensions</button>
+        <button class="modal-tab-btn" data-tab="tabExtCreator">Extension Creator Studio</button>
+        <button class="modal-tab-btn" data-tab="tabExtImport">Import / Export JSON</button>
+      </div>
+
+      <!-- TAB 1: Marketplace -->
+      <div id="tabExtMarketplace" class="tab-content-pane active">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+          Browse and 1-click install verified open-source extensions for Drones, Thermal Cameras, Soil NPK, GPS, and Energy Meters:
+        </div>
+        <div id="extMarketplaceGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; max-height: 420px; overflow-y: auto; padding-right: 6px;">
+          <!-- Dynamically populated by extensionEngine.js -->
+        </div>
+      </div>
+
+      <!-- TAB 2: Installed -->
+      <div id="tabExtInstalled" class="tab-content-pane">
+        <div id="extInstalledList" style="display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; padding-right: 6px;">
+          <!-- Dynamically populated by extensionEngine.js -->
+        </div>
+      </div>
+
+      <!-- TAB 3: Creator Studio -->
+      <div id="tabExtCreator" class="tab-content-pane">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Create a custom hardware extension with your own telemetry fields and dashboard widget:
+        </div>
+        <div class="two-point-grid" style="gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label">Extension Name:</label>
+            <input type="text" id="inputCustomExtName" class="form-input" placeholder="e.g. Water Level Float Sensor">
+          </div>
+          <div>
+            <label class="form-label">Author / Organization:</label>
+            <input type="text" id="inputCustomExtAuthor" class="form-input" placeholder="e.g. Maker Lab Uganda">
+          </div>
+        </div>
+        <div class="two-point-grid" style="gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label">Icon Emoji:</label>
+            <input type="text" id="inputCustomExtIcon" class="form-input" placeholder="e.g. 💧, 🚁, ⚡">
+          </div>
+          <div>
+            <label class="form-label">Category:</label>
+            <select id="selectCustomExtCategory" class="board-select-dropdown" style="width: 100%;">
+              <option value="Sensors">Sensors & Environmental</option>
+              <option value="Drones & UAVs">Drones & Aeronautics</option>
+              <option value="Robotics">Robotics & Actuators</option>
+              <option value="Smart Agriculture">Smart Agriculture</option>
+              <option value="Industrial">Industrial & Energy</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label class="form-label">Telemetry Keys (comma separated):</label>
+          <input type="text" id="inputCustomExtKeys" class="form-input" placeholder="e.g. depth_cm, flow_rate, valve_state">
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label class="form-label">Description & Hardware Notes:</label>
+          <textarea id="txtCustomExtDesc" class="instruction-textarea" style="height: 80px;" placeholder="Hardware description, wiring notes, pinout..."></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="btnCreateCustomExt" class="btn-primary">Create & Install Extension</button>
+        </div>
+      </div>
+
+      <!-- TAB 4: Import / Export -->
+      <div id="tabExtImport" class="tab-content-pane">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+          Import an extension JSON manifest or paste community extension code:
+        </div>
+        <textarea id="txtExtJsonCode" class="instruction-textarea" style="height: 220px; font-family: var(--font-mono); font-size: 11px;" placeholder='{"id": "ext_example", "name": "...", "version": "1.0.0"}'></textarea>
+        <div style="display: flex; justify-content: space-between; margin-top: 12px;">
+          <button id="btnExportAllExt" class="btn-outline">Export Installed Extensions (JSON)</button>
+          <button id="btnApplyImportExt" class="btn-primary">Import & Activate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Multi-Protocol Wireless & Remote Monitoring -->
+  <div id="modalWireless" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 840px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+          Multi-Protocol Wireless Monitoring (WiFi, BLE, Cellular SIM)
+        </div>
+        <button id="btnCloseWireless" class="btn-icon">✕</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="tabWirelessWifi">WiFi / IP Network</button>
+        <button class="modal-tab-btn" data-tab="tabWirelessBle">Web Bluetooth (BLE)</button>
+        <button class="modal-tab-btn" data-tab="tabWirelessCellular">Cellular SIM / GSM / 4G</button>
+      </div>
+
+      <!-- TAB 1: WiFi / IP -->
+      <div id="tabWirelessWifi" class="tab-content-pane active">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Monitor boards over local WiFi, LAN, or WebSocket (ESP32, Raspberry Pi, Home Assistant, Tasmota):
+        </div>
+        <div class="form-group">
+          <label class="form-label">Device HTTP / REST Telemetry URL:</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="inputWifiEndpoint" class="form-input" value="http://192.168.4.1/telemetry" placeholder="http://192.168.1.150/data">
+            <button id="btnTestWifiPing" class="btn-outline" style="white-space: nowrap;">Ping Device</button>
+            <button id="btnStartWifiPolling" class="btn-primary" style="white-space: nowrap;">Start Live Polling</button>
+          </div>
+        </div>
+        <div id="wifiStatusBox" style="padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12px;">
+          Status: Idle &bull; Latency: --- ms
+        </div>
+      </div>
+
+      <!-- TAB 2: BLE -->
+      <div id="tabWirelessBle" class="tab-content-pane">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Connect wirelessly to Bluetooth Low Energy boards (ESP32 BLE, Nordic nRF52, Micro:bit, or Wearables) via browser Web Bluetooth:
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+          <button id="btnScanBleDevice" class="btn-primary">Pair & Connect BLE Device</button>
+          <button id="btnDisconnectBle" class="btn-outline" style="display: none;">Disconnect BLE</button>
+        </div>
+        <div id="bleStatusBox" style="padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12px;">
+          BLE State: Disconnected &bull; Ready to pair
+        </div>
+      </div>
+
+      <!-- TAB 3: Cellular SIM -->
+      <div id="tabWirelessCellular" class="tab-content-pane">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Control SIM800L, SIM7000G, and LTE-M / NB-IoT modems using interactive AT commands:
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+          <button class="btn-outline at-quick-cmd-btn" data-cmd="AT">AT (Ping)</button>
+          <button class="btn-outline at-quick-cmd-btn" data-cmd="AT+CSQ">AT+CSQ (Signal)</button>
+          <button class="btn-outline at-quick-cmd-btn" data-cmd="AT+CREG?">AT+CREG? (Network)</button>
+          <button class="btn-outline at-quick-cmd-btn" data-cmd="AT+CGATT?">AT+CGATT? (Data)</button>
+          <button class="btn-outline at-quick-cmd-btn" data-cmd="AT+COPS?">AT+COPS? (Carrier)</button>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <input type="text" id="inputAtCommand" class="form-input" placeholder="Type custom AT command (e.g. AT+CSTT=&quot;internet&quot;)">
+          <button id="btnSendAtCommand" class="btn-primary">Send AT</button>
+        </div>
+        <div id="cellularTerminalLog" class="serial-terminal-output" style="height: 180px;">
+          [CELLULAR MODEM] Ready &bull; SIMCom SIM7000G LTE-M / NB-IoT
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TekStep Apps Uganda Information & Contact Center -->
+  <div id="modalAboutTekstep" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 780px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span style="font-size: 20px;">🇺🇬</span>
+          About SMART IOT HUB &bull; TekStep Apps Uganda
+        </div>
+        <button id="btnCloseAboutTekstep" class="btn-icon">✕</button>
+      </div>
+      <div id="aboutTekstepContentArea">
+        <!-- Rendered dynamically by aboutTekstep.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add & Connect IoT Device (Hardware or Virtual Simulation) -->
+  <div id="modalAddDevice" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 820px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent-cyan);"><path d="M12 5v14M5 12h14"/></svg>
+          Connect &amp; Add IoT Device
+        </div>
+        <button id="btnCloseAddDevice" class="btn-icon">✕</button>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+        Connect your physical microcontroller or launch a virtual simulation device to monitor live telemetry in <strong>SMART IOT HUB</strong> (<a href="https://tekstepapps.org" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">tekstepapps.org</a>).
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="tabAddSpark">⚡ Spark Core (User Hardware)</button>
+        <button class="modal-tab-btn" data-tab="tabAddVirtual">💻 Virtual Simulation Device</button>
+        <button class="modal-tab-btn" data-tab="tabAddSerial">🔌 USB Serial COM Port</button>
+        <button class="modal-tab-btn" data-tab="tabAddWireless">📶 WiFi / Wireless Board</button>
+      </div>
+
+      <!-- TAB 1: Spark Core Hardware (The User's Device) -->
+      <div id="tabAddSpark" class="tab-content-pane active">
+        <div style="padding: 14px; background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.3); border-radius: var(--radius-md); margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px;">
+            <span>🌟</span> Primary User Hardware &bull; Particle Spark Core
+          </div>
+          <div style="font-size: 12px; color: var(--text-main); line-height: 1.5;">
+            Your Spark Core (Master Chamber) credentials are ready. Connect directly via the Particle Cloud API to stream 9-in-1 sensor readings.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Device Nickname / Label:</label>
+          <input type="text" id="inputAddSparkName" class="form-input" value="Spark Core (Master Chamber)">
+        </div>
+
+        <div class="two-point-grid" style="gap: 12px; margin-bottom: 12px;">
+          <div class="form-group">
+            <label class="form-label">Particle Device ID:</label>
+            <input type="text" id="inputAddSparkId" class="form-input" value="53ff6e066667574849402567" style="font-family: var(--font-mono); font-size: 12px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Access Token:</label>
+            <input type="password" id="inputAddSparkToken" class="form-input" value="2bb1082c94a974b77f88427f7fb28469ad46dc75" style="font-family: var(--font-mono); font-size: 12px;">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label">Zone / Facility Location:</label>
+          <input type="text" id="inputAddSparkZone" class="form-input" value="Master Lab / Chamber">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button id="btnSubmitAddSpark" class="btn-primary" style="background: linear-gradient(135deg, #00f2fe, #4facfe); color: #040914; font-weight: 700; padding: 10px 20px;">
+            ⚡ Connect My Spark Core Hardware
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: Virtual Simulation Device -->
+      <div id="tabAddVirtual" class="tab-content-pane">
+        <div style="padding: 14px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #10b981; margin-bottom: 6px;">
+            <span>💻</span> Pure Virtual Simulation &bull; Zero Hardware Needed
+          </div>
+          <div style="font-size: 12px; color: var(--text-main); line-height: 1.5;">
+            Instantly spin up a full software twin of the 9-in-1 sensor station, drone flight telemetry, and thermal IR camera with physics simulation and interactive stress testing scenarios.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Virtual Twin Device Name:</label>
+          <input type="text" id="inputAddSimName" class="form-input" value="Virtual IoT Sentinel (Simulation)">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label">Simulation Zone:</label>
+          <input type="text" id="inputAddSimZone" class="form-input" value="Cyber Simulation Zone">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="btnSubmitAddSim" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #06b6d4); color: #040914; font-weight: 700; padding: 10px 20px;">
+            🚀 Launch Virtual Simulation Device
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 3: USB Serial Port -->
+      <div id="tabAddSerial" class="tab-content-pane">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+          Connect microcontrollers directly via Chrome / Edge Web Serial API (Arduino Uno/Nano, ESP32, STM32, Pi Pico):
+        </div>
+
+        <div class="two-point-grid" style="gap: 12px; margin-bottom: 12px;">
+          <div class="form-group">
+            <label class="form-label">Board Profile:</label>
+            <select id="selectAddSerialProfile" class="board-select-dropdown" style="width: 100%;">
+              <option value="arduino_uno">Arduino Uno R3</option>
+              <option value="arduino_nano">Arduino Nano</option>
+              <option value="esp32">ESP32 NodeMCU</option>
+              <option value="stm32_bluepill">STM32 Blue Pill</option>
+              <option value="raspberry_pi_pico">Raspberry Pi Pico</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Baud Rate:</label>
+            <select id="selectAddSerialBaud" class="board-select-dropdown" style="width: 100%;">
+              <option value="9600" selected>9600 Baud (Standard)</option>
+              <option value="115200">115200 Baud (High Speed)</option>
+              <option value="57600">57600 Baud</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label">Device Name:</label>
+          <input type="text" id="inputAddSerialName" class="form-input" value="USB Serial Controller">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="btnSubmitAddSerial" class="btn-primary" style="padding: 10px 20px;">
+            🔌 Pair Web Serial Port &amp; Connect
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 4: Wireless Board -->
+      <div id="tabAddWireless" class="tab-content-pane">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+          Add an IP-addressable WiFi board, Web Bluetooth beacon, or cellular gateway:
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Device Name:</label>
+          <input type="text" id="inputAddWirelessName" class="form-input" value="WiFi Remote Node">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label">HTTP / REST Telemetry URL:</label>
+          <input type="text" id="inputAddWirelessUrl" class="form-input" value="http://192.168.4.1/telemetry">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="btnSubmitAddWireless" class="btn-primary" style="padding: 10px 20px;">
+            📶 Connect Wireless IoT Device
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Sensor or Peripheral to Active Device -->
+  <div id="modalAddSensor" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 850px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-cyan);"><path d="M12 5v14M5 12h14"/></svg>
+          Add Sensor / Peripheral to Device
+        </div>
+        <button id="btnCloseAddSensor" class="btn-icon">✕</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div style="font-size: 13px; color: var(--text-muted);">
+          Target Device: <strong id="addSensorTargetDeviceName" style="color: var(--accent-cyan); font-weight: 700;">Spark Core</strong>
+        </div>
+        <div style="position: relative; max-width: 280px; width: 100%;">
+          <input type="text" id="inputSearchSensors" class="form-input" placeholder="Search sensors or bus..." style="padding: 6px 12px 6px 30px; font-size: 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+      </div>
+
+      <div id="addSensorCatalogGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; max-height: 520px; overflow-y: auto; padding-right: 4px;">
+        <!-- Populated dynamically from AVAILABLE_SENSORS_CATALOG -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Device Manager & Switching Hub -->
+  <div id="modalDeviceManager" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 820px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-cyan);"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          Device Manager &amp; Multi-Device Hub
+        </div>
+        <button id="btnCloseDeviceManager" class="btn-icon">✕</button>
+      </div>
+
+      <!-- Project Scope & Project Actions Bar -->
+      <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px; padding: 10px 14px; background: rgba(0, 242, 254, 0.04); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: var(--radius-md); justify-content: space-between; flex-wrap: wrap;">
+        <div>
+          <span style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Active Project:</span>
+          <strong id="modalProjectNameText" style="color: var(--accent-cyan); font-size: 13px; margin-left: 6px;">Spark Core Sentinel Project</strong>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="btnModalNewProject" class="btn-outline" style="padding: 4px 10px; font-size: 11px; color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); cursor: pointer;" title="Clear all boards and devices to start fresh">
+            ➕ New Project (Clear All)
+          </button>
+          <button id="btnModalRestoreSpark" class="btn-outline" style="padding: 4px 10px; font-size: 11px; color: var(--accent-cyan); border-color: rgba(0, 242, 254, 0.35); cursor: pointer;" title="Restore Spark Core Master Chamber Project">
+            ⚡ Restore Spark Core
+          </button>
+        </div>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+        Switch active controllers, configure attached peripherals, or register additional microcontrollers.
+      </div>
+
+      <div id="deviceManagerList" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; max-height: 480px; overflow-y: auto;">
+        <!-- Populated dynamically from deviceRegistry.getDevices() -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 16px;">
+        <span style="font-size: 12px; color: var(--text-dim);">Open-Source IoT Platform by TekStep Apps Uganda &bull; <a href="https://tekstepapps.org" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">tekstepapps.org</a></span>
+        <button id="btnMgrAddNewDevice" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #06b6d4); color: #040914; font-weight: 700;">
+          + Register New Device
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Sensor Health & Device Ping Diagnostics Modal -->
+  <div id="modalPingDetails" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div class="modal-title" style="color: var(--accent-emerald); display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          SENSOR HEALTH, BUS STATUS &amp; DEVICE PINGS
+        </div>
+        <button id="btnClosePingDetails" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <!-- Top Status Bar -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
+          <div class="ext-stat-box" style="padding: 10px;">
+            <span>ACTIVE DEVICE</span>
+            <strong id="modalPingDevName" style="color: var(--accent-cyan); font-size: 13px;">Spark Core</strong>
+            <span id="modalPingDevStatus" class="badge badge-normal" style="margin-top: 4px; font-size: 9px;">ONLINE</span>
+          </div>
+          <div class="ext-stat-box" style="padding: 10px;">
+            <span>OVERALL HEALTH</span>
+            <strong id="modalPingHealthScore" style="color: var(--accent-emerald); font-size: 13px;">100% OPTIMAL</strong>
+            <span id="modalPingHealthSubtext" style="color: var(--text-dim); font-size: 10px;">All Lines Active</span>
+          </div>
+          <div class="ext-stat-box" style="padding: 10px;">
+            <span>PING MONITORING</span>
+            <strong id="modalPingMonitoringState" style="color: #60a5fa; font-size: 13px;">ACTIVE (ON)</strong>
+            <span id="modalPingUptimeText" style="color: var(--text-dim); font-size: 10px;">Uptime: 00:00:00</span>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Sensor Diagnostics Matrix</span>
+          <button id="btnModalPingAll" class="btn-primary" style="padding: 5px 12px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914; font-weight: 700;">
+            ⚡ Ping All Sensors Now
+          </button>
+        </div>
+
+        <!-- Sensor Health Table -->
+        <div style="overflow-x: auto; max-height: 380px; overflow-y: auto;">
+          <table class="pin-matrix-table" style="font-size: 11px; width: 100%;">
+            <thead>
+              <tr>
+                <th>Sensor</th>
+                <th>Pin / Bus</th>
+                <th>Target Device</th>
+                <th>Device Status</th>
+                <th>Latency</th>
+                <th>Line Health</th>
+              </tr>
+            </thead>
+            <tbody id="pingDetailsTableBody">
+              <!-- Dynamically rendered by app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Thumb Navigation Bar -->
+  <nav class="mobile-bottom-bar">
+    <button id="mBtnScan" class="mobile-nav-btn" title="Auto-Search Sensors">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Scan</span>
+    </button>
+    <button id="mBtnCamera" class="mobile-nav-btn" title="Camera / Vision View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span>Camera</span>
+    </button>
+    <button id="mBtnExtensions" class="mobile-nav-btn" title="Extensions Marketplace">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      <span>Exts</span>
+    </button>
+    <button id="mBtnWireless" class="mobile-nav-btn" title="Wireless Monitor (WiFi/BLE/SIM)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <span>Wireless</span>
+    </button>
+    <button id="mBtnSerial" class="mobile-nav-btn" title="USB COM Port">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span>Serial</span>
+    </button>
+    <button id="mBtnAbout" class="mobile-nav-btn" title="TekStep Apps Uganda Info">
+      <span style="font-size: 18px; line-height: 1;">🇺🇬</span>
+      <span>TekStep</span>
+    </button>
+    <button id="mBtnSilence" class="mobile-nav-btn silence-btn" title="Silence Active Alarm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+      <span>Silence</span>
+    </button>
+  </nav>
+
+  <!-- Module Entry Script -->
+  <script type="module" src="/src/js/app.js"></script>
+</body>
+</html>

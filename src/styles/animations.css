@@ -1,0 +1,80 @@
+/* ==========================================================================
+   Animations & Micro-Interactions
+   ========================================================================== */
+
+@keyframes radar-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-red {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: rgba(239, 68, 68, 0.3);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 0.8);
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+  }
+}
+
+@keyframes blip-danger {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 12px #ef4444;
+  }
+  100% {
+    transform: scale(1.6);
+    box-shadow: 0 0 28px #ef4444, 0 0 40px #f43f5e;
+  }
+}
+
+@keyframes ambient-breathing {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.breathing {
+  animation: ambient-breathing 2.5s ease-in-out infinite;
+}
+
+/* Screen alarm flash overlay */
+.alarm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 50;
+  box-shadow: inset 0 0 100px rgba(239, 68, 68, 0.35);
+  animation: pulse-red 0.8s infinite;
+  display: none;
+}
+
+.alarm-overlay.active {
+  display: block;
+}
