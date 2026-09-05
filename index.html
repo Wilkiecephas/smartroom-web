@@ -2441,38 +2441,30 @@
   </div>
 
   <!-- Mobile Thumb Navigation Bar -->
-  <nav class="mobile-bottom-bar">
-    <button id="mBtnScan" class="mobile-nav-btn" title="Auto-Search Sensors">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <span>Scan</span>
+  <nav class="mobile-bottom-bar" id="mobileBottomBar">
+    <button id="mBtnMonitor" class="mobile-nav-btn active" title="Monitoring Mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>Monitor</span>
     </button>
-    <button id="mBtnCamera" class="mobile-nav-btn" title="Camera / Vision View">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      <span>Camera</span>
+    <button id="mBtnSensors" class="mobile-nav-btn" title="Configure Sensors & Auto-Gather">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span>Sensors</span>
     </button>
-    <button id="mBtnExtensions" class="mobile-nav-btn" title="Extensions Marketplace">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-      <span>Exts</span>
+    <button id="mBtnHealth" class="mobile-nav-btn" title="Sensor Health & Pings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span>Health</span>
     </button>
-    <button id="mBtnWireless" class="mobile-nav-btn" title="Wireless Monitor (WiFi/BLE/SIM)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
-      <span>Wireless</span>
-    </button>
-    <button id="mBtnSerial" class="mobile-nav-btn" title="USB COM Port">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      <span>Serial</span>
-    </button>
-    <button id="mBtnInstall" class="mobile-nav-btn" title="Install App to Device">
+    <button id="mBtnInstall" class="mobile-nav-btn" title="Install Web App">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span>Install</span>
     </button>
-    <button id="mBtnAbout" class="mobile-nav-btn" title="TekStep Apps Uganda Info">
-      <span style="font-size: 18px; line-height: 1;">🇺🇬</span>
-      <span>TekStep</span>
+    <button id="mBtnTools" class="mobile-nav-btn" title="Developer Tools & Schematics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      <span>Developer</span>
     </button>
     <button id="mBtnSilence" class="mobile-nav-btn silence-btn" title="Silence Active Alarm">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-      <span>Silence</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+      <span>Mute</span>
     </button>
   </nav>
 

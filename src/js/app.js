@@ -3390,6 +3390,49 @@ class SmartRoomApp {
         this.openSensorEditorModal();
       });
     }
+
+    // Mobile Bottom Navigation Bar Buttons
+    const mBtnMonitor = document.getElementById('mBtnMonitor');
+    if (mBtnMonitor) {
+      mBtnMonitor.addEventListener('click', () => {
+        this.switchDashboardViewMode('monitor');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    const mBtnSensors = document.getElementById('mBtnSensors');
+    if (mBtnSensors) {
+      mBtnSensors.addEventListener('click', () => {
+        this.openSensorEditorModal();
+      });
+    }
+
+    const mBtnHealth = document.getElementById('mBtnHealth');
+    if (mBtnHealth) {
+      mBtnHealth.addEventListener('click', () => {
+        const el = document.getElementById('sensorHealthPart');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+          el.classList.add('highlight-pulse');
+          setTimeout(() => el.classList.remove('highlight-pulse'), 1500);
+        }
+      });
+    }
+
+    const mBtnTools = document.getElementById('mBtnTools');
+    if (mBtnTools) {
+      mBtnTools.addEventListener('click', () => {
+        this.switchDashboardViewMode('developer');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    const mBtnSilence = document.getElementById('mBtnSilence');
+    if (mBtnSilence) {
+      mBtnSilence.addEventListener('click', () => {
+        if (this.dom.btnStopBuzzer) this.dom.btnStopBuzzer.click();
+      });
+    }
   }
 
   switchDashboardViewMode(mode) {
@@ -3401,14 +3444,21 @@ class SmartRoomApp {
 
   applyDashboardViewMode(mode) {
     document.body.classList.remove('view-mode-monitoring', 'view-mode-developer');
+    const mBtnMonitor = document.getElementById('mBtnMonitor');
+    const mBtnTools = document.getElementById('mBtnTools');
+
     if (mode === 'monitor') {
       document.body.classList.add('view-mode-monitoring');
       if (this.dom.btnViewMonitor) this.dom.btnViewMonitor.classList.add('active');
       if (this.dom.btnViewDeveloper) this.dom.btnViewDeveloper.classList.remove('active');
+      if (mBtnMonitor) mBtnMonitor.classList.add('active');
+      if (mBtnTools) mBtnTools.classList.remove('active');
     } else {
       document.body.classList.add('view-mode-developer');
       if (this.dom.btnViewDeveloper) this.dom.btnViewDeveloper.classList.add('active');
       if (this.dom.btnViewMonitor) this.dom.btnViewMonitor.classList.remove('active');
+      if (mBtnTools) mBtnTools.classList.add('active');
+      if (mBtnMonitor) mBtnMonitor.classList.remove('active');
     }
   }
 
