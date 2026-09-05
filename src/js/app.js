@@ -24,6 +24,7 @@ import { wirelessManager } from './wirelessManager.js';
 import { TEKSTEP_INFO, renderAboutModalHtml } from './aboutTekstep.js';
 import { deviceRegistry, AVAILABLE_SENSORS_CATALOG } from './deviceRegistry.js';
 import { circuitBoardSchematic } from './circuitBoardSchematic.js';
+import { pwaManager } from './pwaManager.js';
 
 class SmartRoomApp {
   constructor() {
@@ -76,6 +77,7 @@ class SmartRoomApp {
     this.initViewModeUi();
     this.initSensorEditorModalUi();
     this.initAutoGatherSensorsUi();
+    this.initPwaUi();
     this.renderPingDetailsTable();
     this.updateBriefSummaryStats();
     homeConfig.applyBranding();
@@ -86,9 +88,10 @@ class SmartRoomApp {
   }
 
   cacheDom() {
-    // View Mode Selector
+    // View Mode Selector & PWA Install
     this.dom.btnViewMonitor = document.getElementById('btnViewMonitor');
     this.dom.btnViewDeveloper = document.getElementById('btnViewDeveloper');
+    this.dom.btnInstallPwa = document.getElementById('btnInstallPwa');
     this.dom.btnAutoGatherSensors = document.getElementById('btnAutoGatherSensors');
     this.dom.btnOpenSensorEditor = document.getElementById('btnOpenSensorEditor');
 
@@ -3637,6 +3640,71 @@ class SmartRoomApp {
       if (this.dom.autoGatherScanningState) this.dom.autoGatherScanningState.style.display = 'none';
       if (this.dom.autoGatherResultsState) this.dom.autoGatherResultsState.style.display = 'block';
     }, 550);
+  }
+
+  initPwaUi() {
+    pwaManager.init();
+
+    // 1. Header Install Button
+    if (this.dom.btnInstallPwa) {
+      this.dom.btnInstallPwa.addEventListener('click', () => {
+        pwaManager.install();
+      });
+    }
+
+    // 2. Mobile Bottom Bar Install Button
+    const mBtnInstall = document.getElementById('mBtnInstall');
+    if (mBtnInstall) {
+      mBtnInstall.addEventListener('click', () => {
+        pwaManager.install();
+      });
+    }
+
+    // 3. Compact Monitoring Dashboard Install Button
+    const compactBtn = document.getElementById('compactBtnInstallApp');
+    if (compactBtn) {
+      compactBtn.addEventListener('click', () => {
+        pwaManager.install();
+      });
+    }
+
+    // 4. Floating Banner Buttons
+    const btnBannerInstall = document.getElementById('btnBannerInstallNow');
+    if (btnBannerInstall) {
+      btnBannerInstall.addEventListener('click', () => {
+        pwaManager.install();
+      });
+    }
+
+    const btnBannerDismiss = document.getElementById('btnBannerDismiss');
+    if (btnBannerDismiss) {
+      btnBannerDismiss.addEventListener('click', () => {
+        pwaManager.hideInstallBanner();
+      });
+    }
+
+    // 5. Install Guide Modal Close Buttons
+    const btnCloseModal = document.getElementById('btnCloseInstallModal');
+    const btnDismissModal = document.getElementById('btnDismissInstallModal');
+    if (btnCloseModal) {
+      btnCloseModal.addEventListener('click', () => pwaManager.closeInstallModal());
+    }
+    if (btnDismissModal) {
+      btnDismissModal.addEventListener('click', () => pwaManager.closeInstallModal());
+    }
+
+    // 6. Modal Trigger Button
+    const btnTriggerAction = document.getElementById('btnTriggerInstallModalAction');
+    if (btnTriggerAction) {
+      btnTriggerAction.addEventListener('click', () => {
+        pwaManager.closeInstallModal();
+        if (pwaManager.deferredPrompt) {
+          pwaManager.deferredPrompt.prompt();
+        } else {
+          this.log('To install: click the Install icon in the browser address bar, or use the browser menu (⋮) -> Install app.', 'info');
+        }
+      });
+    }
   }
 
   initBriefSummaryAndHealthUi() {

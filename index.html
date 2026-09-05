@@ -7,6 +7,14 @@
   <meta name="description" content="Open-source Smart IoT Hub with multi-protocol connectors for microcontrollers, UAV drones, robotics, agriculture, camera vision, auto bus scanning, and extensions ecosystem.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
+  <!-- Progressive Web App (PWA) Manifest & Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#00f2fe">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SmartRoom Hub">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -51,6 +59,12 @@
             <span>Developer</span>
           </button>
         </div>
+
+        <!-- Install Web App (PWA) Button -->
+        <button id="btnInstallPwa" class="btn-install-app" title="Install SmartRoom Hub to your Desktop, Phone, or Tablet">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Install App</span>
+        </button>
 
         <!-- Environment Design Theme Selector -->
         <div style="display: flex; align-items: center; gap: 6px;">
@@ -269,6 +283,10 @@
           <button id="compactBtnSilence" class="btn-compact-action silence-btn" title="Silence active alarm buzzer">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
             <span>Silence</span>
+          </button>
+          <button id="compactBtnInstallApp" class="btn-compact-action install-app-btn" title="Install Web App for standalone launch & fast desktop/mobile access">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Install App</span>
           </button>
           <button id="compactBtnTestBuzzer" class="btn-compact-action test-buzzer-btn" title="Test shield hardware buzzer">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
@@ -2333,6 +2351,95 @@
     </div>
   </div>
 
+  <!-- Floating PWA Install Banner (Bottom-Right Toast) -->
+  <div id="pwaInstallBanner" class="pwa-install-banner">
+    <div class="pwa-banner-icon">
+      <img src="/favicon.svg" alt="SmartRoom Icon" width="32" height="32">
+    </div>
+    <div class="pwa-banner-text">
+      <strong>Install SmartRoom Hub</strong>
+      <span>Run as a dedicated standalone window with instant launch &amp; offline support.</span>
+    </div>
+    <div class="pwa-banner-actions">
+      <button id="btnBannerInstallNow" class="btn-primary" style="padding: 6px 14px; font-size: 11px; font-weight: 700;">
+        Install Now
+      </button>
+      <button id="btnBannerDismiss" class="btn-icon" title="Dismiss" style="font-size: 16px; line-height: 1;">&times;</button>
+    </div>
+  </div>
+
+  <!-- PWA Installation Guide Modal -->
+  <div id="modalInstallApp" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-header">
+        <div class="modal-title" style="color: var(--accent-cyan); display: flex; align-items: center; gap: 10px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          INSTALL SMART IOT HUB (PWA)
+        </div>
+        <button id="btnCloseInstallModal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); padding: 14px 18px; border-radius: var(--radius-md);">
+          <img src="/favicon.svg" alt="App Icon" width="48" height="48">
+          <div>
+            <strong style="color: var(--text-main); font-size: 15px;">SmartRoom IoT Hub &bull; Native App Mode</strong>
+            <p style="color: var(--text-dim); font-size: 12px; margin-top: 4px; line-height: 1.4;">
+              Install this web app on your device to launch it directly from your desktop, taskbar, or home screen in a clean, borderless window with offline telemetry caching.
+            </p>
+          </div>
+        </div>
+
+        <div class="install-platform-cards" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px;">
+          <!-- Chrome / Edge Desktop -->
+          <div class="ext-stat-box" style="padding: 12px 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">💻</span>
+              <div>
+                <strong style="color: var(--text-main); font-size: 13px;">Windows / Mac (Chrome &amp; Edge)</strong>
+                <div style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">
+                  Click the <strong>Install icon</strong> in your browser address bar on the right, or press the button below.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- iOS Safari -->
+          <div class="ext-stat-box" style="padding: 12px 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">📱</span>
+              <div>
+                <strong style="color: var(--text-main); font-size: 13px;">iPhone / iPad (Safari)</strong>
+                <div style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">
+                  Tap the <strong>Share button</strong> (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>) in Safari's bottom toolbar, then scroll down and tap <strong>Add to Home Screen</strong>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Android Chrome -->
+          <div class="ext-stat-box" style="padding: 12px 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">🤖</span>
+              <div>
+                <strong style="color: var(--text-main); font-size: 13px;">Android (Chrome / Edge / Firefox)</strong>
+                <div style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">
+                  Tap the three-dots menu (<strong>&vellip;</strong>) in the top right corner and select <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px;">
+          <button id="btnDismissInstallModal" class="btn-outline" style="font-size: 12px; padding: 7px 16px;">Close</button>
+          <button id="btnTriggerInstallModalAction" class="btn-primary" style="background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914; font-weight: 700; font-size: 12px; padding: 7px 18px;">
+            🚀 Install Web App Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Mobile Thumb Navigation Bar -->
   <nav class="mobile-bottom-bar">
     <button id="mBtnScan" class="mobile-nav-btn" title="Auto-Search Sensors">
@@ -2354,6 +2461,10 @@
     <button id="mBtnSerial" class="mobile-nav-btn" title="USB COM Port">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       <span>Serial</span>
+    </button>
+    <button id="mBtnInstall" class="mobile-nav-btn" title="Install App to Device">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Install</span>
     </button>
     <button id="mBtnAbout" class="mobile-nav-btn" title="TekStep Apps Uganda Info">
       <span style="font-size: 18px; line-height: 1;">🇺🇬</span>
