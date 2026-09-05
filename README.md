@@ -92,9 +92,9 @@ npm run preview
 In the dashboard navigation bar, click the **Settings / Cloud** icon to enter your credentials:
 
 - **ThingSpeak Settings**:
-  - Channel ID: `3475948` (or your custom channel)
+  - Channel ID: `3****48` (or your custom channel)
   - Read API Key: Provided by your ThingSpeak channel
-  - Write API Key: `2W20O13FTT3CIUD3`
+  - Write API Key: `2***************3`
 - **Particle Cloud Settings**:
   - Device ID: Your Spark Core 24-character hex ID
   - Access Token: Particle Cloud personal access token
