@@ -214,6 +214,12 @@
             Ping Ports
           </button>
 
+          <!-- Sensor Health & Bus Status Diagnostics Button -->
+          <button id="btnSubMenuSensorHealth" class="btn-outline" style="padding: 6px 12px; font-size: 13px; border-color: rgba(16, 185, 129, 0.4); color: var(--accent-emerald);" title="Sensor Health, Bus Status & Microcontroller Ping Diagnostics">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            Health &amp; Pings
+          </button>
+
           <!-- Firmware Flasher Button -->
           <button id="btnOpenFlasher" class="btn-outline" style="padding: 6px 12px; font-size: 13px;" title="Universal Firmware & WebUSB Flasher">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
@@ -277,20 +283,16 @@
       <!-- Top Monitoring Status & Quick Control Strip -->
       <div class="compact-sentinel-bar">
         <div class="compact-sentinel-left">
-          <div id="compactSecurityPill" class="security-status-pill safe">
+          <div id="compactSecurityPill" class="security-status-pill safe clickable-pill" role="button" tabindex="0" title="Click to Test Security Alarm or View Zone Status">
             <span class="pulse-beacon"></span>
             <span id="compactSecurityText">ALL SYSTEMS NORMAL &bull; ROOM SECURE</span>
           </div>
           <div class="compact-cloud-status">
-            <span class="cloud-pill online"><span class="dot"></span> Particle: Online</span>
-            <span class="cloud-pill online"><span class="dot"></span> ThingSpeak: OK</span>
+            <span id="compactParticlePill" class="cloud-pill online clickable-pill" role="button" tabindex="0" title="Click to Ping Particle Cloud API"><span class="dot"></span> <span id="textParticlePill">Particle: Online</span></span>
+            <span id="compactTsPill" class="cloud-pill online clickable-pill" role="button" tabindex="0" title="Click to Sync ThingSpeak Feed"><span class="dot"></span> <span id="textTsPill">ThingSpeak: OK</span></span>
           </div>
         </div>
         <div class="compact-sentinel-actions">
-          <button id="compactBtnToggleHum" class="btn-compact-action hum-switch-btn" title="Toggle active humidity sensor between SZ-HS100 Analog and DHT11 Digital">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-            <span id="compactHumBtnText">SZ-HS100 (A0)</span>
-          </button>
           <button id="compactBtnAutoGather" class="btn-compact-action auto-gather-btn" title="Auto-detect connected sensors and create pin mapping">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             <span>Auto-Gather</span>
@@ -301,152 +303,200 @@
           </button>
           <button id="compactBtnSilence" class="btn-compact-action silence-btn" title="Silence active alarm buzzer">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-            <span>Silence</span>
+            <span id="compactSilenceBtnText">Silence</span>
           </button>
           <button id="compactBtnInstallApp" class="btn-compact-action install-app-btn" title="Install Web App for standalone launch & fast desktop/mobile access">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>Install App</span>
           </button>
-          <button id="compactBtnTestBuzzer" class="btn-compact-action test-buzzer-btn" title="Test shield hardware buzzer">
+          <button id="compactBtnTestBuzzer" class="btn-compact-action test-buzzer-btn" title="Test shield hardware buzzer sound">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
-            <span>Test Sound</span>
+            <span id="compactTestSoundText">Test Sound</span>
           </button>
         </div>
       </div>
 
-      <!-- Compact 6-Card High-Visibility Metric Grid -->
-      <div class="compact-cards-grid">
-        <!-- 1. Temperature Card -->
-        <div class="compact-card temp-card">
-          <div class="compact-card-header">
-            <div class="card-tag">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
-              <span>TEMPERATURE</span>
+      <!-- Command Dashboard 2-Column Balanced Layout: Left Sensors vs Right Hero Sonar -->
+      <div class="compact-command-layout">
+        <!-- LEFT COLUMN: 4 Core Environmental Sensor Cards in Balanced 2x2 Grid -->
+        <div class="compact-sensors-column">
+          <div class="compact-sensors-grid">
+            <!-- 1. Temperature Card -->
+            <div class="compact-card temp-card">
+              <div class="compact-card-header">
+                <div class="card-tag">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+                  <span>TEMPERATURE</span>
+                </div>
+                <span id="compactBadgeTemp" class="compact-badge badge-normal">COMFORTABLE</span>
+              </div>
+              <div class="compact-card-body">
+                <div class="compact-main-val">
+                  <span id="compactValTemp">24.0</span>
+                  <span class="unit">°C</span>
+                </div>
+                <div class="compact-subtext">DHT11 Digital (D4) &bull; Range: 0-50°C</div>
+                <div class="compact-progress-track">
+                  <div id="compactBarTemp" class="compact-progress-fill" style="width: 48%; background: linear-gradient(90deg, #06b6d4, #f59e0b);"></div>
+                </div>
+              </div>
             </div>
-            <span id="compactBadgeTemp" class="compact-badge badge-normal">COMFORTABLE</span>
-          </div>
-          <div class="compact-card-body">
-            <div class="compact-main-val">
-              <span id="compactValTemp">24.0</span>
-              <span class="unit">°C</span>
+
+            <!-- 2. Humidity Card (DHT11 Digital D4 - pure, no SZ-HS100) -->
+            <div class="compact-card hum-card">
+              <div class="compact-card-header">
+                <div class="card-tag">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                  <span>HUMIDITY</span>
+                </div>
+                <span id="compactBadgeHum" class="compact-badge badge-normal">OPTIMAL</span>
+              </div>
+              <div class="compact-card-body">
+                <div class="compact-main-val">
+                  <span id="compactValHum">55.0</span>
+                  <span class="unit">% RH</span>
+                </div>
+                <div class="compact-subtext">DHT11 Digital (D4) &bull; Precision RH Sensor</div>
+                <div class="compact-progress-track">
+                  <div id="compactBarHum" class="compact-progress-fill" style="width: 55%; background: linear-gradient(90deg, #3b82f6, #06b6d4);"></div>
+                </div>
+              </div>
             </div>
-            <div class="compact-subtext">DHT11 Digital (D4) &bull; Range: 0-50°C</div>
-            <div class="compact-progress-track">
-              <div id="compactBarTemp" class="compact-progress-fill" style="width: 48%; background: linear-gradient(90deg, #06b6d4, #f59e0b);"></div>
+
+            <!-- 3. PIR Motion Detection Card -->
+            <div class="compact-card motion-card">
+              <div class="compact-card-header">
+                <div class="card-tag">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <span>ROOM OCCUPANCY</span>
+                </div>
+                <span id="compactBadgeMotion" class="compact-badge badge-normal">CLEAR</span>
+              </div>
+              <div class="compact-card-body">
+                <div class="compact-main-val" id="compactValMotionText">
+                  <span style="color: var(--accent-emerald);">VACANT</span>
+                </div>
+                <div class="compact-subtext">HC-SR501 Infrared Motion (D3)</div>
+                <div class="motion-pulse-container">
+                  <div id="compactMotionIndicator" class="motion-dot clear"></div>
+                  <span id="compactMotionSubtext" style="font-size: 11px; color: var(--text-dim);">No human movement detected</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Ambient Light Sensor Card -->
+            <div class="compact-card light-card">
+              <div class="compact-card-header">
+                <div class="card-tag">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                  <span>AMBIENT LIGHT</span>
+                </div>
+                <span id="compactBadgeLight" class="compact-badge badge-normal">DAYLIGHT</span>
+              </div>
+              <div class="compact-card-body">
+                <div class="compact-main-val">
+                  <span id="compactValLight">1240</span>
+                  <span class="unit">ADC</span>
+                </div>
+                <div class="compact-subtext">Shield LDR Photoresistor (A1)</div>
+                <div class="compact-progress-track">
+                  <div id="compactBarLight" class="compact-progress-fill" style="width: 60%; background: linear-gradient(90deg, #f59e0b, #eab308);"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 2. Humidity Card with Sensor Switch & Edit Option -->
-        <div class="compact-card hum-card">
-          <div class="compact-card-header">
-            <div class="card-tag">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-              <span>HUMIDITY</span>
+        <!-- RIGHT COLUMN: Hero Field Sonar Radar Command Station (Slightly Wider Area) -->
+        <div class="compact-sonar-column">
+          <div class="compact-card hero-sonar-card" id="heroSonarCard">
+            <div class="hero-sonar-header">
+              <div class="card-tag">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polygon points="12 2 15 8 12 14 9 8 12 2"/><line x1="12" y1="14" x2="12" y2="22"/></svg>
+                <span style="font-weight: 800; letter-spacing: 0.8px; color: var(--accent-cyan);">FIELD SONAR RADAR COMMAND</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="compactBadgeDist" class="compact-badge badge-normal">SAFE RANGE</span>
+                <span class="compact-badge badge-cyan" style="font-size: 9px; letter-spacing: 0.5px;">360° SCOPE</span>
+              </div>
             </div>
-            <span id="compactBadgeHum" class="compact-badge badge-normal">OPTIMAL</span>
-          </div>
-          <div class="compact-card-body">
-            <div class="compact-main-val">
-              <span id="compactValHum">55.0</span>
-              <span class="unit">% RH</span>
-            </div>
-            <div class="compact-sensor-switcher-row">
-              <span id="compactActiveSensorTag" class="active-sensor-chip">SZ-HS100 (A0)</span>
-              <button id="compactCardSwitchHum" class="btn-micro-switch" title="Toggle between SZ-HS100 and DHT11">
-                🔄 Toggle Sensor
-              </button>
-            </div>
-            <div class="compact-progress-track">
-              <div id="compactBarHum" class="compact-progress-fill" style="width: 55%; background: linear-gradient(90deg, #3b82f6, #06b6d4);"></div>
-            </div>
-          </div>
-        </div>
 
-        <!-- 3. Ultrasonic Distance Card -->
-        <div class="compact-card dist-card">
-          <div class="compact-card-header">
-            <div class="card-tag">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-              <span>PROXIMITY RADAR</span>
-            </div>
-            <span id="compactBadgeDist" class="compact-badge badge-normal">SAFE RANGE</span>
-          </div>
-          <div class="compact-card-body">
-            <div class="compact-main-val">
-              <span id="compactValDist">150</span>
-              <span class="unit">cm</span>
-            </div>
-            <div class="compact-subtext">Alert Threshold: &lt; 20 cm &bull; HC-SR04</div>
-            <div class="compact-progress-track">
-              <div id="compactBarDist" class="compact-progress-fill" style="width: 75%; background: linear-gradient(90deg, #10b981, #06b6d4);"></div>
-            </div>
-          </div>
-        </div>
+            <div class="hero-sonar-content">
+              <!-- Radar Scope Visualizer -->
+              <div class="hero-radar-viewport">
+                <div class="hero-radar-scope" id="heroRadarScope">
+                  <!-- Active Rotating Radar Sweep Line -->
+                  <div class="hero-radar-sweep"></div>
+                  <!-- Range Rings with Distance Labels -->
+                  <div class="hero-radar-ring ring-50cm" title="50 cm ring"><span class="ring-label">50</span></div>
+                  <div class="hero-radar-ring ring-100cm" title="100 cm ring"><span class="ring-label">100</span></div>
+                  <div class="hero-radar-ring ring-150cm" title="150 cm ring"><span class="ring-label">150</span></div>
+                  <div class="hero-radar-ring ring-200cm" title="200 cm perimeter"><span class="ring-label">200</span></div>
+                  <!-- Scope Crosshairs & Angle Graticules -->
+                  <div class="hero-radar-cross-h"></div>
+                  <div class="hero-radar-cross-v"></div>
+                  <div class="hero-radar-deg deg-0">0°</div>
+                  <div class="hero-radar-deg deg-90">90°</div>
+                  <div class="hero-radar-deg deg-180">180°</div>
+                  <div class="hero-radar-deg deg-270">270°</div>
+                  <!-- Dynamic Tracking Target Blip -->
+                  <div id="compactRadarBlip" class="hero-radar-blip" title="Live Target Position">
+                    <span class="blip-ring"></span>
+                  </div>
+                </div>
+              </div>
 
-        <!-- 4. PIR Motion Detection Card -->
-        <div class="compact-card motion-card">
-          <div class="compact-card-header">
-            <div class="card-tag">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <span>ROOM OCCUPANCY</span>
-            </div>
-            <span id="compactBadgeMotion" class="compact-badge badge-normal">CLEAR</span>
-          </div>
-          <div class="compact-card-body">
-            <div class="compact-main-val" id="compactValMotionText">
-              <span style="color: var(--accent-emerald);">VACANT</span>
-            </div>
-            <div class="compact-subtext">HC-SR501 Infrared Motion Sensor (D3)</div>
-            <div class="motion-pulse-container">
-              <div id="compactMotionIndicator" class="motion-dot clear"></div>
-              <span id="compactMotionSubtext" style="font-size: 11px; color: var(--text-dim);">No human movement detected</span>
-            </div>
-          </div>
-        </div>
+              <!-- Sonar Live Telemetry & Control Panel -->
+              <div class="hero-sonar-telemetry">
+                <div class="hero-sonar-readout">
+                  <div class="hero-distance-val">
+                    <span id="compactValDist">150</span>
+                    <span class="unit">cm</span>
+                  </div>
+                  <div class="hero-threshold-badge">
+                    <span>Threshold: <strong>&lt; 20 cm</strong></span>
+                    <span class="dot-sep">&bull;</span>
+                    <span id="heroSonarBearingText">Bearing: 45° ENE</span>
+                  </div>
+                </div>
 
-        <!-- 5. Ambient Light Sensor Card -->
-        <div class="compact-card light-card">
-          <div class="compact-card-header">
-            <div class="card-tag">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              <span>AMBIENT LIGHT</span>
-            </div>
-            <span id="compactBadgeLight" class="compact-badge badge-normal">DAYLIGHT</span>
-          </div>
-          <div class="compact-card-body">
-            <div class="compact-main-val">
-              <span id="compactValLight">1240</span>
-              <span class="unit">ADC</span>
-            </div>
-            <div class="compact-subtext">Shield LDR Photoresistor (A1)</div>
-            <div class="compact-progress-track">
-              <div id="compactBarLight" class="compact-progress-fill" style="width: 60%; background: linear-gradient(90deg, #f59e0b, #eab308);"></div>
-            </div>
-          </div>
-        </div>
+                <!-- Distance Range Gauge -->
+                <div class="compact-progress-track" style="height: 7px; margin-top: 6px; margin-bottom: 12px; background: rgba(255,255,255,0.08);">
+                  <div id="compactBarDist" class="compact-progress-fill" style="width: 75%; background: linear-gradient(90deg, #10b981, #06b6d4);"></div>
+                </div>
 
-        <!-- 6. Compact Radar Sonar Scope -->
-        <div class="compact-card radar-card">
-          <div class="compact-card-header">
-            <div class="card-tag">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-              <span>FIELD SONAR RADAR</span>
-            </div>
-            <span class="compact-badge badge-normal" style="font-size: 10px;">ACTIVE SWEEP</span>
-          </div>
-          <div class="compact-radar-wrapper">
-            <div class="compact-radar-scope">
-              <div class="compact-radar-sweep"></div>
-              <div class="compact-radar-ring ring-1"></div>
-              <div class="compact-radar-ring ring-2"></div>
-              <div class="compact-radar-cross-h"></div>
-              <div class="compact-radar-cross-v"></div>
-              <div id="compactRadarBlip" class="compact-radar-blip"></div>
-            </div>
-            <div class="compact-radar-meta">
-              <span id="compactRadarDistText" style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan);">150 cm</span>
-              <span style="font-size: 10px; color: var(--text-dim);">Live Target Track</span>
+                <!-- Sonar Hardware Matrix Specs -->
+                <div class="hero-sonar-specs-grid">
+                  <div class="spec-chip">
+                    <span class="spec-label">SENSOR</span>
+                    <span class="spec-val">HC-SR04</span>
+                  </div>
+                  <div class="spec-chip">
+                    <span class="spec-label">BUS PINS</span>
+                    <span class="spec-val">D2 Trig &bull; D6 Echo</span>
+                  </div>
+                  <div class="spec-chip">
+                    <span class="spec-label">SOUND VELOCITY</span>
+                    <span class="spec-val">343 m/s</span>
+                  </div>
+                  <div class="spec-chip">
+                    <span class="spec-label">PULSE FREQ</span>
+                    <span class="spec-val">40 kHz Ultrasonic</span>
+                  </div>
+                </div>
+
+                <!-- Hero Sonar Quick Controls -->
+                <div class="hero-sonar-actions">
+                  <button id="btnHeroPingSonar" class="btn-hero-sonar-action ping" title="Send immediate ultrasonic ping pulse to measure distance">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span>⚡ Ping Sonar</span>
+                  </button>
+                  <button id="btnHeroSonarChirp" class="btn-hero-sonar-action chirp" title="Play acoustic sonar chirp tone test">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    <span>🔊 Sonar Chirp</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -676,86 +726,6 @@
             Sensor Details &amp; Health Map
           </button>
         </div>
-      </div>
-    </section>
-
-    <!-- ==================================================================== -->
-    <!-- DEDICATED SENSOR HEALTH, BUS STATUS & DEVICE PINGS PART               -->
-    <!-- ==================================================================== -->
-    <section id="sensorHealthPart" class="glass-card sensor-health-part" style="margin-bottom: 24px;">
-      <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
-        <div class="card-title" style="color: var(--accent-emerald); display: flex; align-items: center; gap: 10px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          <span>SENSOR HEALTH, BUS STATUS &amp; DEVICE PINGS</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <button id="btnDedicatedTogglePing" class="btn-brief-ping" title="Toggle active sensor bus ping probe monitoring">
-            <span class="ping-dot"></span>
-            <span id="textDedicatedPingState">PINGS: ON</span>
-          </button>
-          <button id="btnDedicatedPingAll" class="btn-primary" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914;">
-            ⚡ Ping All Sensors Now
-          </button>
-        </div>
-      </div>
-
-      <!-- Quick Metrics Strip -->
-      <div class="sensor-health-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 18px;">
-        <div class="ext-stat-box" style="padding: 12px;">
-          <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Target Controller</span>
-          <strong id="dedicatedDevName" style="color: var(--accent-cyan); font-size: 14px; margin-top: 2px;">Spark Core (STM32F103)</strong>
-          <span id="dedicatedDevStatusBadge" class="badge badge-normal" style="font-size: 9px; align-self: flex-start; margin-top: 4px;">ONLINE &bull; PARTICLE CLOUD</span>
-        </div>
-        <div class="ext-stat-box" style="padding: 12px;">
-          <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Overall Bus Health</span>
-          <strong id="dedicatedHealthScore" style="color: var(--accent-emerald); font-size: 14px; margin-top: 2px;">100% OPTIMAL</strong>
-          <span id="dedicatedHealthSubtext" style="color: var(--text-dim); font-size: 10px; margin-top: 4px;">All Channels Responding</span>
-        </div>
-        <div class="ext-stat-box" style="padding: 12px;">
-          <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Ping Latency</span>
-          <strong id="dedicatedPingLatency" style="color: #60a5fa; font-size: 14px; font-family: var(--font-mono); margin-top: 2px;">1.8 ms AVG</strong>
-          <span id="dedicatedPingStatsText" style="color: var(--accent-emerald); font-size: 10px; margin-top: 4px;">Pass: 7 &bull; Fail: 0</span>
-        </div>
-        <div class="ext-stat-box" style="padding: 12px;">
-          <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Active Humidity Source</span>
-          <strong id="dedicatedHumModeText" style="color: #f59e0b; font-size: 14px; margin-top: 2px;">SZ-HS100 Analog (A0)</strong>
-          <span style="color: var(--text-dim); font-size: 10px; margin-top: 4px;">Backup DHT11 on D4</span>
-        </div>
-      </div>
-
-      <!-- Microcontroller Boards Online Status & Latency Matrix -->
-      <div id="boardPingMatrixSection" style="margin-bottom: 20px; background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-          <div style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
-            <span>CONTROLLER BOARDS ONLINE STATUS &amp; PING LATENCY</span>
-          </div>
-          <button id="btnPingAllBoardsMatrix" class="btn-primary" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914;">
-            ⚡ Ping All Boards Now
-          </button>
-        </div>
-        <div id="boardPingCardsGrid" class="board-ping-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
-          <!-- Dynamically populated cards for Spark Core, Arduino Uno, ESP32, Virtual Sentinel -->
-        </div>
-      </div>
-
-      <!-- Sensor & Bus Health Table -->
-      <div style="overflow-x: auto; max-height: 380px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
-        <table class="pin-matrix-table" style="font-size: 12px; width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.08);">
-              <th style="padding: 10px 14px; text-align: left;">Sensor Module</th>
-              <th style="padding: 10px 14px; text-align: left;">Pin / Interface</th>
-              <th style="padding: 10px 14px; text-align: left;">Target Controller</th>
-              <th style="padding: 10px 14px; text-align: left;">Bus State</th>
-              <th style="padding: 10px 14px; text-align: left;">Latency</th>
-              <th style="padding: 10px 14px; text-align: left;">Line Health</th>
-            </tr>
-          </thead>
-          <tbody id="dedicatedPingTableBody">
-            <!-- Dynamically populated from pinConfig & portPinger -->
-          </tbody>
-        </table>
       </div>
     </section>
 
@@ -1705,7 +1675,7 @@
         <span style="font-size: 22px;">🇺🇬</span>
         <div>
           <div style="font-weight: 700; color: var(--text-main); font-size: 13px; letter-spacing: 0.5px;">SMART IOT HUB &bull; CENTRAL TELEMETRY</div>
-          <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">Multi-Sensor Environmental Sentinel &bull; Spark Core STM32F103 &bull; SZ-HS100 + DHT11</div>
+          <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">Multi-Sensor Environmental Sentinel &bull; Spark Core STM32F103 &bull; DHT11 Digital Telemetry</div>
         </div>
       </div>
       <div class="footer-powered-badge" style="display: flex; align-items: center; gap: 8px; background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.3); padding: 8px 18px; border-radius: 20px; box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);">
@@ -2238,56 +2208,88 @@
 
   <!-- Detailed Sensor Health & Device Ping Diagnostics Modal -->
   <div id="modalPingDetails" class="modal-backdrop">
-    <div class="modal-card" style="max-width: 680px;">
-      <div class="modal-header">
+    <div class="modal-card" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="flex-wrap: wrap; gap: 10px;">
         <div class="modal-title" style="color: var(--accent-emerald); display: flex; align-items: center; gap: 8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          SENSOR HEALTH, BUS STATUS &amp; DEVICE PINGS
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span>SENSOR HEALTH, BUS STATUS &amp; DEVICE PINGS</span>
         </div>
-        <button id="btnClosePingDetails" class="modal-close">&times;</button>
+        <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+          <button id="btnDedicatedTogglePing" class="btn-brief-ping" title="Toggle active sensor bus ping probe monitoring">
+            <span class="ping-dot"></span>
+            <span id="textDedicatedPingState">PINGS: ON</span>
+          </button>
+          <button id="btnClosePingDetails" class="modal-close">&times;</button>
+        </div>
       </div>
-      <div class="modal-body" style="padding: 16px;">
-        <!-- Top Status Bar -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
+
+      <div class="modal-body" style="padding: 18px; overflow-y: auto;">
+        <!-- Top Status Bar & Quick Metrics Strip -->
+        <div class="sensor-health-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px;">
           <div class="ext-stat-box" style="padding: 10px;">
-            <span>ACTIVE DEVICE</span>
-            <strong id="modalPingDevName" style="color: var(--accent-cyan); font-size: 13px;">Spark Core</strong>
-            <span id="modalPingDevStatus" class="badge badge-normal" style="margin-top: 4px; font-size: 9px;">ONLINE</span>
+            <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Target Controller</span>
+            <strong id="dedicatedDevName" style="color: var(--accent-cyan); font-size: 13px; margin-top: 2px;">Spark Core (STM32F103)</strong>
+            <span id="dedicatedDevStatusBadge" class="badge badge-normal" style="font-size: 9px; align-self: flex-start; margin-top: 4px;">ONLINE &bull; PARTICLE CLOUD</span>
           </div>
           <div class="ext-stat-box" style="padding: 10px;">
-            <span>OVERALL HEALTH</span>
-            <strong id="modalPingHealthScore" style="color: var(--accent-emerald); font-size: 13px;">100% OPTIMAL</strong>
-            <span id="modalPingHealthSubtext" style="color: var(--text-dim); font-size: 10px;">All Lines Active</span>
+            <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Overall Bus Health</span>
+            <strong id="dedicatedHealthScore" style="color: var(--accent-emerald); font-size: 13px; margin-top: 2px;">100% OPTIMAL</strong>
+            <span id="dedicatedHealthSubtext" style="color: var(--text-dim); font-size: 10px; margin-top: 4px;">All Channels Responding</span>
           </div>
           <div class="ext-stat-box" style="padding: 10px;">
-            <span>PING MONITORING</span>
-            <strong id="modalPingMonitoringState" style="color: #60a5fa; font-size: 13px;">ACTIVE (ON)</strong>
-            <span id="modalPingUptimeText" style="color: var(--text-dim); font-size: 10px;">Uptime: 00:00:00</span>
+            <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Ping Latency</span>
+            <strong id="dedicatedPingLatency" style="color: #60a5fa; font-size: 13px; font-family: var(--font-mono); margin-top: 2px;">1.8 ms AVG</strong>
+            <span id="dedicatedPingStatsText" style="color: var(--accent-emerald); font-size: 10px; margin-top: 4px;">Pass: 7 &bull; Fault: 0</span>
+          </div>
+          <div class="ext-stat-box" style="padding: 10px;">
+            <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Ping Engine</span>
+            <strong id="modalPingMonitoringState" style="color: #a855f7; font-size: 13px; margin-top: 2px;">PROBE ACTIVE</strong>
+            <span id="modalPingUptimeText" style="color: var(--text-dim); font-size: 10px; margin-top: 4px;">Uptime: 00:00:00</span>
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Sensor Diagnostics Matrix</span>
-          <button id="btnModalPingAll" class="btn-primary" style="padding: 5px 12px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914; font-weight: 700;">
+        <!-- Microcontroller Boards Online Status & Latency Matrix -->
+        <div id="boardPingMatrixSection" style="margin-bottom: 20px; background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+              <span>CONTROLLER BOARDS ONLINE STATUS &amp; PING LATENCY</span>
+            </div>
+            <button id="btnPingAllBoardsMatrix" class="btn-primary" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914;">
+              ⚡ Ping All Boards Now
+            </button>
+          </div>
+          <div id="boardPingCardsGrid" class="board-ping-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
+            <!-- Dynamically populated cards for Spark Core, Arduino Uno, ESP32, Virtual Sentinel -->
+          </div>
+        </div>
+
+        <!-- Sensor Diagnostics Matrix Table -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>SENSOR CHANNELS &amp; BUS STATUS PING MATRIX</span>
+          </div>
+          <button id="btnModalPingAll" class="btn-primary" style="padding: 6px 14px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #00f2fe); color: #040914; font-weight: 700;">
             ⚡ Ping All Sensors Now
           </button>
         </div>
 
         <!-- Sensor Health Table -->
-        <div style="overflow-x: auto; max-height: 380px; overflow-y: auto;">
-          <table class="pin-matrix-table" style="font-size: 11px; width: 100%;">
+        <div style="overflow-x: auto; max-height: 320px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+          <table class="pin-matrix-table" style="font-size: 11px; width: 100%; border-collapse: collapse;">
             <thead>
-              <tr>
-                <th>Sensor</th>
-                <th>Pin / Bus</th>
-                <th>Target Device</th>
-                <th>Device Status</th>
-                <th>Latency</th>
-                <th>Line Health</th>
+              <tr style="background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <th style="padding: 8px 12px; text-align: left;">Sensor Module</th>
+                <th style="padding: 8px 12px; text-align: left;">Pin / Interface</th>
+                <th style="padding: 8px 12px; text-align: left;">Target Controller</th>
+                <th style="padding: 8px 12px; text-align: left;">Bus State</th>
+                <th style="padding: 8px 12px; text-align: left;">Latency</th>
+                <th style="padding: 8px 12px; text-align: left;">Line Health</th>
               </tr>
             </thead>
-            <tbody id="pingDetailsTableBody">
-              <!-- Dynamically rendered by app.js -->
+            <tbody id="dedicatedPingTableBody">
+              <!-- Dynamically rendered by app.js renderPingDetailsTable -->
             </tbody>
           </table>
         </div>

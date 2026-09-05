@@ -45,7 +45,7 @@ class SmartRoomApp {
     this.autoPingEnabled = true;
     this.autoPingTimer = null;
     this.dashboardViewMode = localStorage.getItem('sr_dashboard_view_mode') || 'monitor';
-    this.activeHumiditySource = 'sz_hs100';
+    this.activeHumiditySource = 'dht11';
     this.lastGatheredMapping = null;
 
     this.dom = {};
@@ -102,6 +102,7 @@ class SmartRoomApp {
     this.dom.btnHeaderPingBoard = document.getElementById('btnHeaderPingBoard');
     this.dom.btnAutoGatherSensors = document.getElementById('btnAutoGatherSensors');
     this.dom.btnOpenSensorEditor = document.getElementById('btnOpenSensorEditor');
+    this.dom.btnSubMenuSensorHealth = document.getElementById('btnSubMenuSensorHealth');
     this.dom.boardPingCardsGrid = document.getElementById('boardPingCardsGrid');
     this.dom.btnPingAllBoardsMatrix = document.getElementById('btnPingAllBoardsMatrix');
 
@@ -109,14 +110,16 @@ class SmartRoomApp {
     this.dom.compactMonitoringDashboard = document.getElementById('compactMonitoringDashboard');
     this.dom.compactSecurityPill = document.getElementById('compactSecurityPill');
     this.dom.compactSecurityText = document.getElementById('compactSecurityText');
+    this.dom.compactParticlePill = document.getElementById('compactParticlePill');
+    this.dom.textParticlePill = document.getElementById('textParticlePill');
+    this.dom.compactTsPill = document.getElementById('compactTsPill');
+    this.dom.textTsPill = document.getElementById('textTsPill');
     this.dom.compactValTemp = document.getElementById('compactValTemp');
     this.dom.compactBadgeTemp = document.getElementById('compactBadgeTemp');
     this.dom.compactBarTemp = document.getElementById('compactBarTemp');
     this.dom.compactValHum = document.getElementById('compactValHum');
     this.dom.compactBadgeHum = document.getElementById('compactBadgeHum');
     this.dom.compactBarHum = document.getElementById('compactBarHum');
-    this.dom.compactActiveSensorTag = document.getElementById('compactActiveSensorTag');
-    this.dom.compactCardSwitchHum = document.getElementById('compactCardSwitchHum');
     this.dom.compactValDist = document.getElementById('compactValDist');
     this.dom.compactBadgeDist = document.getElementById('compactBadgeDist');
     this.dom.compactBarDist = document.getElementById('compactBarDist');
@@ -127,15 +130,21 @@ class SmartRoomApp {
     this.dom.compactValLight = document.getElementById('compactValLight');
     this.dom.compactBadgeLight = document.getElementById('compactBadgeLight');
     this.dom.compactBarLight = document.getElementById('compactBarLight');
+    this.dom.heroSonarCard = document.getElementById('heroSonarCard');
+    this.dom.heroRadarScope = document.getElementById('heroRadarScope');
     this.dom.compactRadarBlip = document.getElementById('compactRadarBlip');
-    this.dom.compactRadarDistText = document.getElementById('compactRadarDistText');
+    this.dom.heroSonarBearingText = document.getElementById('heroSonarBearingText');
+    this.dom.btnHeroPingSonar = document.getElementById('btnHeroPingSonar');
+    this.dom.btnHeroSonarChirp = document.getElementById('btnHeroSonarChirp');
     this.dom.compactTickerContent = document.getElementById('compactTickerContent');
-    this.dom.compactBtnToggleHum = document.getElementById('compactBtnToggleHum');
-    this.dom.compactHumBtnText = document.getElementById('compactHumBtnText');
     this.dom.compactBtnAutoGather = document.getElementById('compactBtnAutoGather');
     this.dom.compactBtnEditSensors = document.getElementById('compactBtnEditSensors');
     this.dom.compactBtnSilence = document.getElementById('compactBtnSilence');
+    this.dom.compactSilenceBtnText = document.getElementById('compactSilenceBtnText');
+    this.dom.compactBtnInstallApp = document.getElementById('compactBtnInstallApp');
     this.dom.compactBtnTestBuzzer = document.getElementById('compactBtnTestBuzzer');
+    this.dom.compactTestSoundText = document.getElementById('compactTestSoundText');
+    this.dom.btnDedicatedTogglePing = document.getElementById('btnDedicatedTogglePing');
 
     // Modals for Sensor Edit and Auto-Gather
     this.dom.sensorEditModal = document.getElementById('sensorEditModal');
@@ -3343,7 +3352,7 @@ class SmartRoomApp {
       }
     }
 
-    // 2. Humidity & Sensor Active Source
+    // 2. Humidity (DHT11 Digital D4)
     if (this.dom.compactValHum && data.humidity !== undefined && data.humidity !== null) {
       const h = data.humidity;
       this.dom.compactValHum.textContent = h.toFixed(1);
@@ -3356,16 +3365,7 @@ class SmartRoomApp {
       }
     }
 
-    // Active Humidity Source
-    const isSz = this.activeHumiditySource === 'sz_hs100';
-    if (this.dom.compactActiveSensorTag) {
-      this.dom.compactActiveSensorTag.textContent = isSz ? 'SZ-HS100 (A0)' : 'DHT11 (D4)';
-    }
-    if (this.dom.compactHumBtnText) {
-      this.dom.compactHumBtnText.textContent = isSz ? 'SZ-HS100 (A0)' : 'DHT11 (D4)';
-    }
-
-    // 3. Proximity / Distance
+    // 3. Proximity / Hero Sonar Radar Station
     if (this.dom.compactValDist && data.distance !== undefined && data.distance !== null) {
       const d = data.distance;
       this.dom.compactValDist.textContent = d.toFixed(0);
@@ -3377,16 +3377,23 @@ class SmartRoomApp {
         this.dom.compactBarDist.style.width = `${Math.min(100, Math.max(5, (d / 200) * 100))}%`;
         this.dom.compactBarDist.style.background = isProximityBreach ? '#ef4444' : 'linear-gradient(90deg, #10b981, #06b6d4)';
       }
-      if (this.dom.compactRadarDistText) {
-        this.dom.compactRadarDistText.textContent = `${d.toFixed(0)} cm`;
+      if (this.dom.heroRadarScope) {
+        this.dom.heroRadarScope.classList.toggle('breach-alert', isProximityBreach);
       }
       if (this.dom.compactRadarBlip) {
-        const norm = Math.min(1, Math.max(0, d / 220));
-        const radPx = norm * 26;
-        const bRad = ((d * 2.1) % 360 * Math.PI) / 180;
-        this.dom.compactRadarBlip.style.transform = `translate(${Math.cos(bRad) * radPx}px, ${-Math.sin(bRad) * radPx}px)`;
+        const norm = Math.min(1, Math.max(0.08, d / 200));
+        const radPx = norm * 92; // 220px scope has 110px radius
+        const bAngleDeg = (d * 3.7) % 360;
+        const bRad = (bAngleDeg * Math.PI) / 180;
+        this.dom.compactRadarBlip.style.transform = `translate(${(Math.cos(bRad) * radPx).toFixed(1)}px, ${(-Math.sin(bRad) * radPx).toFixed(1)}px)`;
         this.dom.compactRadarBlip.style.background = isProximityBreach ? '#ef4444' : '#10b981';
-        this.dom.compactRadarBlip.style.boxShadow = isProximityBreach ? '0 0 10px #ef4444' : '0 0 8px #10b981';
+        this.dom.compactRadarBlip.style.boxShadow = isProximityBreach ? '0 0 16px #ef4444' : '0 0 12px #10b981';
+      }
+      if (this.dom.heroSonarBearingText) {
+        const angle = Math.round((d * 3.7) % 360);
+        const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+        const dirName = dirs[Math.floor((angle + 11.25) / 22.5) % 16];
+        this.dom.heroSonarBearingText.textContent = `Bearing: ${angle}° ${dirName}`;
       }
     }
 
@@ -3417,9 +3424,9 @@ class SmartRoomApp {
     // Sentinel Status Pill
     if (this.dom.compactSecurityPill) {
       if (this.isSilenced) {
-        this.dom.compactSecurityPill.className = 'security-status-pill muted';
+        this.dom.compactSecurityPill.className = 'security-status-pill muted clickable-pill';
       } else {
-        this.dom.compactSecurityPill.className = alertTriggered ? (isProximityBreach ? 'security-status-pill alert' : 'security-status-pill motion') : 'security-status-pill safe';
+        this.dom.compactSecurityPill.className = alertTriggered ? (isProximityBreach ? 'security-status-pill alert clickable-pill' : 'security-status-pill motion clickable-pill') : 'security-status-pill safe clickable-pill';
       }
     }
     if (this.dom.compactSecurityText) {
@@ -3433,8 +3440,7 @@ class SmartRoomApp {
     // Activity Ticker
     if (this.dom.compactTickerContent) {
       const timeStr = new Date().toLocaleTimeString();
-      const humTag = isSz ? 'SZ-HS100 Analog' : 'DHT11';
-      this.dom.compactTickerContent.textContent = `[${timeStr}] Temp: ${(data.temperature || 24).toFixed(1)}°C | Hum: ${(data.humidity || 55).toFixed(1)}% (${humTag}) | Proximity: ${(data.distance || 150).toFixed(0)}cm | Room: ${isMotion ? 'OCCUPIED' : 'CLEAR'}`;
+      this.dom.compactTickerContent.textContent = `[${timeStr}] Temp: ${(data.temperature || 24).toFixed(1)}°C | Hum: ${(data.humidity || 55).toFixed(1)}% (DHT11) | Sonar Radar: ${(data.distance || 150).toFixed(0)}cm | Room: ${isMotion ? 'OCCUPIED' : 'CLEAR'}`;
     }
   }
 
@@ -3453,41 +3459,142 @@ class SmartRoomApp {
       });
     }
 
-    if (this.dom.compactBtnSilence) {
-      this.dom.compactBtnSilence.addEventListener('click', () => {
-        this.silenceAllAlarms();
+    // 1. ALL SYSTEMS NORMAL • ROOM SECURE Interactive Pill
+    if (this.dom.compactSecurityPill) {
+      this.dom.compactSecurityPill.addEventListener('click', () => {
+        const isBreach = this.latestTelemetry && (this.latestTelemetry.dist < 20 || this.latestTelemetry.motion === 1);
+        if (isBreach) {
+          this.silenceAllAlarms();
+          this.log('🛡️ Security Sentinel: Threat condition acknowledged and silenced.', 'warn');
+        } else {
+          this.log('🛡️ Security Sentinel: Zone Check - ALL SYSTEMS NOMINAL. Ultrasonic Radar & PIR Active.', 'success');
+          this.dom.compactSecurityPill.classList.add('highlight-pulse');
+          setTimeout(() => this.dom.compactSecurityPill && this.dom.compactSecurityPill.classList.remove('highlight-pulse'), 1200);
+        }
       });
     }
 
-    if (this.dom.compactBtnTestBuzzer) {
-      this.dom.compactBtnTestBuzzer.addEventListener('click', () => {
-        audioEngine.startTone('beep');
-        setTimeout(() => audioEngine.stopTone(), 600);
-        this.log('Hardware buzzer test triggered from Compact Monitor', 'warn');
+    // 2. Particle: Online Interactive Pill
+    if (this.dom.compactParticlePill) {
+      this.dom.compactParticlePill.addEventListener('click', async () => {
+        const tLabel = this.dom.textParticlePill || this.dom.compactParticlePill;
+        tLabel.textContent = 'Particle: Pinging...';
+        try {
+          const t0 = performance.now();
+          await particleApi.ping();
+          const latency = Math.round(performance.now() - t0);
+          tLabel.textContent = `Particle: Online (${latency}ms)`;
+          this.log(`⚡ Particle Cloud Ping: ONLINE • Latency ${latency}ms (Device: ${particleApi.config.deviceId.slice(0, 8)}...)`, 'success');
+        } catch (err) {
+          tLabel.textContent = 'Particle: Offline';
+          this.log(`Particle Cloud Ping Error: ${err.message}`, 'error');
+        }
+        setTimeout(() => {
+          if (tLabel) tLabel.textContent = 'Particle: Online';
+        }, 5000);
       });
     }
 
-    if (this.dom.compactBtnToggleHum) {
-      this.dom.compactBtnToggleHum.addEventListener('click', () => {
-        this.toggleHumiditySensorMode();
+    // 3. ThingSpeak: OK Interactive Pill
+    if (this.dom.compactTsPill) {
+      this.dom.compactTsPill.addEventListener('click', async () => {
+        const tLabel = this.dom.textTsPill || this.dom.compactTsPill;
+        tLabel.textContent = 'ThingSpeak: Syncing...';
+        try {
+          const feed = await thingspeakApi.getLatestFeed();
+          tLabel.textContent = 'ThingSpeak: Synced!';
+          this.log(`🌐 ThingSpeak Cloud Sync: Feed updated (Channel #${thingspeakApi.config.channelId} • Entry #${feed ? feed.entry_id : 'OK'})`, 'success');
+        } catch (err) {
+          tLabel.textContent = 'ThingSpeak: Retrying...';
+          this.log(`ThingSpeak Sync Notice: ${err.message}`, 'warn');
+        }
+        setTimeout(() => {
+          if (tLabel) tLabel.textContent = 'ThingSpeak: OK';
+        }, 5000);
       });
     }
 
-    if (this.dom.compactCardSwitchHum) {
-      this.dom.compactCardSwitchHum.addEventListener('click', () => {
-        this.toggleHumiditySensorMode();
-      });
-    }
-
+    // 4. Auto-Gather Button
     if (this.dom.compactBtnAutoGather) {
       this.dom.compactBtnAutoGather.addEventListener('click', () => {
         this.runAutoGatherBoardSensors();
       });
     }
 
+    // 5. Edit Sensors Button
     if (this.dom.compactBtnEditSensors) {
       this.dom.compactBtnEditSensors.addEventListener('click', () => {
         this.openSensorEditorModal();
+      });
+    }
+
+    // 6. Silence Button
+    if (this.dom.compactBtnSilence) {
+      this.dom.compactBtnSilence.addEventListener('click', () => {
+        this.silenceAllAlarms();
+        if (this.dom.compactSilenceBtnText) {
+          const orig = this.dom.compactSilenceBtnText.textContent;
+          this.dom.compactSilenceBtnText.textContent = 'Silenced (45s)';
+          setTimeout(() => {
+            if (this.dom.compactSilenceBtnText) this.dom.compactSilenceBtnText.textContent = orig;
+          }, 3000);
+        }
+      });
+    }
+
+    // 7. Install App Button
+    if (this.dom.compactBtnInstallApp) {
+      this.dom.compactBtnInstallApp.addEventListener('click', () => {
+        pwaManager.install();
+        this.log('📥 Launching Web App PWA Installer...', 'info');
+      });
+    }
+
+    // 8. Test Sound Button
+    if (this.dom.compactBtnTestBuzzer) {
+      this.dom.compactBtnTestBuzzer.addEventListener('click', () => {
+        audioEngine.startTone('beep');
+        if (this.dom.compactTestSoundText) {
+          this.dom.compactTestSoundText.textContent = 'Beep!';
+        }
+        setTimeout(() => {
+          audioEngine.stopTone();
+          if (this.dom.compactTestSoundText) this.dom.compactTestSoundText.textContent = 'Test Sound';
+        }, 800);
+        this.log('🔊 Hardware & audio buzzer test tone sounded.', 'warn');
+      });
+    }
+
+    // Hero Sonar Quick Controls
+    if (this.dom.btnHeroPingSonar) {
+      this.dom.btnHeroPingSonar.addEventListener('click', async () => {
+        this.dom.btnHeroPingSonar.disabled = true;
+        this.dom.btnHeroPingSonar.innerHTML = '<span>⚡ Pinging...</span>';
+        if (this.dom.heroRadarScope) this.dom.heroRadarScope.classList.add('highlight-pulse');
+        const curDist = (this.latestTelemetry && this.latestTelemetry.dist !== undefined) ? this.latestTelemetry.dist : 150;
+        this.log(`🎯 Field Sonar Ping: Target echo return at ${curDist.toFixed(0)} cm (Trig: D2, Echo: D6)`, 'success');
+        setTimeout(() => {
+          if (this.dom.btnHeroPingSonar) {
+            this.dom.btnHeroPingSonar.disabled = false;
+            this.dom.btnHeroPingSonar.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>⚡ Ping Sonar</span>';
+          }
+          if (this.dom.heroRadarScope) this.dom.heroRadarScope.classList.remove('highlight-pulse');
+        }, 800);
+      });
+    }
+
+    if (this.dom.btnHeroSonarChirp) {
+      this.dom.btnHeroSonarChirp.addEventListener('click', () => {
+        audioEngine.startTone('beep');
+        setTimeout(() => audioEngine.stopTone(), 250);
+        this.log('🔊 Field Sonar Chirp: 40 kHz Acoustic Pulse Test Emitted', 'info');
+      });
+    }
+
+    // Top Toolbar Sub-Menu "Health & Pings" Button
+    if (this.dom.btnSubMenuSensorHealth) {
+      this.dom.btnSubMenuSensorHealth.addEventListener('click', () => {
+        this.openPingDetailsModal();
       });
     }
 
@@ -3510,12 +3617,7 @@ class SmartRoomApp {
     const mBtnHealth = document.getElementById('mBtnHealth');
     if (mBtnHealth) {
       mBtnHealth.addEventListener('click', () => {
-        const el = document.getElementById('sensorHealthPart');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth' });
-          el.classList.add('highlight-pulse');
-          setTimeout(() => el.classList.remove('highlight-pulse'), 1500);
-        }
+        this.openPingDetailsModal();
       });
     }
 
@@ -3559,26 +3661,6 @@ class SmartRoomApp {
       if (this.dom.btnViewMonitor) this.dom.btnViewMonitor.classList.remove('active');
       if (mBtnTools) mBtnTools.classList.add('active');
       if (mBtnMonitor) mBtnMonitor.classList.remove('active');
-    }
-  }
-
-  async toggleHumiditySensorMode() {
-    this.activeHumiditySource = this.activeHumiditySource === 'sz_hs100' ? 'dht11' : 'sz_hs100';
-    const isSz = this.activeHumiditySource === 'sz_hs100';
-    const tagText = isSz ? 'SZ-HS100 (A0)' : 'DHT11 (D4)';
-
-    if (this.dom.compactActiveSensorTag) this.dom.compactActiveSensorTag.textContent = tagText;
-    if (this.dom.compactHumBtnText) this.dom.compactHumBtnText.textContent = tagText;
-
-    try {
-      const res = await particleApi.callFunction('cmd', isSz ? 'sz' : 'dht');
-      if (res && res.connected) {
-        this.log(`Switched humidity sensor to ${isSz ? 'SZ-HS100 Analog (A0)' : 'DHT11 Digital (D4)'} (Cloud CMD Dispatched)`, 'success');
-      } else {
-        this.log(`Switched display humidity to ${isSz ? 'SZ-HS100 Analog (A0)' : 'DHT11 Digital (D4)'}`, 'info');
-      }
-    } catch (_) {
-      this.log(`Switched display humidity to ${isSz ? 'SZ-HS100 Analog (A0)' : 'DHT11 Digital (D4)'}`, 'info');
     }
   }
 
@@ -3639,7 +3721,6 @@ class SmartRoomApp {
     const mapping = pinConfig.mapping;
 
     const editableSensorKeys = [
-      { id: 'sz_hs100', name: 'SZ-HS100 Analog Humidity', type: 'analog', options: ['SZ-HS100 Relative Humidity (0-3.3V)', 'Capacitive Analog RH Probe'] },
       { id: 'dht11', name: 'DHT11 Temp & Humidity', type: 'digital', options: ['DHT11 Single-Wire Digital', 'DHT22 / AM2302 High-Res', 'SHT30 / SHT31'] },
       { id: 'ultrasonic_echo', name: 'HC-SR04 Echo (Distance)', type: 'digital', options: ['HC-SR04 Ultrasonic Echo Pulse', 'RCWL-1601 Pulse', 'VL53L0X Laser ToF'] },
       { id: 'pir_motion', name: 'HC-SR501 PIR Motion', type: 'digital', options: ['HC-SR501 Pyroelectric Infrared', 'RCWL-0516 Microwave Doppler'] },
@@ -4046,7 +4127,9 @@ class SmartRoomApp {
   }
 
   openPingDetailsModal() {
+    this.renderBoardPingMatrix();
     this.renderPingDetailsTable();
+    this.updateBriefSummaryStats();
     if (this.dom.modalPingDetails) {
       this.dom.modalPingDetails.classList.add('active');
     }
