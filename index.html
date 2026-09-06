@@ -956,63 +956,6 @@
       </div>
     </section>
 
-    <!-- Real-Time Hardware Sensor Trigger & LED Status Monitor -->
-    <section class="hardware-trigger-section" id="hardwareTriggerSection" style="margin-bottom: 24px;">
-      <div class="glass-card hardware-status-card" style="padding: 16px 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="hw-pulse-indicator" id="hwPulseIndicator"></div>
-            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.05em; color: var(--text-main);">LIVE HARDWARE TRIGGER &amp; LED LIGHT MONITOR</span>
-          </div>
-          <div id="hwMasterStatusBadge" class="metric-badge badge-normal" style="font-size: 11px; padding: 4px 10px;">ALL HARDWARE CLEAR • ROOM SECURE</div>
-        </div>
-
-        <!-- Interactive LED Status Lights -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px;">
-          <!-- Red LED -->
-          <div class="hw-led-box" id="ledBoxRed">
-            <div class="hw-led-dot red" id="ledDotRed"></div>
-            <div class="hw-led-info">
-              <span class="hw-led-name">RED LED (A5)</span>
-              <span class="hw-led-state" id="ledStateRedText">OFF</span>
-            </div>
-          </div>
-          <!-- Green LED -->
-          <div class="hw-led-box active-green" id="ledBoxGreen">
-            <div class="hw-led-dot green active" id="ledDotGreen"></div>
-            <div class="hw-led-info">
-              <span class="hw-led-name">GREEN LED (A6)</span>
-              <span class="hw-led-state" id="ledStateGreenText">ACTIVE (SECURE)</span>
-            </div>
-          </div>
-          <!-- Blue LED -->
-          <div class="hw-led-box" id="ledBoxBlue">
-            <div class="hw-led-dot blue" id="ledDotBlue"></div>
-            <div class="hw-led-info">
-              <span class="hw-led-name">BLUE LED (A7)</span>
-              <span class="hw-led-state" id="ledStateBlueText">OFF</span>
-            </div>
-          </div>
-          <!-- Onboard Blue LED (D7) -->
-          <div class="hw-led-box active-blue" id="ledBoxD7">
-            <div class="hw-led-dot blue active pulse" id="ledDotD7"></div>
-            <div class="hw-led-info">
-              <span class="hw-led-name">ONBOARD LED (D7)</span>
-              <span class="hw-led-state" id="ledStateD7Text">HEARTBEAT PULSE</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sensor Trigger Quick Status Pills -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px;">
-          <div class="hw-sensor-pill" id="pillHwDist">📡 HC-SR04: <span id="txtHwDist">223 cm (Normal)</span></div>
-          <div class="hw-sensor-pill" id="pillHwIr">👁️ IR D6: <span id="txtHwIr">Clear</span></div>
-          <div class="hw-sensor-pill" id="pillHwPir">🏃 PIR D3: <span id="txtHwPir">Standby</span></div>
-          <div class="hw-sensor-pill" id="pillHwBuzzer">🔊 Buzzer D5: <span id="txtHwBuzzer">Silent</span></div>
-          <div class="hw-sensor-pill" id="pillHwTemp">🌡️ DHT11 D4: <span id="txtHwTemp">30.0°C / 55%</span></div>
-        </div>
-      </div>
-    </section>
 
     <!-- Main Interactive Grid -->
     <div class="dashboard-grid">
