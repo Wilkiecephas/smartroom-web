@@ -174,68 +174,78 @@ export class WirelessManager {
       const server = await device.gatt.connect();
       this.bleServer = server;
 
-      // Dynamically discover primary service
-      let activeService = null;
-
-      if (customServiceUuid) {
-        try {
-          activeService = await server.getPrimaryService(customServiceUuid.trim().toLowerCase());
-        } catch (_) {}
+      // Force-get all accessible primary services from the peripheral
+      let allServices = [];
+      try {
+        allServices = await server.getPrimaryServices();
+      } catch (svcErr) {
+        console.warn('[BLE] getPrimaryServices warning:', svcErr);
       }
 
-      if (!activeService) {
-        // Probe known services in order
-        for (const sId of optionalServices) {
-          try {
-            activeService = await server.getPrimaryService(sId);
-            if (activeService) break;
-          } catch (_) {}
-        }
-      }
+      this.discoveredBleServices = [];
 
-      if (!activeService) {
-        // Fallback: try querying all primary services from peripheral
-        try {
-          const services = await server.getPrimaryServices();
-          if (services && services.length > 0) {
-            activeService = services[0];
-          }
-        } catch (_) {}
-      }
+      for (const service of allServices) {
+        const sRecord = {
+          uuid: service.uuid,
+          name: this.resolveServiceName(service.uuid),
+          characteristics: []
+        };
 
-      // Discover notify and write characteristics
-      if (activeService) {
         try {
-          const chars = await activeService.getCharacteristics();
+          const chars = await service.getCharacteristics();
           for (const c of chars) {
-            if (c.properties.notify || c.properties.indicate) {
-              this.bleTxChar = c;
-              await c.startNotifications();
-              c.addEventListener('characteristicvaluechanged', event => {
-                const value = new TextDecoder().decode(event.target.value);
-                try {
-                  const json = JSON.parse(value);
-                  if (window.smartRoomApp && window.smartRoomApp.updateDashboard) {
-                    window.smartRoomApp.updateDashboard(json);
+            const props = c.properties;
+            const cRecord = {
+              uuid: c.uuid,
+              read: !!props.read,
+              write: !!(props.write || props.writeWithoutResponse),
+              notify: !!(props.notify || props.indicate)
+            };
+
+            // Auto-bind streaming telemetry notification
+            if (props.notify || props.indicate) {
+              if (!this.bleTxChar) this.bleTxChar = c;
+              try {
+                await c.startNotifications();
+                c.addEventListener('characteristicvaluechanged', event => {
+                  const value = new TextDecoder().decode(event.target.value);
+                  try {
+                    const json = JSON.parse(value);
+                    if (window.smartRoomApp && window.smartRoomApp.updateDashboard) {
+                      window.smartRoomApp.updateDashboard(json);
+                    }
+                    if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', data: json });
+                  } catch (_) {
+                    if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', raw: value });
                   }
-                  if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', data: json });
-                } catch (_) {
-                  if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', raw: value });
-                }
-              });
+                });
+              } catch (_) {}
             }
-            if (c.properties.write || c.properties.writeWithoutResponse) {
+
+            if ((props.write || props.writeWithoutResponse) && !this.bleRxChar) {
               this.bleRxChar = c;
             }
+
+            sRecord.characteristics.push(cRecord);
           }
         } catch (charErr) {
-          console.warn('[BLE] Could not enumerate characteristics:', charErr);
+          console.warn(`[BLE] Could not read chars for service ${service.uuid}:`, charErr);
         }
+
+        this.discoveredBleServices.push(sRecord);
       }
 
       this.isBleConnected = true;
       this.notify();
-      return { success: true, deviceName: device.name || 'Unnamed BLE Peripheral' };
+
+      const devName = device.name || 'Unnamed BLE Peripheral';
+      const svcCount = this.discoveredBleServices.length;
+      return { 
+        success: true, 
+        deviceName: devName,
+        servicesCount: svcCount,
+        services: this.discoveredBleServices
+      };
     } catch (err) {
       this.isBleConnected = false;
       this.notify();

@@ -29,6 +29,7 @@ import { iotGateway } from './iotGateway.js';
 import { aiEngine } from './aiEngine.js';
 import { supabaseService, SUPABASE_SQL_SCHEMA } from './supabaseClient.js';
 import { hardwareConnectGuide } from './hardwareConnectGuide.js';
+import { universalServiceInspector } from './serviceInspector.js';
 
 
 class SmartRoomApp {
@@ -453,6 +454,8 @@ class SmartRoomApp {
     this.dom.btnStartWifiPolling = document.getElementById('btnStartWifiPolling');
     this.dom.wifiStatusBox       = document.getElementById('wifiStatusBox');
     this.dom.btnScanBleDevice    = document.getElementById('btnScanBleDevice');
+    this.dom.btnForceGetBleServices = document.getElementById('btnForceGetBleServices');
+    this.dom.inputBleCustomServiceUuid = document.getElementById('inputBleCustomServiceUuid');
     this.dom.btnDisconnectBle    = document.getElementById('btnDisconnectBle');
     this.dom.bleStatusBox        = document.getElementById('bleStatusBox');
     this.dom.inputAtCommand      = document.getElementById('inputAtCommand');
@@ -494,6 +497,7 @@ class SmartRoomApp {
     this.dom.activeDeviceStatusBadge = document.getElementById('activeDeviceStatusBadge');
     this.dom.activeDeviceTypeTag     = document.getElementById('activeDeviceTypeTag');
     this.dom.activeDeviceSensorsRow  = document.getElementById('activeDeviceSensorsRow');
+    this.dom.btnInspectActiveDeviceServices = document.getElementById('btnInspectActiveDeviceServices');
     this.dom.btnAddSensorToDevice    = document.getElementById('btnAddSensorToDevice');
     this.dom.btnOpenDeviceManager    = document.getElementById('btnOpenDeviceManager');
     this.dom.btnOpenAddDeviceModal   = document.getElementById('btnOpenAddDeviceModal');
@@ -1557,7 +1561,8 @@ class SmartRoomApp {
     if (this.dom.btnScanBleDevice) {
       this.dom.btnScanBleDevice.addEventListener('click', async () => {
         this.dom.bleStatusBox.innerHTML = '<span style="color: var(--accent-cyan);">Requesting Bluetooth pair dialog in browser...</span>';
-        const res = await wirelessManager.connectBleDevice();
+        const customUuid = this.dom.inputBleCustomServiceUuid ? this.dom.inputBleCustomServiceUuid.value.trim() : '';
+        const res = await wirelessManager.connectBleDevice(customUuid);
         if (res.success) {
           this.dom.bleStatusBox.innerHTML = `<span style="color: var(--accent-emerald);">✓ Paired & Connected: <strong>${res.deviceName}</strong></span>`;
           this.dom.btnDisconnectBle.style.display = 'inline-block';
@@ -1567,6 +1572,18 @@ class SmartRoomApp {
           this.dom.bleStatusBox.innerHTML = `<span style="color: var(--accent-rose);">BLE Pairing: ${res.error}</span>`;
           this.log(`Bluetooth BLE Error: ${res.error}`, 'error');
         }
+      });
+    }
+
+    if (this.dom.btnForceGetBleServices) {
+      this.dom.btnForceGetBleServices.addEventListener('click', () => {
+        const customUuid = this.dom.inputBleCustomServiceUuid ? this.dom.inputBleCustomServiceUuid.value.trim() : '';
+        universalServiceInspector.inspectDevice({
+          name: 'Bluetooth BLE Peripheral',
+          type: 'ble_peripheral',
+          connectionMethod: 'web_ble',
+          credentials: { serviceUuid: customUuid }
+        });
       });
     }
 
@@ -2466,6 +2483,22 @@ class SmartRoomApp {
       });
     }
 
+    // Universal Device Capability & Service Inspector
+    if (this.dom.btnInspectActiveDeviceServices) {
+      this.dom.btnInspectActiveDeviceServices.addEventListener('click', () => {
+        const active = deviceRegistry.getActiveDevice();
+        if (active) {
+          universalServiceInspector.inspectDevice(active);
+        } else {
+          universalServiceInspector.inspectDevice({
+            name: 'Connected Peripheral',
+            type: 'generic',
+            connectionMethod: 'web_ble'
+          });
+        }
+      });
+    }
+
     // 9. Add Sensor to Device Modal
     if (this.dom.btnAddSensorToDevice) {
       this.dom.btnAddSensorToDevice.addEventListener('click', () => {
@@ -2760,6 +2793,7 @@ class SmartRoomApp {
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="btn-outline btn-force-inspect-dev" data-dev-id="${dev.id}" style="padding: 6px 10px; font-size: 11px; color: var(--accent-cyan); border-color: rgba(0, 242, 254, 0.4);" title="Force-Get & Enumerate All Services, Characteristics, and Control Endpoints">⚡ Force-Get</button>
             ${!isActive ? `<button class="btn-primary btn-switch-to-dev" data-dev-id="${dev.id}" style="padding: 6px 12px; font-size: 11px;">Switch to This</button>` : ''}
             <button class="btn-outline btn-mgr-add-sensor" data-dev-id="${dev.id}" style="padding: 6px 10px; font-size: 11px;">+ Sensors</button>
             ${devices.length > 1 ? `<button class="btn-outline btn-remove-dev" data-dev-id="${dev.id}" style="padding: 6px 10px; font-size: 11px; color: var(--accent-rose);" title="Remove Device">Remove</button>` : ''}
@@ -2769,6 +2803,16 @@ class SmartRoomApp {
     }).join('');
 
     // Wire buttons
+    this.dom.deviceManagerList.querySelectorAll('.btn-force-inspect-dev').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const devId = e.currentTarget.getAttribute('data-dev-id');
+        const dev = deviceRegistry.getDevice(devId);
+        if (dev) {
+          universalServiceInspector.inspectDevice(dev);
+        }
+      });
+    });
+
     this.dom.deviceManagerList.querySelectorAll('.btn-switch-to-dev').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const devId = e.currentTarget.getAttribute('data-dev-id');

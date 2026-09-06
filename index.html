@@ -773,6 +773,10 @@
         </div>
       </div>
       <div class="active-device-actions">
+        <button id="btnInspectActiveDeviceServices" class="btn-outline btn-device-action" style="color: var(--accent-cyan); border-color: rgba(0, 242, 254, 0.4);" title="Force-get and inspect all services, endpoints & capabilities for this device">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          ⚡ Force-Get Services
+        </button>
         <button id="btnAddSensorToDevice" class="btn-outline btn-device-action" title="Attach new sensor or extension to this device">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           Add Sensor to Device
@@ -2328,8 +2332,13 @@
         <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
           Connect wirelessly to Bluetooth Low Energy boards (ESP32 BLE, Nordic nRF52, Micro:bit, or Wearables) via browser Web Bluetooth:
         </div>
-        <div style="display: flex; gap: 10px; margin-bottom: 14px;">
-          <button id="btnScanBleDevice" class="btn-primary">Pair & Connect BLE Device</button>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 11px;">Custom GATT Service UUID (Optional - for proprietary boards/smartwatches):</label>
+          <input type="text" id="inputBleCustomServiceUuid" class="form-input" placeholder="e.g. 4fafc201-1fb5-459e-8fcc-c5c9c331914b or 0000ffe0-..." style="font-family: var(--font-mono); font-size: 11px;">
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+          <button id="btnScanBleDevice" class="btn-primary">Pair &amp; Connect BLE Device</button>
+          <button id="btnForceGetBleServices" class="btn-outline" style="color: var(--accent-cyan); border-color: rgba(0, 242, 254, 0.4);">⚡ Force-Get Services</button>
           <button id="btnDisconnectBle" class="btn-outline" style="display: none;">Disconnect BLE</button>
         </div>
         <div id="bleStatusBox" style="padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12px;">
@@ -2960,6 +2969,36 @@
         <span style="font-size: 12px; color: var(--text-dim);">Open-Source IoT Platform by TekStep Apps Uganda &bull; <a href="https://tekstepapps.org" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">tekstepapps.org</a></span>
         <button id="btnMgrAddNewDevice" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #06b6d4); color: #040914; font-weight: 700;">
           + Register New Device
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Universal Device Service & Capability Inspector Modal -->
+  <div id="modalServiceInspector" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title" style="display: flex; align-items: center; gap: 8px; color: var(--accent-cyan);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span id="serviceInspectorTitle">Universal Device Capabilities &amp; Services Inspector</span>
+        </div>
+        <button id="btnCloseServiceInspector" class="btn-icon">✕</button>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Deep introspection of active hardware: GATT services, characteristics, exposed REST endpoints, cloud functions, and serial control channels.
+      </div>
+
+      <div id="serviceInspectorContent" style="overflow-y: auto; flex: 1; min-height: 250px; display: flex; flex-direction: column; gap: 14px;">
+        <!-- Dynamically rendered -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 14px;">
+        <button id="btnInspectorRefresh" class="btn-outline" style="font-size: 12px; display: flex; align-items: center; gap: 6px;">
+          <span>🔄 Re-Interrogate Device</span>
+        </button>
+        <button id="btnInspectorDone" class="btn-primary" style="padding: 8px 18px; font-size: 12px;">
+          Done
         </button>
       </div>
     </div>
