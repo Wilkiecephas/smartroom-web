@@ -4255,19 +4255,19 @@ class SmartRoomApp {
     const hwPulse = document.getElementById('hwPulseIndicator');
     if (hwMasterBadge) {
       if (isBreach && isMotion) {
-        hwMasterBadge.textContent = '🚨 MULTI-SENSOR TRIGGER: PROXIMITY & MOTION DETECTED';
+        hwMasterBadge.textContent = '🚨 MULTI-SENSOR TRIGGER: PROXIMITY & INTRUSION • SIREN FLASHING';
         hwMasterBadge.className = 'metric-badge badge-danger';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
       } else if (isBreach) {
-        hwMasterBadge.textContent = '🚨 ULTRASONIC BREACH (<20cm) • ALARM SOUNDING';
+        hwMasterBadge.textContent = '🚨 ULTRASONIC BREACH (<20cm) • MULTI-COLOR SIREN FLASHING';
         hwMasterBadge.className = 'metric-badge badge-danger';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
       } else if (isMotion) {
-        hwMasterBadge.textContent = isIrTriggered ? '👁️ IR BEAM BROKEN (D6) • INTRUSION DETECTED' : '🏃 MOTION / ROTATION DETECTED';
+        hwMasterBadge.textContent = isIrTriggered ? '🚨 IR INTRUSION DETECTED (D6) • SIREN FLASHING' : '🏃 MOTION / ROTATION DETECTED • SIREN FLASHING';
         hwMasterBadge.className = 'metric-badge badge-warning';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
       } else {
-        hwMasterBadge.textContent = 'ALL HARDWARE CLEAR • ROOM SECURE';
+        hwMasterBadge.textContent = 'ALL HARDWARE CLEAR • 5s GREEN BEACON ACTIVE';
         hwMasterBadge.className = 'metric-badge badge-normal';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator';
       }
@@ -4278,10 +4278,10 @@ class SmartRoomApp {
     const dotRed = document.getElementById('ledDotRed');
     const txtRed = document.getElementById('ledStateRedText');
     if (boxRed && dotRed && txtRed) {
-      if (isRed) {
+      if (isBreach || isMotion) {
         boxRed.className = 'hw-led-box active-red';
         dotRed.className = 'hw-led-dot red active pulse';
-        txtRed.textContent = 'ACTIVE (BREACH)';
+        txtRed.textContent = 'SIREN STROBE';
         txtRed.style.color = 'var(--accent-rose)';
       } else {
         boxRed.className = 'hw-led-box';
@@ -4295,16 +4295,16 @@ class SmartRoomApp {
     const dotGreen = document.getElementById('ledDotGreen');
     const txtGreen = document.getElementById('ledStateGreenText');
     if (boxGreen && dotGreen && txtGreen) {
-      if (isGreen) {
+      if (!isBreach && !isMotion) {
         boxGreen.className = 'hw-led-box active-green';
-        dotGreen.className = 'hw-led-dot green active';
-        txtGreen.textContent = 'ACTIVE (SECURE)';
+        dotGreen.className = 'hw-led-dot green active pulse';
+        txtGreen.textContent = '5s BEACON PULSE';
         txtGreen.style.color = 'var(--accent-emerald)';
       } else {
-        boxGreen.className = 'hw-led-box';
-        dotGreen.className = 'hw-led-dot green';
-        txtGreen.textContent = 'OFF';
-        txtGreen.style.color = 'var(--text-dim)';
+        boxGreen.className = 'hw-led-box active-green';
+        dotGreen.className = 'hw-led-dot green active';
+        txtGreen.textContent = 'SIREN STROBE';
+        txtGreen.style.color = 'var(--accent-emerald)';
       }
     }
 
@@ -4312,10 +4312,10 @@ class SmartRoomApp {
     const dotBlue = document.getElementById('ledDotBlue');
     const txtBlue = document.getElementById('ledStateBlueText');
     if (boxBlue && dotBlue && txtBlue) {
-      if (isBlue) {
+      if (isBreach || isMotion) {
         boxBlue.className = 'hw-led-box active-blue';
         dotBlue.className = 'hw-led-dot blue active pulse';
-        txtBlue.textContent = 'ACTIVE (MOTION)';
+        txtBlue.textContent = 'SIREN STROBE';
         txtBlue.style.color = 'var(--accent-cyan)';
       } else {
         boxBlue.className = 'hw-led-box';
@@ -4332,12 +4332,12 @@ class SmartRoomApp {
       if (isBreach || isMotion) {
         boxD7.className = 'hw-led-box active-blue';
         dotD7.className = 'hw-led-dot blue active pulse';
-        txtD7.textContent = 'ALARM STROBE';
+        txtD7.textContent = 'SIREN 10Hz STROBE';
         txtD7.style.color = 'var(--accent-cyan)';
       } else {
         boxD7.className = 'hw-led-box';
         dotD7.className = 'hw-led-dot blue active pulse';
-        txtD7.textContent = 'HEARTBEAT PULSE';
+        txtD7.textContent = '5s BEACON SYNC';
         txtD7.style.color = 'var(--text-main)';
       }
     }
@@ -4353,7 +4353,7 @@ class SmartRoomApp {
     const pillIr = document.getElementById('pillHwIr');
     const txtIr = document.getElementById('txtHwIr');
     if (pillIr && txtIr) {
-      txtIr.textContent = isIrTriggered ? '🚨 Beam Broken' : 'Clear';
+      txtIr.textContent = isIrTriggered ? '🚨 INTRUSION DETECTED' : 'Beam Active (Secure)';
       pillIr.className = `hw-sensor-pill ${isIrTriggered ? 'triggered' : ''}`;
     }
 
