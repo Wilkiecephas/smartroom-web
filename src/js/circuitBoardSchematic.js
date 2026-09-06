@@ -92,9 +92,10 @@ export class CircuitBoardSchematic {
       }
       case 'pir_motion':
         return t.motion === 1 ? '3.30V (MOTION HIGH)' : '0.00V (SECURE LOW)';
+      case 'ir_intrusion':
+        return t.motion === 1 ? '0.04V (INTRUSION DETECTED)' : '3.30V (SECURE IDLE)';
       case 'ldr_light': {
-        const v = Math.min(3.3, ((t.light || 620) / 4095 * 3.3)).toFixed(2);
-        return `${v}V (ADC)`;
+        return '0.00V (DISCONNECTED)';
       }
       case 'lm35_temp': {
         const temp = t.temperature || 24.2;

@@ -126,15 +126,25 @@ export const DEFAULT_SENSOR_MAPPING = {
     instructions: 'Controls Blue LED element on 9-in-1 shield. High indicates motion triggered.',
     status: 'healthy'
   },
+  ir_intrusion: {
+    id: 'ir_intrusion',
+    name: 'IR Intrusion Receiver (D6)',
+    pin: 'D6',
+    signalType: 'digital_input',
+    voltageReq: '5V Tolerant (Active-LOW)',
+    hotkey: 'i',
+    instructions: 'Built-in on 9-in-1 shield at pin D6. Active-LOW infrared receiver for room security and intrusion detection.',
+    status: 'healthy'
+  },
   ldr_light: {
     id: 'ldr_light',
-    name: 'LDR Ambient Light Sensor',
+    name: 'LDR Light Sensor (A1 - Disconnected)',
     pin: 'A1',
     signalType: 'analog_input',
-    voltageReq: '0 - 3.3V Analog ADC',
+    voltageReq: 'Disconnected',
     hotkey: 'p',
-    instructions: 'Built-in on 9-in-1 shield at pin A1. Measures room illumination through voltage divider circuit.',
-    status: 'healthy'
+    instructions: 'Disconnected per hardware calibration to protect Spark Core 3.3V ADC reference rail from 5V pullup distortion.',
+    status: 'inactive'
   },
   lm35_temp: {
     id: 'lm35_temp',
