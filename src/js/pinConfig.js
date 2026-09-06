@@ -138,13 +138,13 @@ export const DEFAULT_SENSOR_MAPPING = {
   },
   ldr_light: {
     id: 'ldr_light',
-    name: 'LDR Light Sensor (A1 - Disconnected)',
+    name: 'LDR Light Sensor (A1)',
     pin: 'A1',
     signalType: 'analog_input',
-    voltageReq: 'Disconnected',
+    voltageReq: '0 - 3.3V Analog ADC',
     hotkey: 'p',
-    instructions: 'Disconnected per hardware calibration to protect Spark Core 3.3V ADC reference rail from 5V pullup distortion.',
-    status: 'inactive'
+    instructions: 'Built-in on 9-in-1 shield at pin A1. Senses ambient light levels and room darkness.',
+    status: 'healthy'
   },
   lm35_temp: {
     id: 'lm35_temp',

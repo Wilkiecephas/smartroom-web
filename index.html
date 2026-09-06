@@ -379,27 +379,62 @@
             <span id="compactTsPill" class="cloud-pill online clickable-pill" role="button" tabindex="0" title="Click to Sync ThingSpeak Feed"><span class="dot"></span> <span id="textTsPill">ThingSpeak: OK</span></span>
           </div>
         </div>
-        <div class="compact-sentinel-actions">
-          <button id="compactBtnAutoGather" class="btn-compact-action auto-gather-btn" title="Auto-detect connected sensors and create pin mapping">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>Auto-Gather</span>
-          </button>
-          <button id="compactBtnEditSensors" class="btn-compact-action edit-sensors-btn" title="Edit sensor models, pin mapping & calibration">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-            <span>Edit Sensors</span>
-          </button>
-          <button id="compactBtnSilence" class="btn-compact-action silence-btn" title="Silence active alarm buzzer">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-            <span id="compactSilenceBtnText">Silence</span>
-          </button>
-          <button id="compactBtnInstallApp" class="btn-compact-action install-app-btn" title="Install Web App for standalone launch & fast desktop/mobile access">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Install App</span>
-          </button>
-          <button id="compactBtnTestBuzzer" class="btn-compact-action test-buzzer-btn" title="Test shield hardware buzzer sound">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
-            <span id="compactTestSoundText">Test Sound</span>
-          </button>
+        <!-- Top Center Panel: LIVE HARDWARE TRIGGER & LED LIGHT MONITOR (Moved to top per user request) -->
+        <div class="compact-hardware-monitor-panel" id="hardwareTriggerSection" style="flex: 1 1 auto; background: rgba(13, 21, 39, 0.65); border: 1px solid rgba(0, 242, 254, 0.25); border-radius: var(--radius-md); padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="hw-pulse-indicator" id="hwPulseIndicator"></div>
+              <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.05em; color: var(--text-main);">LIVE HARDWARE TRIGGER &amp; LED LIGHT MONITOR</span>
+            </div>
+            <div id="hwMasterStatusBadge" class="metric-badge badge-normal" style="font-size: 10px; padding: 2px 8px;">ALL HARDWARE CLEAR • ROOM SECURE</div>
+          </div>
+
+          <!-- Interactive LED Status Lights -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <!-- Red LED -->
+            <div class="hw-led-box" id="ledBoxRed" style="padding: 6px 8px;">
+              <div class="hw-led-dot red" id="ledDotRed"></div>
+              <div class="hw-led-info">
+                <span class="hw-led-name" style="font-size: 9px;">RED (A5)</span>
+                <span class="hw-led-state" id="ledStateRedText" style="font-size: 10px;">OFF</span>
+              </div>
+            </div>
+            <!-- Green LED -->
+            <div class="hw-led-box active-green" id="ledBoxGreen" style="padding: 6px 8px;">
+              <div class="hw-led-dot green active" id="ledDotGreen"></div>
+              <div class="hw-led-info">
+                <span class="hw-led-name" style="font-size: 9px;">GREEN (A6)</span>
+                <span class="hw-led-state" id="ledStateGreenText" style="font-size: 10px;">ACTIVE</span>
+              </div>
+            </div>
+            <!-- Blue LED -->
+            <div class="hw-led-box" id="ledBoxBlue" style="padding: 6px 8px;">
+              <div class="hw-led-dot blue" id="ledDotBlue"></div>
+              <div class="hw-led-info">
+                <span class="hw-led-name" style="font-size: 9px;">BLUE (A7)</span>
+                <span class="hw-led-state" id="ledStateBlueText" style="font-size: 10px;">OFF</span>
+              </div>
+            </div>
+            <!-- Onboard Blue LED (D7) -->
+            <div class="hw-led-box active-blue" id="ledBoxD7" style="padding: 6px 8px;">
+              <div class="hw-led-dot blue active pulse" id="ledDotD7"></div>
+              <div class="hw-led-info">
+                <span class="hw-led-name" style="font-size: 9px;">ONBOARD (D7)</span>
+                <span class="hw-led-state" id="ledStateD7Text" style="font-size: 10px;">HEARTBEAT</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sensor Trigger Quick Status Pills -->
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 10px;">
+            <div class="hw-sensor-pill" id="pillHwDist">📡 HC-SR04: <span id="txtHwDist">223 cm (Normal)</span></div>
+            <div class="hw-sensor-pill" id="pillHwIr">👁️ IR D6: <span id="txtHwIr">Beam Active (Secure)</span></div>
+            <div class="hw-sensor-pill" id="pillHwPir">🏃 PIR D3: <span id="txtHwPir">Standby</span></div>
+            <div class="hw-sensor-pill" id="pillHwLdr">☀️ LDR A1: <span id="txtHwLdr">💡 Ambient</span></div>
+            <div class="hw-sensor-pill" id="pillHwPot">🎛️ POT A0: <span id="txtHwPot">50%</span></div>
+            <div class="hw-sensor-pill" id="pillHwBuzzer">🔊 Buzzer D5: <span id="txtHwBuzzer">Silent</span></div>
+            <div class="hw-sensor-pill" id="pillHwTemp">🌡️ DHT11: <span id="txtHwTemp">29.0°C / 54%</span></div>
+          </div>
         </div>
 
         <!-- Sensor Summary & Health Brief Tab (Positioned to the right of top notification actions) -->
