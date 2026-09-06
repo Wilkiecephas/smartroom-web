@@ -4234,6 +4234,167 @@ class SmartRoomApp {
       const timeStr = new Date().toLocaleTimeString();
       this.dom.compactTickerContent.textContent = `[${timeStr}] Temp: ${(data.temperature || 24).toFixed(1)}°C | Hum: ${(data.humidity || 55).toFixed(1)}% (DHT11) | Sonar Radar: ${(data.distance || 150).toFixed(0)}cm | Room: ${isMotion ? 'OCCUPIED' : 'CLEAR'}`;
     }
+
+    // Update Live Hardware Trigger & LED Light Monitor
+    this.updateHardwareStatusAndLeds(data);
+  }
+
+  updateHardwareStatusAndLeds(data) {
+    if (!data) return;
+
+    const isBreach = data.isProximity || (data.distance > 0 && data.distance < 50);
+    const isMotion = data.motion === 1 || data.isMotion;
+    const isRed = data.isLedRedOn !== undefined ? data.isLedRedOn : isBreach;
+    const isGreen = data.isLedGreenOn !== undefined ? data.isLedGreenOn : (!isBreach && !isMotion);
+    const isBlue = data.isLedBlueOn !== undefined ? data.isLedBlueOn : (isMotion && !isBreach);
+    const isD7 = data.isLedD7On !== undefined ? data.isLedD7On : (isBreach || isMotion);
+    const isIrTriggered = data.isIrBroken || (data.rawMotionMask && (data.rawMotionMask & 128) !== 0);
+
+    // 1. Master Trigger Status Badge
+    const hwMasterBadge = document.getElementById('hwMasterStatusBadge');
+    const hwPulse = document.getElementById('hwPulseIndicator');
+    if (hwMasterBadge) {
+      if (isBreach && isMotion) {
+        hwMasterBadge.textContent = '🚨 MULTI-SENSOR TRIGGER: PROXIMITY & MOTION DETECTED';
+        hwMasterBadge.className = 'metric-badge badge-danger';
+        if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
+      } else if (isBreach) {
+        hwMasterBadge.textContent = '🚨 ULTRASONIC BREACH (<50cm) • ALARM SOUNDING';
+        hwMasterBadge.className = 'metric-badge badge-danger';
+        if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
+      } else if (isMotion) {
+        hwMasterBadge.textContent = isIrTriggered ? '👁️ IR BEAM BROKEN (D6) • INTRUSION DETECTED' : '🏃 PIR MOTION DETECTED (D3)';
+        hwMasterBadge.className = 'metric-badge badge-warning';
+        if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
+      } else {
+        hwMasterBadge.textContent = 'ALL HARDWARE CLEAR • ROOM SECURE';
+        hwMasterBadge.className = 'metric-badge badge-normal';
+        if (hwPulse) hwPulse.className = 'hw-pulse-indicator';
+      }
+    }
+
+    // 2. LED Status Boxes
+    const boxRed = document.getElementById('ledBoxRed');
+    const dotRed = document.getElementById('ledDotRed');
+    const txtRed = document.getElementById('ledStateRedText');
+    if (boxRed && dotRed && txtRed) {
+      if (isRed) {
+        boxRed.className = 'hw-led-box active-red';
+        dotRed.className = 'hw-led-dot red active pulse';
+        txtRed.textContent = 'ACTIVE (BREACH)';
+        txtRed.style.color = 'var(--accent-rose)';
+      } else {
+        boxRed.className = 'hw-led-box';
+        dotRed.className = 'hw-led-dot red';
+        txtRed.textContent = 'OFF';
+        txtRed.style.color = 'var(--text-dim)';
+      }
+    }
+
+    const boxGreen = document.getElementById('ledBoxGreen');
+    const dotGreen = document.getElementById('ledDotGreen');
+    const txtGreen = document.getElementById('ledStateGreenText');
+    if (boxGreen && dotGreen && txtGreen) {
+      if (isGreen) {
+        boxGreen.className = 'hw-led-box active-green';
+        dotGreen.className = 'hw-led-dot green active';
+        txtGreen.textContent = 'ACTIVE (SECURE)';
+        txtGreen.style.color = 'var(--accent-emerald)';
+      } else {
+        boxGreen.className = 'hw-led-box';
+        dotGreen.className = 'hw-led-dot green';
+        txtGreen.textContent = 'OFF';
+        txtGreen.style.color = 'var(--text-dim)';
+      }
+    }
+
+    const boxBlue = document.getElementById('ledBoxBlue');
+    const dotBlue = document.getElementById('ledDotBlue');
+    const txtBlue = document.getElementById('ledStateBlueText');
+    if (boxBlue && dotBlue && txtBlue) {
+      if (isBlue) {
+        boxBlue.className = 'hw-led-box active-blue';
+        dotBlue.className = 'hw-led-dot blue active pulse';
+        txtBlue.textContent = 'ACTIVE (MOTION)';
+        txtBlue.style.color = 'var(--accent-cyan)';
+      } else {
+        boxBlue.className = 'hw-led-box';
+        dotBlue.className = 'hw-led-dot blue';
+        txtBlue.textContent = 'OFF';
+        txtBlue.style.color = 'var(--text-dim)';
+      }
+    }
+
+    const boxD7 = document.getElementById('ledBoxD7');
+    const dotD7 = document.getElementById('ledDotD7');
+    const txtD7 = document.getElementById('ledStateD7Text');
+    if (boxD7 && dotD7 && txtD7) {
+      if (isBreach || isMotion) {
+        boxD7.className = 'hw-led-box active-blue';
+        dotD7.className = 'hw-led-dot blue active pulse';
+        txtD7.textContent = 'ALARM STROBE';
+        txtD7.style.color = 'var(--accent-cyan)';
+      } else {
+        boxD7.className = 'hw-led-box';
+        dotD7.className = 'hw-led-dot blue active pulse';
+        txtD7.textContent = 'HEARTBEAT PULSE';
+        txtD7.style.color = 'var(--text-main)';
+      }
+    }
+
+    // 3. Sensor Trigger Quick Pills
+    const pillDist = document.getElementById('pillHwDist');
+    const txtDist = document.getElementById('txtHwDist');
+    if (pillDist && txtDist) {
+      txtDist.textContent = `${(data.distance || 150).toFixed(0)} cm ${isBreach ? '(🚨 BREACH)' : '(Normal)'}`;
+      pillDist.className = `hw-sensor-pill ${isBreach ? 'triggered' : ''}`;
+    }
+
+    const pillIr = document.getElementById('pillHwIr');
+    const txtIr = document.getElementById('txtHwIr');
+    if (pillIr && txtIr) {
+      txtIr.textContent = isIrTriggered ? '🚨 Beam Broken' : 'Clear';
+      pillIr.className = `hw-sensor-pill ${isIrTriggered ? 'triggered' : ''}`;
+    }
+
+    const pillPir = document.getElementById('pillHwPir');
+    const txtPir = document.getElementById('txtHwPir');
+    if (pillPir && txtPir) {
+      txtPir.textContent = isMotion ? '🏃 Triggered' : 'Standby';
+      pillPir.className = `hw-sensor-pill ${isMotion ? 'active-blue' : ''}`;
+    }
+
+    const pillBuzzer = document.getElementById('pillHwBuzzer');
+    const txtBuzzer = document.getElementById('txtHwBuzzer');
+    if (pillBuzzer && txtBuzzer) {
+      txtBuzzer.textContent = (isBreach || isMotion) ? '🚨 Sounding Alarm' : 'Silent';
+      pillBuzzer.className = `hw-sensor-pill ${(isBreach || isMotion) ? 'triggered' : ''}`;
+    }
+
+    const txtTemp = document.getElementById('txtHwTemp');
+    if (txtTemp) {
+      txtTemp.textContent = `${(data.temperature || 25).toFixed(1)}°C / ${(data.humidity || 50).toFixed(0)}%`;
+    }
+
+    // 4. Update New Metric Cards
+    const valIr = document.getElementById('valIrState');
+    const badgeIr = document.getElementById('badgeIrState');
+    const cardIr = document.getElementById('cardMetricIr');
+    if (valIr && badgeIr) {
+      if (isIrTriggered || isMotion) {
+        valIr.textContent = 'INTRUSION';
+        valIr.style.color = 'var(--accent-rose)';
+        badgeIr.textContent = 'BEAM BROKEN';
+        badgeIr.className = 'metric-badge badge-danger';
+        if (cardIr) cardIr.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+      } else {
+        valIr.textContent = 'SECURE';
+        valIr.style.color = 'var(--text-main)';
+        badgeIr.textContent = 'BEAM ACTIVE';
+        badgeIr.className = 'metric-badge badge-normal';
+        if (cardIr) cardIr.style.borderColor = '';
+      }
+    }
   }
 
   initViewModeUi() {

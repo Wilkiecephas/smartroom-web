@@ -175,7 +175,16 @@ export class ParticleApi {
       const temperature = temp !== null ? Number(temp) : this.lastGoodReadings.temperature;
       const humidity = hum !== null ? Number(hum) : this.lastGoodReadings.humidity;
       const distance = dist !== null ? Number(dist) : this.lastGoodReadings.distance;
-      const motionVal = motion !== null ? Number(motion) : this.lastGoodReadings.motion;
+      const rawMotion = motion !== null ? Number(motion) : this.lastGoodReadings.rawMotionMask || 0;
+      const isMotion = (rawMotion & 1) !== 0;
+      const isProximity = (rawMotion & 2) !== 0 || (distance > 0 && distance < 50);
+      const isBuzzerOn = (rawMotion & 4) !== 0 || isProximity;
+      const isLedD7On = (rawMotion & 8) !== 0 || isProximity || isMotion;
+      const isLedRedOn = (rawMotion & 16) !== 0 || isProximity;
+      const isLedGreenOn = (rawMotion & 32) !== 0 || (!isProximity && !isMotion);
+      const isLedBlueOn = (rawMotion & 64) !== 0 || (isMotion && !isProximity);
+      const isIrBroken = (rawMotion & 128) !== 0;
+      const isPirTriggered = (rawMotion & 256) !== 0;
       
       // Calculate realistic ambient light with gentle fluctuation
       const lightVal = 650 + Math.floor(Math.sin(Date.now() / 10000) * 35) + Math.floor(Math.random() * 8);
@@ -184,7 +193,16 @@ export class ParticleApi {
         temperature,
         humidity,
         distance,
-        motion: motionVal,
+        motion: isMotion ? 1 : 0,
+        rawMotionMask: rawMotion,
+        isProximity,
+        isBuzzerOn,
+        isLedD7On,
+        isLedRedOn,
+        isLedGreenOn,
+        isLedBlueOn,
+        isIrBroken,
+        isPirTriggered,
         light: lightVal,
         timestamp: Date.now()
       };
