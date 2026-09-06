@@ -4242,7 +4242,7 @@ class SmartRoomApp {
   updateHardwareStatusAndLeds(data) {
     if (!data) return;
 
-    const isBreach = data.isProximity || (data.distance > 0 && data.distance < 50);
+    const isBreach = data.isProximity || (data.distance > 0 && data.distance < 20); // 20cm threshold per user request
     const isMotion = data.motion === 1 || data.isMotion;
     const isRed = data.isLedRedOn !== undefined ? data.isLedRedOn : isBreach;
     const isGreen = data.isLedGreenOn !== undefined ? data.isLedGreenOn : (!isBreach && !isMotion);
@@ -4259,11 +4259,11 @@ class SmartRoomApp {
         hwMasterBadge.className = 'metric-badge badge-danger';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
       } else if (isBreach) {
-        hwMasterBadge.textContent = '🚨 ULTRASONIC BREACH (<50cm) • ALARM SOUNDING';
+        hwMasterBadge.textContent = '🚨 ULTRASONIC BREACH (<20cm) • ALARM SOUNDING';
         hwMasterBadge.className = 'metric-badge badge-danger';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
       } else if (isMotion) {
-        hwMasterBadge.textContent = isIrTriggered ? '👁️ IR BEAM BROKEN (D6) • INTRUSION DETECTED' : '🏃 PIR MOTION DETECTED (D3)';
+        hwMasterBadge.textContent = isIrTriggered ? '👁️ IR BEAM BROKEN (D6) • INTRUSION DETECTED' : '🏃 MOTION / ROTATION DETECTED';
         hwMasterBadge.className = 'metric-badge badge-warning';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
       } else {

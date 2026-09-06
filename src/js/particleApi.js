@@ -177,7 +177,7 @@ export class ParticleApi {
       const distance = dist !== null ? Number(dist) : this.lastGoodReadings.distance;
       const rawMotion = motion !== null ? Number(motion) : this.lastGoodReadings.rawMotionMask || 0;
       const isMotion = (rawMotion & 1) !== 0;
-      const isProximity = (rawMotion & 2) !== 0 || (distance > 0 && distance < 50);
+      const isProximity = (rawMotion & 2) !== 0 || (distance > 0 && distance < 20); // 20cm per user request
       const isBuzzerOn = (rawMotion & 4) !== 0 || isProximity;
       const isLedD7On = (rawMotion & 8) !== 0 || isProximity || isMotion;
       const isLedRedOn = (rawMotion & 16) !== 0 || isProximity;
@@ -185,9 +185,14 @@ export class ParticleApi {
       const isLedBlueOn = (rawMotion & 64) !== 0 || (isMotion && !isProximity);
       const isIrBroken = (rawMotion & 128) !== 0;
       const isPirTriggered = (rawMotion & 256) !== 0;
-      
-      // Calculate realistic ambient light with gentle fluctuation
-      const lightVal = 650 + Math.floor(Math.sin(Date.now() / 10000) * 35) + Math.floor(Math.random() * 8);
+      const isRotationTriggered = (rawMotion & 512) !== 0;
+      const isLdrShadow = (rawMotion & 1024) !== 0;
+
+      // Unpack 10-bit scaled LDR light (bits 11-20) and Pot rotation (bits 21-30)
+      const rawLight10 = (rawMotion >> 11) & 0x3FF;
+      const rawPot10 = (rawMotion >> 21) & 0x3FF;
+      const lightVal = rawLight10 > 0 ? (rawLight10 * 4) : (this.lastGoodReadings.light || 800);
+      const potVal = rawPot10 > 0 ? (rawPot10 * 4) : (this.lastGoodReadings.pot || 2048);
 
       const snapshot = {
         temperature,
@@ -203,7 +208,10 @@ export class ParticleApi {
         isLedBlueOn,
         isIrBroken,
         isPirTriggered,
+        isRotationTriggered,
+        isLdrShadow,
         light: lightVal,
+        pot: potVal,
         timestamp: Date.now()
       };
 
