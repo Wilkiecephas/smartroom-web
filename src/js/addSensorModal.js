@@ -11,6 +11,7 @@ export class AddSensorModal {
     this.openBtn = document.getElementById('btnHeaderAddDevice'); // reuse existing Add Device button
     this.closeBtn = this.modal?.querySelector('.modal-close');
     this.setupListeners();
+    this.setupTypeToggle();
   }
 
   setupListeners() {
