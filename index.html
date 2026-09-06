@@ -868,13 +868,38 @@
       <!-- PIR Motion Detection Status -->
       <div class="metric-card">
         <div class="metric-label">
-          <span>PIR MOTION</span>
+          <span>MOTION (PIR/IR)</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </div>
         <div class="metric-value-container">
           <span id="valMotion" class="metric-value">CLEAR</span>
         </div>
         <span id="badgeMotion" class="metric-badge badge-normal">AREA SECURE</span>
+      </div>
+
+      <!-- IR Intrusion Sensor (D6) -->
+      <div class="metric-card" id="cardMetricIr">
+        <div class="metric-label">
+          <span>IR INTRUSION (D6)</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24M14.83 14.83l4.24 4.24M14.83 9.17l4.24-4.24M4.93 19.07l4.24-4.24"/></svg>
+        </div>
+        <div class="metric-value-container">
+          <span id="valIrState" class="metric-value">SECURE</span>
+        </div>
+        <span id="badgeIrState" class="metric-badge badge-normal">BEAM ACTIVE</span>
+      </div>
+
+      <!-- Potentiometer Analog Level (A0) -->
+      <div class="metric-card" id="cardMetricPot">
+        <div class="metric-label">
+          <span>POTENTIOMETER (A0)</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        </div>
+        <div class="metric-value-container">
+          <span id="valPotLevel" class="metric-value">50</span>
+          <span class="metric-unit">%</span>
+        </div>
+        <span id="badgePotLevel" class="metric-badge badge-normal">2048 ADC</span>
       </div>
 
       <!-- Sonar Radar Brief Menu Card (Pure Visual Scope & Target Location: No Numbers, No Words) -->
