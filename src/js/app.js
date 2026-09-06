@@ -1,7 +1,7 @@
 /**
  * Master Application Controller: Universal IoT Hardware Platform
  * Coordinates Multi-MCU Architecture, WebUSB & WebSerial, Sensor Calibration,
- * Port Line Pinging, Audio Synthesizer, and Cloud Telemetry.
+ * Port Line Pinging, Audio Synthesizer, Cloud Telemetry, and Universal IoT Gateway.
  */
 
 import { audioEngine } from './audioEngine.js';
@@ -25,6 +25,11 @@ import { TEKSTEP_INFO, renderAboutModalHtml } from './aboutTekstep.js';
 import { deviceRegistry, AVAILABLE_SENSORS_CATALOG } from './deviceRegistry.js';
 import { circuitBoardSchematic } from './circuitBoardSchematic.js';
 import { pwaManager } from './pwaManager.js';
+import { iotGateway } from './iotGateway.js';
+import { aiEngine } from './aiEngine.js';
+import { supabaseService, SUPABASE_SQL_SCHEMA } from './supabaseClient.js';
+import { hardwareConnectGuide } from './hardwareConnectGuide.js';
+
 
 class SmartRoomApp {
   constructor() {
@@ -73,6 +78,8 @@ class SmartRoomApp {
     this.initTopMenuToggleUi();
     this.initTopSubMenusUi();
     this.initDeviceRegistryUi();
+    this.initAccountSystemUi();
+    this.initColorModeUi();
     this.initBriefSummaryAndHealthUi();
     this.initCircuitBoardSchematics();
     this.initViewModeUi();
@@ -80,15 +87,20 @@ class SmartRoomApp {
     this.initPwaUi();
     this.initSilenceAlarmsUi();
     this.initBoardPingUi();
+    this.initAiEngineUi();
+    this.initIotGateway();
     this.renderPingDetailsTable();
     this.renderBoardPingMatrix();
     this.updateBriefSummaryStats();
     this.updateHeaderBoardStatus();
     homeConfig.applyBranding();
+    hardwareConnectGuide.init();
+    this.initFloatingCornerBrand();
+
 
     // Start in Live mode by default
     this.switchMode('live');
-    this.log('Smart IoT Hub Initialized &bull; Built by TekStep Apps Uganda 🇺🇬', 'success');
+    this.log('Smart IoT Hub Initialized • Universal IoT Platform • Built by TekStep Apps Uganda 🇺🇬', 'success');
   }
 
   cacheDom() {
@@ -528,6 +540,101 @@ class SmartRoomApp {
     this.dom.modalProjectNameText   = document.getElementById('modalProjectNameText');
     this.dom.btnModalNewProject     = document.getElementById('btnModalNewProject');
     this.dom.btnModalRestoreSpark   = document.getElementById('btnModalRestoreSpark');
+
+    // Dynamic Sensor Grid (Universal IoT — custom device sensor cards)
+    this.dom.dynamicSensorGrid      = document.getElementById('dynamicSensorGrid');
+
+    // Add Device Modal — new connection type inputs
+    this.dom.inputAddRestName       = document.getElementById('inputAddRestName');
+    this.dom.inputAddRestEndpoint   = document.getElementById('inputAddRestEndpoint');
+    this.dom.inputAddRestInterval   = document.getElementById('inputAddRestInterval');
+    this.dom.textareaAddRestSchema  = document.getElementById('textareaAddRestSchema');
+    this.dom.btnSubmitAddRest       = document.getElementById('btnSubmitAddRest');
+
+    this.dom.inputAddWsName         = document.getElementById('inputAddWsName');
+    this.dom.inputAddWsEndpoint     = document.getElementById('inputAddWsEndpoint');
+    this.dom.textareaAddWsSchema    = document.getElementById('textareaAddWsSchema');
+    this.dom.btnSubmitAddWs         = document.getElementById('btnSubmitAddWs');
+
+    this.dom.inputAddMqttName       = document.getElementById('inputAddMqttName');
+    this.dom.inputAddMqttBroker     = document.getElementById('inputAddMqttBroker');
+    this.dom.inputAddMqttTopic      = document.getElementById('inputAddMqttTopic');
+    this.dom.btnSubmitAddMqtt       = document.getElementById('btnSubmitAddMqtt');
+
+    this.dom.inputAutoDiscoverJson  = document.getElementById('inputAutoDiscoverJson');
+    this.dom.btnAutoDiscoverApply   = document.getElementById('btnAutoDiscoverApply');
+    this.dom.selectFirmwareLang     = document.getElementById('selectFirmwareLang');
+    this.dom.autoDiscoverSnippet    = document.getElementById('autoDiscoverSnippet');
+    this.dom.btnCopyRegSnippet      = document.getElementById('btnCopyRegSnippet');
+    this.dom.btnListenForDevices    = document.getElementById('btnListenForDevices');
+    this.dom.autoDiscoverStatusText = document.getElementById('autoDiscoverStatusText');
+
+    // AI & Intelligence Panel
+    this.dom.modalAiPanel           = document.getElementById('modalAiPanel');
+    this.dom.btnOpenAiPanel         = document.getElementById('btnOpenAiPanel');
+    this.dom.btnCloseAiPanel        = document.getElementById('btnCloseAiPanel');
+    this.dom.chkAiAnomaly           = document.getElementById('chkAiAnomaly');
+    this.dom.chkAiTrend             = document.getElementById('chkAiTrend');
+    this.dom.aiAnomalyLog           = document.getElementById('aiAnomalyLog');
+    this.dom.aiChatMessages         = document.getElementById('aiChatMessages');
+    this.dom.inputAiChat            = document.getElementById('inputAiChat');
+    this.dom.btnAiChatSend          = document.getElementById('btnAiChatSend');
+    this.dom.inputAiApiKey          = document.getElementById('inputAiApiKey');
+    this.dom.selectAiProvider       = document.getElementById('selectAiProvider');
+    this.dom.btnSaveAiSettings      = document.getElementById('btnSaveAiSettings');
+    this.dom.aiTrendChannel         = document.getElementById('aiTrendChannel');
+    this.dom.aiTrendResult          = document.getElementById('aiTrendResult');
+    this.dom.btnGetTrend            = document.getElementById('btnGetTrend');
+
+    // Account & Supabase Elements
+    this.dom.btnOpenAccount         = document.getElementById('btnOpenAccount');
+    this.dom.btnSubMenuAccount      = document.getElementById('btnSubMenuAccount');
+    this.dom.mBtnAccount            = document.getElementById('mBtnAccount');
+    this.dom.modalAccount           = document.getElementById('modalAccount');
+    this.dom.btnCloseAccountModal   = document.getElementById('btnCloseAccountModal');
+    this.dom.userAvatarBadge        = document.getElementById('userAvatarBadge');
+    this.dom.userAccountName        = document.getElementById('userAccountName');
+    this.dom.userCloudIndicator     = document.getElementById('userCloudIndicator');
+    this.dom.accountProfileName     = document.getElementById('accountProfileName');
+    this.dom.accountProfileEmail    = document.getElementById('accountProfileEmail');
+    this.dom.accountProfileBadge    = document.getElementById('accountProfileBadge');
+    this.dom.accountDeviceCount     = document.getElementById('accountDeviceCount');
+    this.dom.cardSwitchWilkie       = document.getElementById('cardSwitchWilkie');
+    this.dom.cardSwitchGuest        = document.getElementById('cardSwitchGuest');
+    this.dom.btnSwitchToWilkie      = document.getElementById('btnSwitchToWilkie');
+    this.dom.btnSwitchToGuest       = document.getElementById('btnSwitchToGuest');
+    this.dom.btnSignOutAccount      = document.getElementById('btnSignOutAccount');
+    this.dom.inputAuthFullName      = document.getElementById('inputAuthFullName');
+    this.dom.inputAuthEmail         = document.getElementById('inputAuthEmail');
+    this.dom.inputAuthPassword      = document.getElementById('inputAuthPassword');
+    this.dom.btnAuthSignIn          = document.getElementById('btnAuthSignIn');
+    this.dom.btnAuthSignUp          = document.getElementById('btnAuthSignUp');
+    this.dom.authStatusMessage      = document.getElementById('authStatusMessage');
+    this.dom.inputSupabaseUrl       = document.getElementById('inputSupabaseUrl');
+    this.dom.inputSupabaseAnonKey   = document.getElementById('inputSupabaseAnonKey');
+    this.dom.btnTestSupabase        = document.getElementById('btnTestSupabase');
+    this.dom.btnSaveSupabaseConfig  = document.getElementById('btnSaveSupabaseConfig');
+    this.dom.supabaseStatusBadge    = document.getElementById('supabaseStatusBadge');
+    this.dom.supabaseSqlSnippet     = document.getElementById('supabaseSqlSnippet');
+    this.dom.btnCopySupabaseSql     = document.getElementById('btnCopySupabaseSql');
+
+    // Blank Workspace Elements
+    this.dom.blankWorkspaceState        = document.getElementById('blankWorkspaceState');
+    this.dom.blankWorkspaceUserGreeting = document.getElementById('blankWorkspaceUserGreeting');
+    this.dom.compactCommandLayout       = document.getElementById('compactCommandLayout');
+    this.dom.btnTogglePirAttached       = document.getElementById('btnTogglePirAttached');
+    this.dom.txtPirAttachedState        = document.getElementById('txtPirAttachedState');
+    this.dom.blankBtnAddSpark           = document.getElementById('blankBtnAddSpark');
+    this.dom.blankBtnAddSerial          = document.getElementById('blankBtnAddSerial');
+    this.dom.blankBtnAddRest            = document.getElementById('blankBtnAddRest');
+    this.dom.blankBtnAddWs              = document.getElementById('blankBtnAddWs');
+    this.dom.blankBtnSwitchWilkie       = document.getElementById('blankBtnSwitchWilkie');
+
+    // Color Mode (Light / Dark)
+    this.dom.btnToggleColorMode         = document.getElementById('btnToggleColorMode');
+    this.dom.iconColorMode              = document.getElementById('iconColorMode');
+    this.dom.mBtnTheme                  = document.getElementById('mBtnTheme');
+    this.dom.mIconTheme                 = document.getElementById('mIconTheme');
   }
 
   switchBoardProfile(boardId) {
@@ -797,90 +904,114 @@ class SmartRoomApp {
       this.dom.modalCalibration.classList.remove('active');
     });
 
-    // 8. Firmware Flasher Modal Events
-    this.dom.btnOpenFlasher.addEventListener('click', () => {
-      this.renderFirmwareFlasher();
-      this.dom.modalFlasher.classList.add('active');
-    });
-
-    this.dom.btnCloseFlasher.addEventListener('click', () => {
-      this.dom.modalFlasher.classList.remove('active');
-    });
-
-    this.dom.modalFlasher.querySelectorAll('.modal-tab-btn').forEach(tab => {
-      tab.addEventListener('click', () => {
-        this.dom.modalFlasher.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
-        this.dom.modalFlasher.querySelectorAll('.tab-content-pane').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        const target = document.getElementById(tab.getAttribute('data-tab'));
-        if (target) target.classList.add('active');
+    // 8. Universal Hardware Connect & Firmware Hub Events
+    if (this.dom.btnOpenFlasher) {
+      this.dom.btnOpenFlasher.addEventListener('click', () => {
+        hardwareConnectGuide.open('tabConnectArduino');
       });
-    });
+    }
 
-    this.dom.btnCopyGeneratedCode.addEventListener('click', () => {
-      navigator.clipboard.writeText(this.dom.txtGeneratedFirmware.value);
-      this.log('Universal firmware sketch copied to clipboard!', 'success');
-    });
+    if (this.dom.btnCloseFlasher) {
+      this.dom.btnCloseFlasher.addEventListener('click', () => {
+        hardwareConnectGuide.close();
+      });
+    }
 
-    this.dom.btnDownloadSketch.addEventListener('click', () => {
-      const board = pinConfig.getActiveBoard();
-      const isPy = board.firmwareType.includes('python');
-      const filename = `sentinel_${board.id}.${isPy ? 'py' : 'ino'}`;
-      const blob = new Blob([this.dom.txtGeneratedFirmware.value], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      this.log(`Downloaded firmware file: ${filename}`, 'success');
-    });
+    // Direct Code Generator Jump Buttons inside modalAddDevice
+    const btnLinkSpark = document.getElementById('btnLinkSparkToCode');
+    if (btnLinkSpark) {
+      btnLinkSpark.addEventListener('click', () => {
+        if (this.dom.modalAddDevice) this.dom.modalAddDevice.classList.remove('active');
+        hardwareConnectGuide.open('tabConnectSpark');
+      });
+    }
+    const btnLinkSerial = document.getElementById('btnLinkSerialToCode');
+    if (btnLinkSerial) {
+      btnLinkSerial.addEventListener('click', () => {
+        if (this.dom.modalAddDevice) this.dom.modalAddDevice.classList.remove('active');
+        hardwareConnectGuide.open('tabConnectArduino');
+      });
+    }
+    const btnLinkRest = document.getElementById('btnLinkRestToCode');
+    if (btnLinkRest) {
+      btnLinkRest.addEventListener('click', () => {
+        if (this.dom.modalAddDevice) this.dom.modalAddDevice.classList.remove('active');
+        hardwareConnectGuide.open('tabConnectEsp32');
+      });
+    }
+
+    if (this.dom.btnCopyGeneratedCode) {
+      this.dom.btnCopyGeneratedCode.addEventListener('click', () => {
+        navigator.clipboard.writeText(this.dom.txtGeneratedFirmware?.value || '');
+        this.log('Universal firmware sketch copied to clipboard!', 'success');
+      });
+    }
+
+    if (this.dom.btnDownloadSketch) {
+      this.dom.btnDownloadSketch.addEventListener('click', () => {
+        const board = pinConfig.getActiveBoard();
+        const isPy = board.firmwareType.includes('python');
+        const filename = `sentinel_${board.id}.${isPy ? 'py' : 'ino'}`;
+        const blob = new Blob([this.dom.txtGeneratedFirmware?.value || ''], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.log(`Downloaded firmware file: ${filename}`, 'success');
+      });
+    }
 
     // Drag & Drop Flashing
-    this.dom.flashDropZone.addEventListener('click', () => this.dom.inputFileFirmware.click());
-    this.dom.inputFileFirmware.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        this.handleFirmwareFile(e.target.files[0]);
-      }
-    });
+    if (this.dom.flashDropZone && this.dom.inputFileFirmware) {
+      this.dom.flashDropZone.addEventListener('click', () => this.dom.inputFileFirmware.click());
+      this.dom.inputFileFirmware.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          this.handleFirmwareFile(e.target.files[0]);
+        }
+      });
 
-    this.dom.flashDropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      this.dom.flashDropZone.classList.add('dragover');
-    });
+      this.dom.flashDropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        this.dom.flashDropZone.classList.add('dragover');
+      });
 
-    this.dom.flashDropZone.addEventListener('dragleave', () => {
-      this.dom.flashDropZone.classList.remove('dragover');
-    });
+      this.dom.flashDropZone.addEventListener('dragleave', () => {
+        this.dom.flashDropZone.classList.remove('dragover');
+      });
 
-    this.dom.flashDropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      this.dom.flashDropZone.classList.remove('dragover');
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        this.handleFirmwareFile(e.dataTransfer.files[0]);
-      }
-    });
+      this.dom.flashDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        this.dom.flashDropZone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          this.handleFirmwareFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
 
-    this.dom.btnStartFlashUsb.addEventListener('click', async () => {
-      if (!this.firmwareFileBuffer) return;
-      this.dom.btnStartFlashUsb.disabled = true;
-      this.dom.flashProgressBox.style.display = 'block';
-      this.dom.flashProgressText.style.display = 'block';
+    if (this.dom.btnStartFlashUsb) {
+      this.dom.btnStartFlashUsb.addEventListener('click', async () => {
+        if (!this.firmwareFileBuffer) return;
+        this.dom.btnStartFlashUsb.disabled = true;
+        if (this.dom.flashProgressBox) this.dom.flashProgressBox.style.display = 'block';
+        if (this.dom.flashProgressText) this.dom.flashProgressText.style.display = 'block';
 
-      try {
-        await webSerialManager.flashFirmware(this.firmwareFileBuffer, (pct, cur, total) => {
-          this.dom.flashProgressBar.style.width = `${pct}%`;
-          this.dom.flashProgressText.textContent = `Flashing ${pct}% (${cur}/${total} packets)...`;
-        });
-        this.dom.flashProgressText.textContent = '✅ Flashing 100% Complete! Verification Verified.';
-        this.log('Firmware successfully flashed to board via WebUSB!', 'success');
-      } catch (err) {
-        this.dom.flashProgressText.textContent = `❌ Flashing Failed: ${err.message}`;
-        this.log(`WebUSB Flash failed: ${err.message}`, 'error');
-      } finally {
-        this.dom.btnStartFlashUsb.disabled = false;
-      }
-    });
+        try {
+          await webSerialManager.flashFirmware(this.firmwareFileBuffer, (pct, cur, total) => {
+            if (this.dom.flashProgressBar) this.dom.flashProgressBar.style.width = `${pct}%`;
+            if (this.dom.flashProgressText) this.dom.flashProgressText.textContent = `Flashing ${pct}% (${cur}/${total} packets)...`;
+          });
+          if (this.dom.flashProgressText) this.dom.flashProgressText.textContent = '✅ Flashing 100% Complete! Verification Verified.';
+          this.log('Firmware successfully flashed to board via WebUSB!', 'success');
+        } catch (err) {
+          if (this.dom.flashProgressText) this.dom.flashProgressText.textContent = `❌ Flashing Failed: ${err.message}`;
+          this.log(`Flashing failed: ${err.message}`, 'danger');
+        } finally {
+          this.dom.btnStartFlashUsb.disabled = false;
+        }
+      });
+    }
 
     // 9. Standard App Controls (Tone presets, Mode, Pin Setup, Actuators)
     this.dom.btnModeLive.addEventListener('click', () => this.switchMode('live'));
@@ -2302,6 +2433,36 @@ class SmartRoomApp {
       this.dom.modalProjectNameText.textContent = projectName;
     }
 
+    const devices = deviceRegistry.getDevices();
+    const hasDevices = Boolean(active && devices.length > 0);
+
+    if (this.dom.blankWorkspaceState) {
+      if (!hasDevices) {
+        this.dom.blankWorkspaceState.style.display = 'block';
+        if (this.dom.compactCommandLayout) this.dom.compactCommandLayout.style.display = 'none';
+        if (this.dom.dynamicSensorGrid) this.dom.dynamicSensorGrid.style.display = 'none';
+        const user = supabaseService.getCurrentUser();
+        if (this.dom.blankWorkspaceUserGreeting) {
+          const name = user.fullName || user.email?.split('@')[0] || 'Developer';
+          this.dom.blankWorkspaceUserGreeting.textContent = `Welcome ${name}! Your developer workspace is currently empty. Connect your physical microcontroller, IP address, serial port, or custom REST API to start streaming live telemetry.`;
+        }
+      } else {
+        this.dom.blankWorkspaceState.style.display = 'none';
+        if (this.dom.compactMonitoringDashboard) this.dom.compactMonitoringDashboard.style.display = 'block';
+        if (this.dom.compactCommandLayout) this.dom.compactCommandLayout.style.display = 'grid';
+      }
+    }
+
+    if (this.dom.txtPirAttachedState) {
+      const isPirAttached = active ? (active.attachedSensors || []).includes('pir_motion') : false;
+      this.dom.txtPirAttachedState.textContent = isPirAttached ? '🔌 Wired' : '❌ Unplugged';
+      this.dom.txtPirAttachedState.style.color = isPirAttached ? 'var(--accent-cyan)' : 'var(--text-dim)';
+    }
+
+    if (this.dom.accountDeviceCount) {
+      this.dom.accountDeviceCount.textContent = `${devices.length} ${devices.length === 1 ? 'device' : 'devices'} active`;
+    }
+
     if (!active) {
       if (this.dom.activeDeviceName) {
         this.dom.activeDeviceName.textContent = 'No Connected Boards';
@@ -2618,6 +2779,7 @@ class SmartRoomApp {
                 this.dom.tsSyncIndicator.className = 'metric-badge badge-normal';
               }
               this.log(`ThingSpeak Telemetry Synced: Entry #${res.entryId} at ${res.timestamp}`, 'info');
+              // Telemetry sending is completely silent per user requirement
             }
           }
         }
@@ -2783,12 +2945,20 @@ class SmartRoomApp {
 
   renderFirmwareFlasher() {
     const board = pinConfig.getActiveBoard();
-    this.dom.flasherBoardBanner.innerHTML = `
-      Target Board: <strong>${board.name}</strong> (${board.arch}) &bull; <span style="color: var(--accent-emerald);">${board.voltage}</span>
-    `;
+    if (this.dom.flasherBoardBanner) {
+      this.dom.flasherBoardBanner.innerHTML = `
+        Target Board: <strong>${board.name}</strong> (${board.arch}) &bull; <span style="color: var(--accent-emerald);">${board.voltage}</span>
+      `;
+    }
 
     const code = generateBoardFirmware(board.id, pinConfig.mapping);
-    this.dom.txtGeneratedFirmware.value = code;
+    if (this.dom.txtGeneratedFirmware) {
+      this.dom.txtGeneratedFirmware.value = code;
+    }
+
+    if (typeof hardwareConnectGuide !== 'undefined' && hardwareConnectGuide.refreshAllCodes) {
+      hardwareConnectGuide.refreshAllCodes();
+    }
   }
 
   handleFirmwareFile(file) {
@@ -3163,6 +3333,9 @@ class SmartRoomApp {
     hardwareDiagnostics.updateLiveTelemetry(data, this.mode === 'live');
     circuitBoardSchematic.updateTelemetry(data);
 
+    // Feed AI engine (anomaly detection + trend analysis)
+    aiEngine.processTelemetry(data);
+
     // 1. Temperature (DHT11)
     const dhtEnabled = calibrationManager.isSensorEnabled('dht11');
     if (!dhtEnabled) {
@@ -3212,23 +3385,41 @@ class SmartRoomApp {
     }
 
     // 3. PIR Motion
-    const pirEnabled = calibrationManager.isSensorEnabled('pir_motion');
+    const activeDev = deviceRegistry.getActiveDevice();
+    const isPirAttached = activeDev ? (
+      (activeDev.attachedSensors || []).includes('pir_motion') &&
+      (activeDev.type !== 'spark_core' || activeDev.userWiredPir === true)
+    ) : false;
+    const pirEnabled = calibrationManager.isSensorEnabled('pir_motion') && isPirAttached;
     let isMotion = false;
-    if (!pirEnabled) {
-      this.dom.valMotion.textContent = 'OFF';
-      this.dom.valMotion.style.color = 'var(--text-dim)';
-      this.dom.badgeMotion.textContent = 'ISOLATED';
-      this.dom.badgeMotion.className = 'metric-badge';
-      this.dom.modPirState.textContent = 'ISOLATED';
-      this.dom.modPirState.style.color = 'var(--text-dim)';
+    if (!pirEnabled || !isPirAttached) {
+      isMotion = false; // Strictly false when PIR is not physically wired or enabled
+      if (this.dom.valMotion) {
+        this.dom.valMotion.textContent = 'UNWIRED';
+        this.dom.valMotion.style.color = 'var(--text-dim)';
+      }
+      if (this.dom.badgeMotion) {
+        this.dom.badgeMotion.textContent = 'DISCONNECTED';
+        this.dom.badgeMotion.className = 'metric-badge';
+      }
+      if (this.dom.modPirState) {
+        this.dom.modPirState.textContent = 'DISCONNECTED (Alarms Suppressed)';
+        this.dom.modPirState.style.color = 'var(--text-dim)';
+      }
     } else {
-      isMotion = data.motion === 1;
-      this.dom.valMotion.textContent = isMotion ? 'DETECTED' : 'CLEAR';
-      this.dom.valMotion.style.color = isMotion ? 'var(--accent-red)' : 'var(--text-main)';
-      this.dom.badgeMotion.textContent = isMotion ? 'INTRUSION ALERT' : 'AREA SECURE';
-      this.dom.badgeMotion.className = isMotion ? 'metric-badge badge-danger' : 'metric-badge badge-normal';
-      this.dom.modPirState.textContent = isMotion ? 'MOTION DETECTED' : 'CLEAR';
-      this.dom.modPirState.style.color = isMotion ? 'var(--accent-red)' : 'var(--accent-emerald)';
+      isMotion = Number(data.motion) === 1;
+      if (this.dom.valMotion) {
+        this.dom.valMotion.textContent = isMotion ? 'DETECTED' : 'CLEAR';
+        this.dom.valMotion.style.color = isMotion ? 'var(--accent-red)' : 'var(--text-main)';
+      }
+      if (this.dom.badgeMotion) {
+        this.dom.badgeMotion.textContent = isMotion ? 'INTRUSION ALERT' : 'AREA SECURE';
+        this.dom.badgeMotion.className = isMotion ? 'metric-badge badge-danger' : 'metric-badge badge-normal';
+      }
+      if (this.dom.modPirState) {
+        this.dom.modPirState.textContent = isMotion ? 'MOTION DETECTED' : 'CLEAR';
+        this.dom.modPirState.style.color = isMotion ? 'var(--accent-red)' : 'var(--accent-emerald)';
+      }
     }
 
     // 4. Ultrasonic Distance & Sonar Radar
@@ -3396,7 +3587,17 @@ class SmartRoomApp {
       this.log(`ALARM TRIGGERED: ${reason}`, 'error');
 
       if (this.audioAlarmEnabled && !audioEngine.isPlaying) {
-        audioEngine.startTone(this.activeTone);
+        const nowMs = Date.now();
+        if (!this.lastAlertAudioTime || (nowMs - this.lastAlertAudioTime > 15000)) {
+          this.lastAlertAudioTime = nowMs;
+          if (isProximity) {
+            // Melodic phrase loop for confirmed proximity breaches (< 20cm)
+            audioEngine.startTone(this.activeTone || 'siren');
+          } else {
+            // Melodic sequence for confirmed motion events
+            audioEngine.playMelody('alert');
+          }
+        }
       }
     } else if (!alertTriggered && this.isAlerting) {
       this.isAlerting = false;
@@ -3532,18 +3733,46 @@ class SmartRoomApp {
     }
 
     // 4. PIR Motion
-    if (this.dom.compactValMotionText) {
-      this.dom.compactValMotionText.innerHTML = isMotion ? '<span style="color: var(--accent-red);">OCCUPIED</span>' : '<span style="color: var(--accent-emerald);">VACANT</span>';
+    const activeDev = deviceRegistry.getActiveDevice();
+    const isPirAttached = activeDev ? (
+      (activeDev.attachedSensors || []).includes('pir_motion') &&
+      (activeDev.type !== 'spark_core' || activeDev.userWiredPir === true)
+    ) : false;
+    const pirEnabled = calibrationManager.isSensorEnabled('pir_motion') && isPirAttached;
+
+    if (this.dom.txtPirAttachedState) {
+      this.dom.txtPirAttachedState.textContent = isPirAttached ? '🔌 Wired' : '❌ Unplugged';
+      this.dom.txtPirAttachedState.style.color = isPirAttached ? 'var(--accent-cyan)' : 'var(--text-dim)';
     }
-    if (this.dom.compactBadgeMotion) {
-      this.dom.compactBadgeMotion.textContent = isMotion ? 'MOTION ALERT' : 'CLEAR';
-      this.dom.compactBadgeMotion.className = `compact-badge ${isMotion ? 'badge-danger' : 'badge-normal'}`;
-    }
-    if (this.dom.compactMotionIndicator) {
-      this.dom.compactMotionIndicator.className = `motion-dot ${isMotion ? 'active' : 'clear'}`;
-    }
-    if (this.dom.compactMotionSubtext) {
-      this.dom.compactMotionSubtext.textContent = isMotion ? 'Active movement in chamber' : 'No human movement detected';
+
+    if (!pirEnabled || !isPirAttached) {
+      if (this.dom.compactValMotionText) {
+        this.dom.compactValMotionText.innerHTML = '<span style="color: var(--text-dim);">UNPLUGGED</span>';
+      }
+      if (this.dom.compactBadgeMotion) {
+        this.dom.compactBadgeMotion.textContent = 'ISOLATED';
+        this.dom.compactBadgeMotion.className = 'compact-badge';
+      }
+      if (this.dom.compactMotionIndicator) {
+        this.dom.compactMotionIndicator.className = 'motion-dot clear';
+      }
+      if (this.dom.compactMotionSubtext) {
+        this.dom.compactMotionSubtext.textContent = 'Sensor unplugged • Alarms suppressed';
+      }
+    } else {
+      if (this.dom.compactValMotionText) {
+        this.dom.compactValMotionText.innerHTML = isMotion ? '<span style="color: var(--accent-red);">OCCUPIED</span>' : '<span style="color: var(--accent-emerald);">VACANT</span>';
+      }
+      if (this.dom.compactBadgeMotion) {
+        this.dom.compactBadgeMotion.textContent = isMotion ? 'MOTION ALERT' : 'CLEAR';
+        this.dom.compactBadgeMotion.className = `compact-badge ${isMotion ? 'badge-danger' : 'badge-normal'}`;
+      }
+      if (this.dom.compactMotionIndicator) {
+        this.dom.compactMotionIndicator.className = `motion-dot ${isMotion ? 'active' : 'clear'}`;
+      }
+      if (this.dom.compactMotionSubtext) {
+        this.dom.compactMotionSubtext.textContent = isMotion ? 'Active movement in chamber' : 'No human movement detected';
+      }
     }
 
     // 5. Ambient Light
@@ -3687,15 +3916,45 @@ class SmartRoomApp {
     // 8. Test Sound Button
     if (this.dom.compactBtnTestBuzzer) {
       this.dom.compactBtnTestBuzzer.addEventListener('click', () => {
-        audioEngine.startTone('beep');
+        audioEngine.playMelody('chime');
         if (this.dom.compactTestSoundText) {
-          this.dom.compactTestSoundText.textContent = 'Beep!';
+          this.dom.compactTestSoundText.textContent = 'Melody!';
         }
         setTimeout(() => {
-          audioEngine.stopTone();
           if (this.dom.compactTestSoundText) this.dom.compactTestSoundText.textContent = 'Test Sound';
         }, 800);
-        this.log('🔊 Hardware & audio buzzer test tone sounded.', 'warn');
+        this.log('🎵 Melodic acoustic chime sounded.', 'info');
+      });
+    }
+
+    // 9. PIR Motion Quick Disconnect / Connect Button
+    if (this.dom.btnTogglePirAttached) {
+      this.dom.btnTogglePirAttached.addEventListener('click', async () => {
+        const activeDev = deviceRegistry.getActiveDevice();
+        if (!activeDev) return;
+        activeDev.attachedSensors = activeDev.attachedSensors || [];
+        const idx = activeDev.attachedSensors.indexOf('pir_motion');
+        const willBeAttached = idx === -1;
+        if (willBeAttached) {
+          activeDev.attachedSensors.push('pir_motion');
+          activeDev.userWiredPir = true;
+          calibrationManager.setSensorEnabled('pir_motion', true);
+        } else {
+          activeDev.attachedSensors.splice(idx, 1);
+          activeDev.userWiredPir = false;
+          calibrationManager.setSensorEnabled('pir_motion', false);
+        }
+        deviceRegistry.save();
+        deviceRegistry.notify();
+        this.silenceAllAlarms();
+        this.renderActiveDeviceBanner();
+
+        if (this.mode === 'live' && pinConfig.activeBoardId === 'spark_core') {
+          particleApi.callFunction('alarm', 'p').catch(() => {});
+        }
+
+        this.log(`PIR Motion Sensor: ${willBeAttached ? 'ATTACHED & ARMED' : 'DISCONNECTED / UNPLUGGED (Alarms Suppressed)'}`, 'warn');
+        if (this.audioAlarmEnabled) audioEngine.playMelody('notice');
       });
     }
 
@@ -3719,9 +3978,8 @@ class SmartRoomApp {
 
     if (this.dom.btnHeroSonarChirp) {
       this.dom.btnHeroSonarChirp.addEventListener('click', () => {
-        audioEngine.startTone('beep');
-        setTimeout(() => audioEngine.stopTone(), 250);
-        this.log('🔊 Field Sonar Chirp: 40 kHz Acoustic Pulse Test Emitted', 'info');
+        audioEngine.playMelody('sonar');
+        this.log('🔊 Field Sonar Acoustic Harmonic Ping Emitted', 'info');
       });
     }
 
@@ -3785,12 +4043,15 @@ class SmartRoomApp {
 
     if (mode === 'monitor') {
       document.body.classList.add('view-mode-monitoring');
+      if (this.dom.compactMonitoringDashboard) this.dom.compactMonitoringDashboard.style.display = 'block';
+      if (this.dom.compactCommandLayout) this.dom.compactCommandLayout.style.display = 'grid';
       if (this.dom.btnViewMonitor) this.dom.btnViewMonitor.classList.add('active');
       if (this.dom.btnViewDeveloper) this.dom.btnViewDeveloper.classList.remove('active');
       if (mBtnMonitor) mBtnMonitor.classList.add('active');
       if (mBtnTools) mBtnTools.classList.remove('active');
     } else {
       document.body.classList.add('view-mode-developer');
+      if (this.dom.compactMonitoringDashboard) this.dom.compactMonitoringDashboard.style.display = 'none';
       if (this.dom.btnViewDeveloper) this.dom.btnViewDeveloper.classList.add('active');
       if (this.dom.btnViewMonitor) this.dom.btnViewMonitor.classList.remove('active');
       if (mBtnTools) mBtnTools.classList.add('active');
@@ -4542,6 +4803,802 @@ class SmartRoomApp {
     while (this.dom.logTerminal.children.length > 60) {
       this.dom.logTerminal.removeChild(this.dom.logTerminal.firstChild);
     }
+  }
+
+  // ===========================================================================
+  // IoT Gateway Integration — Universal device connectivity
+  // ===========================================================================
+
+  initIotGateway() {
+    // Listen for data from any gateway-connected device (custom_rest / websocket / server_api)
+    iotGateway.onData((deviceId, data, latencyMs) => {
+      const active = deviceRegistry.getActiveDevice();
+      if (active && active.id === deviceId) {
+        // If this device has a custom sensorSchema, use dynamic rendering
+        if (active.sensorSchema && active.sensorSchema.length > 0) {
+          this.updateDynamicDashboard(deviceId, data);
+        } else {
+          // Try standard dashboard update (if fields match known keys)
+          this.updateDashboard(data);
+        }
+      }
+    });
+
+    // Listen for newly self-registered devices
+    iotGateway.onNewDeviceRegistered((device) => {
+      this.log(`📡 New device auto-registered: ${device.name} (${device.connectionMethod})`, 'success');
+      this.renderActiveDeviceBanner();
+      this.renderDeviceManagerList();
+    });
+
+    // Restore any previously self-registered custom connections
+    iotGateway.restorePersistedConnections();
+
+    // Wire up Add Device modal — Custom REST tab
+    if (this.dom.btnSubmitAddRest) {
+      this.dom.btnSubmitAddRest.addEventListener('click', () => {
+        const name = this.dom.inputAddRestName?.value.trim() || 'Custom REST Device';
+        const endpoint = this.dom.inputAddRestEndpoint?.value.trim() || '';
+        const intervalMs = parseInt(this.dom.inputAddRestInterval?.value || '3000', 10);
+        let schema = [];
+        try { schema = JSON.parse(this.dom.textareaAddRestSchema?.value || '[]'); } catch (_) {}
+
+        if (!endpoint) { alert('Please enter a valid REST endpoint URL.'); return; }
+
+        const device = iotGateway.registerFromPayload({
+          id: 'dev_rest_' + Date.now(),
+          name,
+          firmware: 'custom',
+          connectionMethod: 'custom_rest',
+          endpoint,
+          credentials: { endpoint, pollIntervalMs: intervalMs },
+          sensorSchema: schema
+        });
+
+        if (this.dom.modalAddDevice) this.dom.modalAddDevice.classList.remove('active');
+        this.log(`🌐 Custom REST Device added: ${name} → ${endpoint}`, 'success');
+        this.renderActiveDeviceBanner();
+      });
+    }
+
+    // Wire up Add Device modal — WebSocket tab
+    if (this.dom.btnSubmitAddWs) {
+      this.dom.btnSubmitAddWs.addEventListener('click', () => {
+        const name = this.dom.inputAddWsName?.value.trim() || 'WebSocket Device';
+        const wsEndpoint = this.dom.inputAddWsEndpoint?.value.trim() || '';
+        let schema = [];
+        try { schema = JSON.parse(this.dom.textareaAddWsSchema?.value || '[]'); } catch (_) {}
+
+        if (!wsEndpoint) { alert('Please enter a valid WebSocket endpoint URL (ws:// or wss://).'); return; }
+
+        const device = iotGateway.registerFromPayload({
+          id: 'dev_ws_' + Date.now(),
+          name,
+          firmware: 'custom',
+          connectionMethod: 'websocket',
+          wsEndpoint,
+          credentials: { wsEndpoint },
+          sensorSchema: schema
+        });
+
+        if (this.dom.modalAddDevice) this.dom.modalAddDevice.classList.remove('active');
+        this.log(`📡 WebSocket Device added: ${name} → ${wsEndpoint}`, 'success');
+        this.renderActiveDeviceBanner();
+      });
+    }
+
+    // Wire up Auto-Discover — apply pasted JSON
+    if (this.dom.btnAutoDiscoverApply) {
+      this.dom.btnAutoDiscoverApply.addEventListener('click', () => {
+        const raw = this.dom.inputAutoDiscoverJson?.value.trim() || '';
+        try {
+          const payload = JSON.parse(raw);
+          const device = iotGateway.registerFromPayload(payload);
+          this.log(`🔍 Auto-Discover: Registered ${device.name}`, 'success');
+          if (this.dom.autoDiscoverStatusText) {
+            this.dom.autoDiscoverStatusText.textContent = `✅ Device "${device.name}" registered successfully!`;
+            this.dom.autoDiscoverStatusText.style.color = 'var(--accent-emerald)';
+          }
+          this.renderActiveDeviceBanner();
+        } catch (err) {
+          if (this.dom.autoDiscoverStatusText) {
+            this.dom.autoDiscoverStatusText.textContent = `❌ Invalid JSON: ${err.message}`;
+            this.dom.autoDiscoverStatusText.style.color = 'var(--accent-rose)';
+          }
+        }
+      });
+    }
+
+    // Wire up Auto-Discover — firmware snippet generator
+    const updateSnippet = () => {
+      if (!this.dom.autoDiscoverSnippet || !this.dom.selectFirmwareLang) return;
+      const lang = this.dom.selectFirmwareLang.value || 'arduino';
+      const snippet = iotGateway.generateRegistrationSnippet({ firmware: lang });
+      this.dom.autoDiscoverSnippet.textContent = snippet;
+    };
+
+    if (this.dom.selectFirmwareLang) {
+      this.dom.selectFirmwareLang.addEventListener('change', updateSnippet);
+      updateSnippet(); // initial render
+    }
+
+    if (this.dom.btnCopyRegSnippet) {
+      this.dom.btnCopyRegSnippet.addEventListener('click', () => {
+        const code = this.dom.autoDiscoverSnippet?.textContent || '';
+        navigator.clipboard.writeText(code).then(() => {
+          this.dom.btnCopyRegSnippet.textContent = '✅ Copied!';
+          setTimeout(() => { if (this.dom.btnCopyRegSnippet) this.dom.btnCopyRegSnippet.textContent = '📋 Copy Code'; }, 2000);
+        });
+      });
+    }
+
+    // Listen button — polls /api/register for new self-registered devices
+    if (this.dom.btnListenForDevices) {
+      let isListening = false;
+      this.dom.btnListenForDevices.addEventListener('click', () => {
+        if (!isListening) {
+          isListening = true;
+          iotGateway.startServerRegistrationPolling('/api', 4000);
+          this.dom.btnListenForDevices.textContent = '⏹ Stop Listening';
+          this.dom.btnListenForDevices.style.background = 'rgba(239,68,68,0.15)';
+          if (this.dom.autoDiscoverStatusText) {
+            this.dom.autoDiscoverStatusText.textContent = '🟢 Listening for incoming device registrations on /api/register...';
+            this.dom.autoDiscoverStatusText.style.color = 'var(--accent-emerald)';
+          }
+          this.log('Auto-discover: Listening for device self-registrations...', 'info');
+        } else {
+          isListening = false;
+          iotGateway.stopServerRegistrationPolling();
+          this.dom.btnListenForDevices.textContent = '📻 Listen for Devices';
+          this.dom.btnListenForDevices.style.background = '';
+          if (this.dom.autoDiscoverStatusText) {
+            this.dom.autoDiscoverStatusText.textContent = 'Not listening.';
+            this.dom.autoDiscoverStatusText.style.color = 'var(--text-dim)';
+          }
+        }
+      });
+    }
+
+    // Start any custom-connection devices already in the registry
+    deviceRegistry.getDevices().forEach(dev => {
+      if (['custom_rest', 'websocket', 'server_api'].includes(dev.connectionMethod)) {
+        iotGateway.startDevice(dev);
+      }
+    });
+  }
+
+  // ===========================================================================
+  // Dynamic Dashboard — renders sensor cards for custom-schema devices
+  // ===========================================================================
+
+  /**
+   * Handles telemetry from a custom (non-Particle, non-Arduino) device.
+   * Routes to standard or dynamic rendering based on sensorSchema.
+   */
+  updateDynamicDashboard(deviceId, data) {
+    if (!data) return;
+    this.latestTelemetry = { ...data, timestamp: Date.now() };
+
+    const device = deviceRegistry.getDevices().find(d => d.id === deviceId);
+    if (!device) return;
+
+    const schema = device.sensorSchema || [];
+
+    // Check if schema includes standard known sensors — update them too
+    const knownKeyMap = {
+      temp: 'temperature', temperature: 'temperature',
+      hum: 'humidity', humidity: 'humidity',
+      dist: 'distance', distance: 'distance',
+      motion: 'motion', pir: 'motion',
+      light: 'light', ldr: 'light'
+    };
+
+    const normalizedData = {};
+    Object.entries(data).forEach(([k, v]) => {
+      const mappedKey = knownKeyMap[k.toLowerCase()];
+      if (mappedKey) normalizedData[mappedKey] = v;
+      else normalizedData[k] = v;
+    });
+
+    // If it has any known sensor keys — update compact dashboard
+    if (normalizedData.temperature !== undefined || normalizedData.humidity !== undefined ||
+        normalizedData.distance !== undefined || normalizedData.motion !== undefined) {
+      this.updateDashboard(normalizedData);
+    }
+
+    // Feed AI engine
+    aiEngine.processTelemetry(normalizedData);
+
+    // Render dynamic cards for custom schema keys
+    if (schema.length > 0 && this.dom.dynamicSensorGrid) {
+      this.renderDynamicSensorCards(device, schema, data);
+    }
+  }
+
+  /**
+   * Renders glassmorphism sensor cards dynamically for a custom device's sensorSchema.
+   * Called every telemetry update — only updates values, not the whole card DOM.
+   */
+  renderDynamicSensorCards(device, schema, data) {
+    if (!this.dom.dynamicSensorGrid) return;
+
+    const grid = this.dom.dynamicSensorGrid;
+
+    // Show the grid if it was hidden
+    grid.style.display = '';
+
+    // Check if we need to rebuild (schema changed or grid is empty)
+    const existingCardCount = grid.querySelectorAll('.dynamic-sensor-card').length;
+    if (existingCardCount !== schema.length) {
+      // Rebuild the card structure
+      grid.innerHTML = `
+        <div class="dynamic-grid-header">
+          <span class="dynamic-grid-title">📡 ${device.name}</span>
+          <span class="dynamic-grid-subtitle">${device.connectionMethod.replace('_', ' ').toUpperCase()} • ${device.zone || 'Remote Zone'}</span>
+        </div>
+        <div class="dynamic-cards-row" id="dynamicCardsRow"></div>
+      `;
+
+      const row = document.getElementById('dynamicCardsRow');
+      schema.forEach(field => {
+        const card = document.createElement('div');
+        card.className = 'dynamic-sensor-card';
+        card.id = `dynCard_${field.key}`;
+
+        const val = data[field.key];
+        const displayVal = val !== undefined && val !== null
+          ? (typeof val === 'number' ? val.toFixed(field.decimals !== undefined ? field.decimals : 1) : String(val))
+          : '--';
+
+        const pct = (field.min !== undefined && field.max !== undefined && typeof val === 'number')
+          ? Math.min(100, Math.max(0, ((val - field.min) / (field.max - field.min)) * 100))
+          : 50;
+
+        card.innerHTML = `
+          <div class="dyn-card-header">
+            <span class="dyn-card-icon">${field.icon || '📊'}</span>
+            <span class="dyn-card-label">${field.label || field.key}</span>
+          </div>
+          <div class="dyn-card-value" id="dynVal_${field.key}">${displayVal}</div>
+          <div class="dyn-card-unit">${field.unit || ''}</div>
+          <div class="dyn-bar-track">
+            <div class="dyn-bar-fill" id="dynBar_${field.key}" style="width:${pct}%"></div>
+          </div>
+          <div class="dyn-card-badge" id="dynBadge_${field.key}">LIVE</div>
+        `;
+        row.appendChild(card);
+      });
+    } else {
+      // Just update values
+      schema.forEach(field => {
+        const val = data[field.key];
+        if (val === undefined || val === null) return;
+
+        const valEl = document.getElementById(`dynVal_${field.key}`);
+        const barEl = document.getElementById(`dynBar_${field.key}`);
+        const badgeEl = document.getElementById(`dynBadge_${field.key}`);
+
+        if (valEl) {
+          valEl.textContent = typeof val === 'number'
+            ? val.toFixed(field.decimals !== undefined ? field.decimals : 1)
+            : String(val);
+        }
+
+        if (barEl && field.min !== undefined && field.max !== undefined && typeof val === 'number') {
+          const pct = Math.min(100, Math.max(0, ((val - field.min) / (field.max - field.min)) * 100));
+          barEl.style.width = `${pct}%`;
+        }
+
+        if (badgeEl) {
+          // Simple threshold-based badge
+          if (field.dangerAbove !== undefined && typeof val === 'number' && val > field.dangerAbove) {
+            badgeEl.textContent = field.dangerLabel || 'HIGH';
+            badgeEl.className = 'dyn-card-badge badge-danger';
+          } else if (field.warnAbove !== undefined && typeof val === 'number' && val > field.warnAbove) {
+            badgeEl.textContent = field.warnLabel || 'WARN';
+            badgeEl.className = 'dyn-card-badge badge-warning';
+          } else {
+            badgeEl.textContent = field.normalLabel || 'NORMAL';
+            badgeEl.className = 'dyn-card-badge badge-normal';
+          }
+        }
+      });
+    }
+  }
+
+  // ===========================================================================
+  // AI Engine UI
+  // ===========================================================================
+
+  initAiEngineUi() {
+    // Open/close AI panel modal
+    if (this.dom.btnOpenAiPanel) {
+      this.dom.btnOpenAiPanel.addEventListener('click', () => {
+        if (this.dom.modalAiPanel) this.dom.modalAiPanel.classList.add('active');
+      });
+    }
+    if (this.dom.btnCloseAiPanel) {
+      this.dom.btnCloseAiPanel.addEventListener('click', () => {
+        if (this.dom.modalAiPanel) this.dom.modalAiPanel.classList.remove('active');
+      });
+    }
+
+    // Also wire any inline AI buttons in the dropdown menu
+    document.querySelectorAll('[data-open-ai-panel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (this.dom.modalAiPanel) this.dom.modalAiPanel.classList.add('active');
+      });
+    });
+
+    // Anomaly detection toggle
+    if (this.dom.chkAiAnomaly) {
+      this.dom.chkAiAnomaly.checked = aiEngine.isAnomalyDetectionEnabled;
+      this.dom.chkAiAnomaly.addEventListener('change', (e) => {
+        aiEngine.enableAnomalyDetection(e.target.checked);
+        this.log(`🤖 AI Anomaly Detection: ${e.target.checked ? 'ENABLED' : 'DISABLED'}`, 'info');
+      });
+    }
+
+    // Trend analysis toggle
+    if (this.dom.chkAiTrend) {
+      this.dom.chkAiTrend.checked = aiEngine.isTrendEnabled;
+      this.dom.chkAiTrend.addEventListener('change', (e) => {
+        aiEngine.enableTrend(e.target.checked);
+        this.log(`📊 AI Trend Analysis: ${e.target.checked ? 'ENABLED' : 'DISABLED'}`, 'info');
+      });
+    }
+
+    // Listen for anomaly events — show in log and AI panel
+    aiEngine.onAnomaly((result) => {
+      const label = result.channel.charAt(0).toUpperCase() + result.channel.slice(1);
+      const alertMsg = `🚨 AI ANOMALY: ${label} = ${result.value} (Z=${result.zScore}, μ=${result.mean}±${result.stdev})`;
+      this.log(alertMsg, 'error');
+      this._appendAiAnomalyLog(alertMsg);
+    });
+
+    // AI Chat
+    if (this.dom.btnAiChatSend) {
+      this.dom.btnAiChatSend.addEventListener('click', () => this._sendAiChat());
+    }
+    if (this.dom.inputAiChat) {
+      this.dom.inputAiChat.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._sendAiChat(); }
+      });
+    }
+
+    // Subscribe to AI chat messages
+    aiEngine.chat.onMessage((msg) => {
+      this._appendAiChatMessage(msg.role, msg.content);
+    });
+
+    // AI Settings
+    if (this.dom.btnSaveAiSettings) {
+      this.dom.btnSaveAiSettings.addEventListener('click', () => {
+        const key = this.dom.inputAiApiKey?.value.trim() || '';
+        const provider = this.dom.selectAiProvider?.value || 'gemini';
+        aiEngine.chat.setApiKey(key);
+        aiEngine.chat.setProvider(provider);
+        this.log(`🔑 AI Settings saved: Provider=${provider}, Key=${key ? '***set***' : 'none (local mode)'}`, 'success');
+      });
+    }
+
+    // Populate saved key
+    if (this.dom.inputAiApiKey && aiEngine.chat.apiKey) {
+      this.dom.inputAiApiKey.value = aiEngine.chat.apiKey;
+    }
+    if (this.dom.selectAiProvider) {
+      this.dom.selectAiProvider.value = aiEngine.chat.provider;
+    }
+
+    // Trend predictor
+    if (this.dom.btnGetTrend) {
+      this.dom.btnGetTrend.addEventListener('click', () => {
+        const channel = this.dom.aiTrendChannel?.value || 'temperature';
+        const result = aiEngine.getTrend(channel, 60000);
+        if (this.dom.aiTrendResult) {
+          if (!result) {
+            this.dom.aiTrendResult.textContent = 'Insufficient data. Need at least 3 readings. Keep sensors live for a moment.';
+          } else {
+            const arrow = result.trend === 'rising' ? '↗️' : result.trend === 'falling' ? '↘️' : '→';
+            this.dom.aiTrendResult.innerHTML = `
+              ${arrow} <strong>${result.trend.toUpperCase()}</strong> — 
+              Current: <strong>${result.current}</strong> → 
+              60s Forecast: <strong>${result.value}</strong> 
+              (slope: ${result.slope}/s)
+            `;
+          }
+        }
+      });
+    }
+
+    // Add a welcome message to the AI chat
+    setTimeout(() => {
+      this._appendAiChatMessage('assistant',
+        '👋 Hi! I\'m your IoT AI assistant. Ask me about your sensor readings, device health, or anomalies detected. No API key needed for basic analysis!');
+    }, 500);
+  }
+
+  _sendAiChat() {
+    const msg = this.dom.inputAiChat?.value.trim();
+    if (!msg) return;
+    if (this.dom.inputAiChat) this.dom.inputAiChat.value = '';
+    aiEngine.chat.send(msg, this.latestTelemetry);
+  }
+
+  _appendAiChatMessage(role, content) {
+    if (!this.dom.aiChatMessages) return;
+    if (role === 'thinking') return; // handled as spinner
+
+    const el = document.createElement('div');
+    el.className = `ai-chat-bubble ai-bubble-${role}`;
+    el.innerHTML = `<div class="ai-bubble-content">${content.replace(/\n/g, '<br>')}</div>`;
+    this.dom.aiChatMessages.appendChild(el);
+    this.dom.aiChatMessages.scrollTop = this.dom.aiChatMessages.scrollHeight;
+  }
+
+  _appendAiAnomalyLog(message) {
+    if (!this.dom.aiAnomalyLog) return;
+    const entry = document.createElement('div');
+    entry.className = 'ai-anomaly-entry';
+    entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    this.dom.aiAnomalyLog.appendChild(entry);
+    this.dom.aiAnomalyLog.scrollTop = this.dom.aiAnomalyLog.scrollHeight;
+    // Keep last 20 entries
+    while (this.dom.aiAnomalyLog.children.length > 20) {
+      this.dom.aiAnomalyLog.removeChild(this.dom.aiAnomalyLog.firstChild);
+    }
+  }
+
+  // =========================================================================
+  // SUPABASE MULTI-USER ACCOUNTS & WORKSPACE ISOLATION
+  // =========================================================================
+  initAccountSystemUi() {
+    const openModal = (tabId = 'tabAccountProfile') => {
+      if (!this.dom.modalAccount) return;
+      this.dom.modalAccount.classList.add('active');
+      const tabs = this.dom.modalAccount.querySelectorAll('.modal-tab-btn');
+      const panes = this.dom.modalAccount.querySelectorAll('.tab-content-pane');
+      tabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === tabId));
+      panes.forEach(p => p.classList.toggle('active', p.id === tabId));
+      renderAccountState(supabaseService.getCurrentUser(), supabaseService.isConfigured());
+    };
+
+    if (this.dom.btnOpenAccount) {
+      this.dom.btnOpenAccount.addEventListener('click', () => openModal());
+    }
+    if (this.dom.btnSubMenuAccount) {
+      this.dom.btnSubMenuAccount.addEventListener('click', () => openModal());
+    }
+    if (this.dom.mBtnAccount) {
+      this.dom.mBtnAccount.addEventListener('click', () => openModal());
+    }
+    if (this.dom.btnCloseAccountModal) {
+      this.dom.btnCloseAccountModal.addEventListener('click', () => {
+        if (this.dom.modalAccount) this.dom.modalAccount.classList.remove('active');
+      });
+    }
+
+    // Modal tabs click handling
+    if (this.dom.modalAccount) {
+      const tabs = this.dom.modalAccount.querySelectorAll('.modal-tab-btn');
+      const panes = this.dom.modalAccount.querySelectorAll('.tab-content-pane');
+      tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabKey = btn.getAttribute('data-tab');
+          tabs.forEach(b => b.classList.remove('active'));
+          panes.forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          const target = document.getElementById(tabKey);
+          if (target) target.classList.add('active');
+        });
+      });
+    }
+
+    const renderAccountState = (user, isConfigured) => {
+      if (!user) user = supabaseService.getCurrentUser();
+      const isOwner = supabaseService.isCurrentUserOwner();
+
+      // Top bar header badge
+      if (this.dom.userAccountName) {
+        this.dom.userAccountName.textContent = isOwner ? 'Wilkie (Owner)' : (user.fullName || user.email?.split('@')[0] || 'Developer');
+      }
+      if (this.dom.userAvatarBadge) {
+        this.dom.userAvatarBadge.textContent = isOwner ? '👑' : '👤';
+      }
+      if (this.dom.userCloudIndicator) {
+        this.dom.userCloudIndicator.className = 'user-cloud-indicator' + (isConfigured ? '' : ' offline');
+        this.dom.userCloudIndicator.title = isConfigured ? 'Supabase DB: Connected & Synced' : 'Supabase DB: Local Offline';
+      }
+
+      // Profile modal elements
+      if (this.dom.accountProfileName) {
+        this.dom.accountProfileName.textContent = user.fullName || (isOwner ? 'Wilkie (Master Owner)' : 'Developer');
+      }
+      if (this.dom.accountProfileEmail) {
+        this.dom.accountProfileEmail.textContent = user.email || 'Local Offline Account';
+      }
+      if (this.dom.accountProfileBadge) {
+        this.dom.accountProfileBadge.textContent = isOwner 
+          ? '⚡ Master Hardware Chamber • Spark Core Active' 
+          : '🧪 Custom IoT Developer • Isolated Clean Workspace';
+      }
+      const avatarLg = document.getElementById('accountAvatarLarge');
+      if (avatarLg) {
+        avatarLg.textContent = isOwner ? '👑' : '👤';
+      }
+
+      if (this.dom.cardSwitchWilkie) {
+        this.dom.cardSwitchWilkie.classList.toggle('active-user', isOwner);
+      }
+      if (this.dom.cardSwitchGuest) {
+        this.dom.cardSwitchGuest.classList.toggle('active-user', !isOwner);
+      }
+
+      const devices = deviceRegistry.getDevices();
+      if (this.dom.accountDeviceCount) {
+        this.dom.accountDeviceCount.textContent = `${devices.length} ${devices.length === 1 ? 'device' : 'devices'} active`;
+      }
+
+      // Supabase Config fields
+      const cfg = supabaseService.getConfig();
+      if (this.dom.inputSupabaseUrl && !this.dom.inputSupabaseUrl.value) {
+        this.dom.inputSupabaseUrl.value = cfg.url;
+      }
+      if (this.dom.inputSupabaseAnonKey && !this.dom.inputSupabaseAnonKey.value) {
+        this.dom.inputSupabaseAnonKey.value = cfg.anonKey;
+      }
+      if (this.dom.supabaseStatusBadge) {
+        this.dom.supabaseStatusBadge.textContent = isConfigured ? 'Cloud Connected' : 'Local Offline Mode';
+        this.dom.supabaseStatusBadge.className = 'metric-badge ' + (isConfigured ? 'badge-normal' : 'badge-dim');
+      }
+      if (this.dom.supabaseSqlSnippet && !this.dom.supabaseSqlSnippet.textContent) {
+        this.dom.supabaseSqlSnippet.textContent = SUPABASE_SQL_SCHEMA;
+      }
+    };
+
+    // Quick Switch to Wilkie
+    if (this.dom.btnSwitchToWilkie) {
+      this.dom.btnSwitchToWilkie.addEventListener('click', () => {
+        supabaseService.switchToWilkie();
+        this.log('👑 Switched to Wilkie (Master Owner) — Spark Core running live.', 'success');
+        this.renderActiveDeviceBanner();
+        if (this.dom.modalAccount) this.dom.modalAccount.classList.remove('active');
+      });
+    }
+
+    // Quick Switch to New User / Blank Slate
+    if (this.dom.btnSwitchToGuest) {
+      this.dom.btnSwitchToGuest.addEventListener('click', () => {
+        supabaseService.switchToGuestUser('New Developer', 'developer@iot.local');
+        this.log('🧪 Switched to New Developer account — blank workspace initialized (0 devices).', 'info');
+        this.renderActiveDeviceBanner();
+        if (this.dom.modalAccount) this.dom.modalAccount.classList.remove('active');
+      });
+    }
+
+    // Sign Out
+    if (this.dom.btnSignOutAccount) {
+      this.dom.btnSignOutAccount.addEventListener('click', async () => {
+        await supabaseService.signOut();
+        this.log('Signed out of session. Returned to default station.', 'info');
+        this.renderActiveDeviceBanner();
+        if (this.dom.modalAccount) this.dom.modalAccount.classList.remove('active');
+      });
+    }
+
+    // Supabase Sign In
+    if (this.dom.btnAuthSignIn) {
+      this.dom.btnAuthSignIn.addEventListener('click', async () => {
+        const email = this.dom.inputAuthEmail?.value.trim();
+        const password = this.dom.inputAuthPassword?.value;
+        if (!email || !password) {
+          alert('Please enter both email and password.');
+          return;
+        }
+        this.dom.btnAuthSignIn.textContent = 'Signing in...';
+        const res = await supabaseService.signIn({ email, password });
+        this.dom.btnAuthSignIn.textContent = 'Sign In';
+
+        if (res.error) {
+          if (this.dom.authStatusMessage) {
+            this.dom.authStatusMessage.style.display = 'block';
+            this.dom.authStatusMessage.style.color = 'var(--accent-rose)';
+            this.dom.authStatusMessage.textContent = `❌ ${res.error}`;
+          }
+        } else {
+          this.log(`Signed in successfully as ${res.user.email}!`, 'success');
+          this.renderActiveDeviceBanner();
+          if (this.dom.modalAccount) this.dom.modalAccount.classList.remove('active');
+        }
+      });
+    }
+
+    // Supabase Sign Up (Creates a clean isolated account for new users)
+    if (this.dom.btnAuthSignUp) {
+      this.dom.btnAuthSignUp.addEventListener('click', async () => {
+        const fullName = this.dom.inputAuthFullName?.value.trim() || 'IoT Developer';
+        const email = this.dom.inputAuthEmail?.value.trim();
+        const password = this.dom.inputAuthPassword?.value;
+        if (!email || !password) {
+          alert('Please enter email and password.');
+          return;
+        }
+        this.dom.btnAuthSignUp.textContent = 'Creating account...';
+        const res = await supabaseService.signUp({ email, password, fullName });
+        this.dom.btnAuthSignUp.textContent = 'Create New Account (Blank Slate)';
+
+        if (res.error) {
+          if (this.dom.authStatusMessage) {
+            this.dom.authStatusMessage.style.display = 'block';
+            this.dom.authStatusMessage.style.color = 'var(--accent-rose)';
+            this.dom.authStatusMessage.textContent = `❌ ${res.error}`;
+          }
+        } else {
+          this.log(`🎉 Account created for ${fullName} (${email})! Workspace is blank — add your hardware to begin.`, 'success');
+          this.renderActiveDeviceBanner();
+          if (this.dom.modalAccount) this.dom.modalAccount.classList.remove('active');
+        }
+      });
+    }
+
+    // Save Supabase Configuration
+    if (this.dom.btnSaveSupabaseConfig) {
+      this.dom.btnSaveSupabaseConfig.addEventListener('click', () => {
+        const url = this.dom.inputSupabaseUrl?.value.trim() || '';
+        const key = this.dom.inputSupabaseAnonKey?.value.trim() || '';
+        const ok = supabaseService.setConfig(url, key);
+        this.log(ok ? '☁️ Supabase Cloud Keys saved and client initialized!' : 'Supabase configured in local fallback mode.', 'success');
+        renderAccountState(supabaseService.getCurrentUser(), ok);
+        alert(ok ? '✅ Supabase Cloud connected successfully!' : '⚠️ Incomplete Supabase URL or Anon Key. Using local offline storage.');
+      });
+    }
+
+    // Test Supabase Connection
+    if (this.dom.btnTestSupabase) {
+      this.dom.btnTestSupabase.addEventListener('click', async () => {
+        if (!supabaseService.isConfigured()) {
+          alert('Please enter your Supabase Project URL and Public Anon Key first.');
+          return;
+        }
+        this.dom.btnTestSupabase.textContent = 'Testing...';
+        try {
+          const user = supabaseService.getCurrentUser();
+          const devList = await supabaseService.fetchCloudDevices(user.id);
+          this.dom.btnTestSupabase.textContent = '⚡ Test Connection';
+          if (devList !== null) {
+            alert(`✅ Connected to Supabase successfully!\nFound ${devList.length} device records in database.`);
+          } else {
+            alert('Connected to Supabase project, but the "devices" table was not found or returned an error. Please run the SQL migration schema in Tab 4.');
+          }
+        } catch (err) {
+          this.dom.btnTestSupabase.textContent = '⚡ Test Connection';
+          alert('❌ Connection failed: ' + err.message);
+        }
+      });
+    }
+
+    // Copy SQL Migration
+    if (this.dom.btnCopySupabaseSql) {
+      this.dom.btnCopySupabaseSql.addEventListener('click', () => {
+        navigator.clipboard.writeText(SUPABASE_SQL_SCHEMA).then(() => {
+          this.dom.btnCopySupabaseSql.textContent = '✅ Copied!';
+          setTimeout(() => {
+            if (this.dom.btnCopySupabaseSql) this.dom.btnCopySupabaseSql.textContent = '📋 Copy SQL Schema';
+          }, 2000);
+        });
+      });
+    }
+
+    // Wire up Blank Workspace Buttons
+    const openAddDeviceWithTab = (tabName) => {
+      if (!this.dom.modalAddDevice) return;
+      this.dom.modalAddDevice.classList.add('active');
+      const tabs = this.dom.modalAddDevice.querySelectorAll('.modal-tab-btn');
+      const panes = this.dom.modalAddDevice.querySelectorAll('.tab-content-pane');
+      tabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === tabName));
+      panes.forEach(p => p.classList.toggle('active', p.id === tabName));
+    };
+
+    if (this.dom.blankBtnAddSpark) {
+      this.dom.blankBtnAddSpark.addEventListener('click', () => openAddDeviceWithTab('tabAddSpark'));
+    }
+    if (this.dom.blankBtnAddSerial) {
+      this.dom.blankBtnAddSerial.addEventListener('click', () => openAddDeviceWithTab('tabAddSerial'));
+    }
+    if (this.dom.blankBtnAddRest) {
+      this.dom.blankBtnAddRest.addEventListener('click', () => openAddDeviceWithTab('tabAddRest'));
+    }
+    if (this.dom.blankBtnAddWs) {
+      this.dom.blankBtnAddWs.addEventListener('click', () => openAddDeviceWithTab('tabAddWs'));
+    }
+    if (this.dom.blankBtnSwitchWilkie) {
+      this.dom.blankBtnSwitchWilkie.addEventListener('click', () => {
+        supabaseService.switchToWilkie();
+        this.log('👑 Switched to Wilkie master station.', 'success');
+        this.renderActiveDeviceBanner();
+      });
+    }
+
+    // Listen to Auth changes
+    supabaseService.onAuthChange((user, isConfigured) => {
+      renderAccountState(user, isConfigured);
+      this.renderActiveDeviceBanner();
+    });
+
+    // Initial render
+    renderAccountState(supabaseService.getCurrentUser(), supabaseService.isConfigured());
+  }
+
+  // =========================================================================
+  // COLOR MODE (LIGHT / DARK) MANAGEMENT
+  // =========================================================================
+  initColorModeUi() {
+    const updateIcons = (mode) => {
+      const isLight = mode === 'light';
+      const icon = isLight ? '☀️' : '🌙';
+      const label = isLight ? 'Switch to Dark Mode (Currently Light)' : 'Switch to Light Mode (Currently Dark)';
+      if (this.dom.iconColorMode) this.dom.iconColorMode.textContent = icon;
+      if (this.dom.btnToggleColorMode) this.dom.btnToggleColorMode.title = label;
+      if (this.dom.mIconTheme) this.dom.mIconTheme.textContent = icon;
+    };
+
+    const handleToggle = () => {
+      const next = themeEngine.toggleColorMode();
+      updateIcons(next);
+      this.log(`Theme switched to ${next === 'light' ? 'Light Mode ☀️' : 'Dark Mode 🌙'}`, 'info');
+    };
+
+    if (this.dom.btnToggleColorMode) {
+      this.dom.btnToggleColorMode.addEventListener('click', handleToggle);
+    }
+    if (this.dom.mBtnTheme) {
+      this.dom.mBtnTheme.addEventListener('click', handleToggle);
+    }
+
+    themeEngine.onChange((theme, mode) => {
+      updateIcons(mode || themeEngine.getColorMode());
+    });
+
+    updateIcons(themeEngine.getColorMode());
+  }
+
+  // =========================================================================
+  // FLOATING REDUCED-SIZE CORNER BRAND (PINNED IN TOP-LEFT WHEN SCROLLED)
+  // =========================================================================
+  initFloatingCornerBrand() {
+    const cornerBrand = document.getElementById('floatingCornerBrand');
+    if (!cornerBrand) return;
+
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          // When page scrolls down beyond top menu (60px), show reduced corner brand
+          if (window.scrollY > 60) {
+            cornerBrand.classList.add('visible');
+          } else {
+            cornerBrand.classList.remove('visible');
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // Click on reduced corner logo smoothly returns view to top menu
+    cornerBrand.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    cornerBrand.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
   }
 }
 

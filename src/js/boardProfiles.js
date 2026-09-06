@@ -260,6 +260,45 @@ export const BOARD_PROFILES = {
     }
   },
 
+  'esp32_rest_client': {
+    id: 'esp32_rest_client',
+    name: 'ESP32 Wi-Fi REST Client (Auto-Publish)',
+    family: 'ESP',
+    arch: 'Xtensa Dual-Core 32-bit LX6 (WiFi+BLE)',
+    voltage: '3.3V Logic (NOT 5V Tolerant!)',
+    flash: '4 MB',
+    clock: '240 MHz',
+    formFactor: '30/38-Pin DIP',
+    defaultBaud: 115200,
+    firmwareType: 'esp32_rest',
+    pins: [
+      { name: 'GPIO4',  type: 'digital', is5V: false, desc: 'DHT11 Data Line' },
+      { name: 'GPIO5',  type: 'digital', is5V: false, desc: 'Piezo Alarm Buzzer' },
+      { name: 'GPIO18', type: 'digital', is5V: false, desc: 'HC-SR04 Trig Pin' },
+      { name: 'GPIO19', type: 'digital', is5V: false, desc: 'HC-SR04 Echo Pin' },
+      { name: 'GPIO13', type: 'digital', is5V: false, desc: 'PIR Motion Sensor' },
+      { name: 'GPIO25', type: 'digital', is5V: false, desc: 'RGB Red LED' },
+      { name: 'GPIO26', type: 'digital', is5V: false, desc: 'RGB Green LED' },
+      { name: 'GPIO27', type: 'digital', is5V: false, desc: 'RGB Blue LED' },
+      { name: 'GPIO34', type: 'analog',  is5V: false, desc: 'LDR Light ADC' },
+      { name: 'GPIO35', type: 'analog',  is5V: false, desc: 'LM35 Temperature ADC' },
+      { name: 'GPIO32', type: 'analog',  is5V: false, desc: 'Potentiometer ADC' }
+    ],
+    defaultMapping: {
+      dht11: 'GPIO4',
+      buzzer: 'GPIO5',
+      ultrasonic_trig: 'GPIO18',
+      ultrasonic_echo: 'GPIO19',
+      pir_motion: 'GPIO13',
+      rgb_red: 'GPIO25',
+      rgb_green: 'GPIO26',
+      rgb_blue: 'GPIO27',
+      ldr_light: 'GPIO34',
+      lm35_temp: 'GPIO35',
+      potentiometer: 'GPIO32'
+    }
+  },
+
   'esp8266': {
     id: 'esp8266',
     name: 'ESP8266 NodeMCU (ESP-12E)',
@@ -440,6 +479,47 @@ export const BOARD_PROFILES = {
       potentiometer: 'GP28',
       btn_key1: 'GP7',
       btn_key2: 'GP8'
+    }
+  },
+
+  'rpi_pico_w': {
+    id: 'rpi_pico_w',
+    name: 'Raspberry Pi Pico W (Wi-Fi MicroPython)',
+    family: 'Raspberry Pi',
+    arch: 'Dual ARM Cortex-M0+ & CYW43439 2.4GHz Wi-Fi',
+    voltage: '3.3V Logic (NOT 5V Tolerant!)',
+    flash: '2 MB',
+    clock: '133 MHz',
+    formFactor: '40-Pin DIP Module with Onboard Wi-Fi Antenna',
+    defaultBaud: 115200,
+    firmwareType: 'pico_w_python',
+    pins: [
+      { name: 'GP0',  type: 'digital', is5V: false, desc: 'UART0 TX, I2C0 SDA' },
+      { name: 'GP1',  type: 'digital', is5V: false, desc: 'UART0 RX, I2C0 SCL' },
+      { name: 'GP2',  type: 'digital', is5V: false, desc: 'DHT11 Data Line' },
+      { name: 'GP3',  type: 'digital', is5V: false, desc: 'Piezo Alarm Buzzer' },
+      { name: 'GP4',  type: 'digital', is5V: false, desc: 'HC-SR04 Trig Pin' },
+      { name: 'GP5',  type: 'digital', is5V: false, desc: 'HC-SR04 Echo Pin' },
+      { name: 'GP6',  type: 'digital', is5V: false, desc: 'PIR Motion Sensor' },
+      { name: 'GP14', type: 'digital', is5V: false, desc: 'RGB Red LED' },
+      { name: 'GP15', type: 'digital', is5V: false, desc: 'RGB Green LED' },
+      { name: 'GP16', type: 'digital', is5V: false, desc: 'RGB Blue LED' },
+      { name: 'GP26', type: 'analog',  is5V: false, desc: 'LDR Ambient Light (ADC0)' },
+      { name: 'GP27', type: 'analog',  is5V: false, desc: 'LM35 Temperature (ADC1)' },
+      { name: 'GP28', type: 'analog',  is5V: false, desc: 'Potentiometer (ADC2)' }
+    ],
+    defaultMapping: {
+      dht11: 'GP2',
+      buzzer: 'GP3',
+      ultrasonic_trig: 'GP4',
+      ultrasonic_echo: 'GP5',
+      pir_motion: 'GP6',
+      rgb_red: 'GP14',
+      rgb_green: 'GP15',
+      rgb_blue: 'GP16',
+      ldr_light: 'GP26',
+      lm35_temp: 'GP27',
+      potentiometer: 'GP28'
     }
   },
 
@@ -784,10 +864,14 @@ export const BOARD_PROFILES = {
  * Generates ready-to-flash Arduino C++, ESP-IDF C++, or MicroPython source code
  * based on the active board profile and pin assignments.
  */
-export function generateBoardFirmware(boardId, pinMap) {
+export function generateBoardFirmware(boardId, pinMap, options = {}) {
   const board = BOARD_PROFILES[boardId] || BOARD_PROFILES['arduino_uno'];
 
-  if (board.firmwareType === 'pico_python' || board.firmwareType === 'rpi_python') {
+  if (board.firmwareType === 'esp32_rest') {
+    return generateEsp32RestClientCode(board, pinMap, options);
+  } else if (board.firmwareType === 'pico_w_python') {
+    return generatePicoWRestClientCode(board, pinMap, options);
+  } else if (board.firmwareType === 'pico_python' || board.firmwareType === 'rpi_python') {
     return generatePythonCode(board, pinMap);
   } else {
     return generateArduinoCppCode(board, pinMap);
@@ -994,3 +1078,203 @@ while True:
     time.sleep(0.3)
 `;
 }
+
+export function generateEsp32RestClientCode(board, map, options = {}) {
+  const ssid = options.wifiSsid || 'YOUR_WIFI_SSID';
+  const password = options.wifiPassword || 'YOUR_WIFI_PASSWORD';
+  const endpoint = options.endpoint || 'http://192.168.1.100:3000/api/telemetry';
+  const deviceId = options.deviceId || 'dev_esp32_' + Math.floor(1000 + Math.random() * 9000);
+
+  return `/* =========================================================================
+ * Smart Room Sentinel — ESP32 REST Client Firmware
+ * Target Board: ${board.name}
+ * Auto-publishes JSON telemetry directly to dashboard endpoint
+ * ========================================================================= */
+
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
+const char* WIFI_SSID = "${ssid}";
+const char* WIFI_PASS = "${password}";
+const char* TELEMETRY_URL = "${endpoint}";
+const char* DEVICE_ID = "${deviceId}";
+
+// Pin Configurations
+#define PIN_DHT        ${cleanPin(map.dht11) || '4'}
+#define PIN_BUZZER     ${cleanPin(map.buzzer) || '5'}
+#define PIN_US_TRIG    ${cleanPin(map.ultrasonic_trig) || '18'}
+#define PIN_US_ECHO    ${cleanPin(map.ultrasonic_echo) || '19'}
+#define PIN_PIR        ${cleanPin(map.pir_motion) || '13'}
+#define PIN_RGB_R      ${cleanPin(map.rgb_red) || '25'}
+#define PIN_RGB_G      ${cleanPin(map.rgb_green) || '26'}
+#define PIN_RGB_B      ${cleanPin(map.rgb_blue) || '27'}
+#define PIN_LDR        ${cleanPin(map.ldr_light) || '34'}
+#define PIN_LM35       ${cleanPin(map.lm35_temp) || '35'}
+
+float g_temperature = 24.5;
+float g_humidity    = 55.0;
+float g_distance    = 100.0;
+int   g_motion      = 0;
+int   g_light       = 512;
+
+float measureUltrasonic() {
+  digitalWrite(PIN_US_TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(PIN_US_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(PIN_US_TRIG, LOW);
+  long dur = pulseIn(PIN_US_ECHO, HIGH, 26000);
+  if (dur == 0) return 999.0;
+  return (dur * 0.0343) / 2.0;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PIN_US_TRIG, OUTPUT);
+  pinMode(PIN_US_ECHO, INPUT);
+  pinMode(PIN_PIR, INPUT);
+  pinMode(PIN_BUZZER, OUTPUT);
+  pinMode(PIN_RGB_R, OUTPUT);
+  pinMode(PIN_RGB_G, OUTPUT);
+  pinMode(PIN_RGB_B, OUTPUT);
+
+  Serial.println("[ESP32] Connecting to Wi-Fi...");
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n[ESP32] Wi-Fi Connected! IP: " + WiFi.localIP().toString());
+}
+
+void loop() {
+  g_distance = measureUltrasonic();
+  g_motion = digitalRead(PIN_PIR);
+  g_light = analogRead(PIN_LDR);
+  int lm35Raw = analogRead(PIN_LM35);
+  g_temperature = (lm35Raw * (3.3 / 4095.0)) * 100.0;
+
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(TELEMETRY_URL);
+    http.addHeader("Content-Type", "application/json");
+
+    StaticJsonDocument<256> doc;
+    doc["deviceId"] = DEVICE_ID;
+    doc["temp"] = g_temperature;
+    doc["hum"] = g_humidity;
+    doc["dist"] = g_distance;
+    doc["motion"] = g_motion;
+    doc["light"] = g_light;
+
+    String jsonPayload;
+    serializeJson(doc, jsonPayload);
+
+    int httpCode = http.POST(jsonPayload);
+    Serial.printf("[REST] HTTP Status: %d\\n", httpCode);
+    http.end();
+  }
+
+  delay(2000);
+}
+`;
+}
+
+export function generatePicoWRestClientCode(board, map, options = {}) {
+  const ssid = options.wifiSsid || 'YOUR_WIFI_SSID';
+  const password = options.wifiPassword || 'YOUR_WIFI_PASSWORD';
+  const endpoint = options.endpoint || 'http://192.168.1.100:3000/api/telemetry';
+  const deviceId = options.deviceId || 'dev_picow_' + Math.floor(1000 + Math.random() * 9000);
+
+  return `# =========================================================================
+# Smart Room Sentinel — Raspberry Pi Pico W MicroPython REST Client
+# Auto-publishes JSON telemetry directly to dashboard endpoint
+# =========================================================================
+
+import network
+import urequests
+import ujson
+import time
+from machine import Pin, ADC
+
+WIFI_SSID = "${ssid}"
+WIFI_PASS = "${password}"
+TELEMETRY_URL = "${endpoint}"
+DEVICE_ID = "${deviceId}"
+
+# Pin Configurations
+PIN_BUZZER  = ${cleanPin(map.buzzer) || '3'}
+PIN_US_TRIG = ${cleanPin(map.ultrasonic_trig) || '4'}
+PIN_US_ECHO = ${cleanPin(map.ultrasonic_echo) || '5'}
+PIN_PIR     = ${cleanPin(map.pir_motion) || '6'}
+PIN_RGB_R   = ${cleanPin(map.rgb_red) || '14'}
+PIN_RGB_G   = ${cleanPin(map.rgb_green) || '15'}
+PIN_RGB_B   = ${cleanPin(map.rgb_blue) || '16'}
+PIN_LDR     = ${cleanPin(map.ldr_light) || '26'}
+PIN_LM35    = ${cleanPin(map.lm35_temp) || '27'}
+
+trig = Pin(PIN_US_TRIG, Pin.OUT)
+echo = Pin(PIN_US_ECHO, Pin.IN)
+pir  = Pin(PIN_PIR, Pin.IN)
+adc_ldr = ADC(Pin(PIN_LDR))
+adc_lm35 = ADC(Pin(PIN_LM35))
+
+# Connect to Wi-Fi
+wlan = network.WLAN(network.STA_IF)
+wlan.active(True)
+wlan.connect(WIFI_SSID, WIFI_PASS)
+
+print("[Pico W] Connecting to WiFi...")
+while not wlan.isconnected():
+    time.sleep(0.5)
+print("[Pico W] Connected! IP:", wlan.ifconfig()[0])
+
+def measure_distance():
+    trig.low()
+    time.sleep_us(2)
+    trig.high()
+    time.sleep_us(10)
+    trig.low()
+    
+    timeout = 30000
+    start = time.ticks_us()
+    while echo.value() == 0:
+        if time.ticks_diff(time.ticks_us(), start) > timeout:
+            return 999.0
+    
+    echo_start = time.ticks_us()
+    while echo.value() == 1:
+        if time.ticks_diff(time.ticks_us(), echo_start) > timeout:
+            return 999.0
+            
+    dur = time.ticks_diff(time.ticks_us(), echo_start)
+    return (dur * 0.0343) / 2.0
+
+while True:
+    dist = measure_distance()
+    motion = pir.value()
+    light = adc_ldr.read_u16() >> 6
+    temp_raw = adc_lm35.read_u16()
+    temp_c = (temp_raw * 3.3 / 65535.0) * 100.0
+
+    payload = {
+        "deviceId": DEVICE_ID,
+        "temp": round(temp_c, 1),
+        "hum": 55.0,
+        "dist": round(dist, 1),
+        "motion": motion,
+        "light": light
+    }
+
+    try:
+        res = urequests.post(TELEMETRY_URL, json=payload, headers={"Content-Type": "application/json"})
+        print("[Pico W] Telemetry POST status:", res.status_code)
+        res.close()
+    except Exception as e:
+        print("[Pico W] POST failed:", e)
+
+    time.sleep(2.5)
+`;
+}
+

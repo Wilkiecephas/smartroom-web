@@ -2,7 +2,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "functions": {
+    "api/register.js": { "memory": 128, "maxDuration": 10 },
+    "api/telemetry.js": { "memory": 128, "maxDuration": 10 }
+  },
   "rewrites": [
+    { "source": "/api/register", "destination": "/api/register" },
+    { "source": "/api/telemetry", "destination": "/api/telemetry" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

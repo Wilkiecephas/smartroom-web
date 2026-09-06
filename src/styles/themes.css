@@ -214,3 +214,37 @@
   --accent-red: #e11d48;
   --theme-bg-gradient: radial-gradient(at 20% 20%, rgba(226, 177, 106, 0.09) 0px, transparent 60%), radial-gradient(at 80% 80%, rgba(194, 155, 97, 0.07) 0px, transparent 60%);
 }
+
+/* ==========================================================================
+   GLOBAL LIGHT MODE PALETTE (When data-color-mode="light")
+   High-contrast, clean laboratory aesthetic with rich legible accents
+   ========================================================================== */
+[data-color-mode="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #eef2f7;
+  --bg-card: rgba(255, 255, 255, 0.94);
+  --bg-card-hover: #ffffff;
+  --border-subtle: rgba(15, 23, 42, 0.12);
+  --border-glow: rgba(2, 132, 199, 0.45);
+  --border-alert: rgba(220, 38, 38, 0.6);
+
+  --text-main: #0f172a;
+  --text-muted: #334155;
+  --text-dim: #64748b;
+
+  --accent-cyan: #0284c7;
+  --accent-blue: #2563eb;
+  --accent-purple: #9333ea;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-rose: #e11d48;
+  --accent-red: #dc2626;
+
+  --glow-cyan: 0 0 16px rgba(2, 132, 199, 0.22);
+  --glow-emerald: 0 0 16px rgba(5, 150, 105, 0.22);
+  --glow-rose: 0 0 18px rgba(225, 29, 72, 0.28);
+
+  --theme-bg-gradient: radial-gradient(at 15% 15%, rgba(2, 132, 199, 0.07) 0px, transparent 50%),
+                       radial-gradient(at 85% 85%, rgba(147, 51, 234, 0.05) 0px, transparent 50%);
+}
+

@@ -6,6 +6,31 @@
  * Part of SMART IOT HUB &bull; Built by TekStep Apps Uganda (tekstepapps.org)
  */
 
+import { supabaseService } from './supabaseClient.js';
+
+/**
+ * Connection methods supported by the Universal IoT Hub.
+ * particle_cloud  — Particle Cloud REST API (Spark Core / Photon / Argon)
+ * web_serial      — WebSerial USB UART (Arduino, RP2040, STM32, etc.)
+ * wifi            — Direct Wi-Fi endpoint polling (legacy, use custom_rest)
+ * virtual_simulation — Browser VM simulator
+ * custom_rest     — HTTP REST polling of device's own endpoint
+ * websocket       — WebSocket streaming from device
+ * server_api      — Device POSTs to /api/telemetry on this server; browser polls
+ * web_ble         — Web Bluetooth GATT
+ * mqtt_ws         — MQTT over WebSocket (broker URL required)
+ */
+export const SUPPORTED_CONNECTION_METHODS = [
+  { id: 'particle_cloud',      label: 'Particle Cloud (Spark Core / Photon)',     icon: '⚡', group: 'Cloud' },
+  { id: 'web_serial',          label: 'USB Serial (WebSerial UART)',               icon: '🔌', group: 'Wired' },
+  { id: 'custom_rest',         label: 'Custom REST / HTTP Polling',                icon: '🌐', group: 'Wireless' },
+  { id: 'websocket',           label: 'WebSocket (Live Streaming)',                icon: '📡', group: 'Wireless' },
+  { id: 'server_api',          label: 'Server API (Device → Dashboard Server)',    icon: '☁️',  group: 'Cloud' },
+  { id: 'web_ble',             label: 'Web Bluetooth (BLE GATT)',                 icon: '🦷', group: 'Wireless' },
+  { id: 'mqtt_ws',             label: 'MQTT over WebSocket',                      icon: '📨', group: 'Wireless' },
+  { id: 'virtual_simulation',  label: 'Virtual Simulation (Browser VM)',           icon: '💻', group: 'Virtual' },
+];
+
 export const PRESET_DEVICES = [
   {
     id: 'dev_spark_core_primary',
@@ -21,13 +46,13 @@ export const PRESET_DEVICES = [
     attachedSensors: [
       'dht11',
       'ultrasonic',
-      'pir_motion',
       'ldr_light',
       'lm35_temp',
       'potentiometer',
       'buzzer',
       'rgb_led'
     ],
+    sensorSchema: [], // Known sensors resolved from AVAILABLE_SENSORS_CATALOG
     zone: 'Master Lab / Chamber',
     lastSeen: new Date().toISOString()
   },
@@ -52,6 +77,7 @@ export const PRESET_DEVICES = [
       'buzzer',
       'rgb_led'
     ],
+    sensorSchema: [],
     zone: 'Hardware Electronics Bench',
     lastSeen: new Date().toISOString()
   },
@@ -72,6 +98,7 @@ export const PRESET_DEVICES = [
       'ldr_light',
       'buzzer'
     ],
+    sensorSchema: [],
     zone: 'Perimeter Node 1',
     lastSeen: new Date().toISOString()
   },
@@ -95,6 +122,7 @@ export const PRESET_DEVICES = [
       'amg8833_thermal',
       'drone_mavlink'
     ],
+    sensorSchema: [],
     zone: 'Cyber Simulation Zone',
     lastSeen: new Date().toISOString()
   }
@@ -120,55 +148,113 @@ export const AVAILABLE_SENSORS_CATALOG = [
 
 class DeviceRegistry {
   constructor() {
-    this.storageKey = 'sr_registered_devices_v2';
-    this.activeKey = 'sr_active_device_id_v2';
-    this.onboardingKey = 'sr_onboarding_completed_v2';
-    this.projectKey = 'sr_active_project_name_v2';
+    this.currentUser = supabaseService.getCurrentUser();
+    this._resolveKeys();
     this.devices = this.loadDevices();
     this.activeDeviceId = this.loadActiveDeviceId();
     this.projectName = this.loadProjectName();
     this.listeners = new Set();
+
+    // Listen to Supabase Auth changes (user switch, login, logout)
+    supabaseService.onAuthChange((user) => {
+      this.setUser(user);
+    });
+  }
+
+  _resolveKeys() {
+    const isOwner = supabaseService.isCurrentUserOwner();
+    const uid = this.currentUser?.id || 'owner';
+    if (isOwner) {
+      this.storageKey = 'sr_registered_devices_v2';
+      this.activeKey = 'sr_active_device_id_v2';
+    } else {
+      this.storageKey = `sr_registered_devices_v2_${uid}`;
+      this.activeKey = `sr_active_device_id_v2_${uid}`;
+    }
+    this.onboardingKey = `sr_onboarding_completed_v2_${uid}`;
+    this.projectKey = `sr_active_project_name_v2_${uid}`;
+  }
+
+  setUser(user) {
+    this.currentUser = user;
+    this._resolveKeys();
+    this.devices = this.loadDevices();
+    this.activeDeviceId = this.loadActiveDeviceId();
+    this.projectName = this.loadProjectName();
+
+    // If Supabase is connected, asynchronously fetch devices for this user
+    if (supabaseService.isConfigured() && this.currentUser?.id) {
+      supabaseService.fetchCloudDevices(this.currentUser.id).then(cloudDevices => {
+        if (Array.isArray(cloudDevices) && cloudDevices.length > 0) {
+          this.devices = cloudDevices;
+          if (!this.devices.some(d => d.id === this.activeDeviceId)) {
+            this.activeDeviceId = this.devices[0].id;
+          }
+          this.save(false); // save locally without re-pushing
+          this.notify();
+        }
+      }).catch(err => console.warn('[Registry] Cloud sync error:', err));
+    }
+
+    this.notify();
   }
 
   loadDevices() {
+    const isOwner = supabaseService.isCurrentUserOwner();
     try {
       if (typeof localStorage !== 'undefined') {
         const saved = localStorage.getItem(this.storageKey);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            let modified = false;
-            // Self-heal: update any stale Spark Core device credentials
-            parsed.forEach(dev => {
-              if (dev.type === 'spark_core') {
-                if (!dev.credentials || dev.credentials.deviceId === '53ff6e066667574849402567' || !dev.credentials.deviceId) {
-                  dev.credentials = {
-                    deviceId: '54ff74066678574924331067',
-                    token: 'a0797b36a33322a66526d0580e6fe270a5ade86f'
-                  };
-                  modified = true;
+          if (Array.isArray(parsed)) {
+            if (isOwner && parsed.length > 0) {
+              let modified = false;
+              // Self-heal: update any stale Spark Core device credentials for owner
+              parsed.forEach(dev => {
+                if (dev.type === 'spark_core') {
+                  if (!dev.credentials || dev.credentials.deviceId === '53ff6e066667574849402567' || !dev.credentials.deviceId) {
+                    dev.credentials = {
+                      deviceId: '54ff74066678574924331067',
+                      token: 'a0797b36a33322a66526d0580e6fe270a5ade86f'
+                    };
+                    modified = true;
+                  }
+                  // Self-heal: ensure disconnected PIR sensor does not trigger false intrusion alerts
+                  if (!dev.userWiredPir && Array.isArray(dev.attachedSensors) && dev.attachedSensors.includes('pir_motion')) {
+                    dev.attachedSensors = dev.attachedSensors.filter(s => s !== 'pir_motion');
+                    modified = true;
+                  }
                 }
+              });
+
+              if (!parsed.some(d => d.id === 'dev_arduino_uno_primary' || d.type === 'arduino_uno')) {
+                parsed.push(PRESET_DEVICES[1]);
+                modified = true;
               }
-            });
 
-            // Ensure Arduino Uno is present
-            if (!parsed.some(d => d.id === 'dev_arduino_uno_primary' || d.type === 'arduino_uno')) {
-              parsed.push(PRESET_DEVICES[1]);
-              modified = true;
+              if (modified) {
+                localStorage.setItem(this.storageKey, JSON.stringify(parsed));
+              }
+              return parsed;
+            } else if (!isOwner) {
+              // Non-owner: return their saved devices (or empty array if none)
+              return parsed;
             }
-
-            if (modified) {
-              localStorage.setItem(this.storageKey, JSON.stringify(parsed));
-            }
-            return parsed;
           }
         }
       }
     } catch (_) {}
-    return [...PRESET_DEVICES];
+
+    // Owner gets preset devices (Spark Core running), other users get a blank workspace!
+    if (isOwner) {
+      return [...PRESET_DEVICES];
+    } else {
+      return []; // BLANK SLATE for other users until they add their hardware!
+    }
   }
 
   loadActiveDeviceId() {
+    const isOwner = supabaseService.isCurrentUserOwner();
     try {
       if (typeof localStorage !== 'undefined') {
         const saved = localStorage.getItem(this.activeKey);
@@ -177,21 +263,27 @@ class DeviceRegistry {
         }
       }
     } catch (_) {}
-    const hasSpark = this.devices.some(d => d.id === 'dev_spark_core_primary');
-    return hasSpark ? 'dev_spark_core_primary' : (this.devices[0] ? this.devices[0].id : null);
+
+    if (isOwner) {
+      const hasSpark = this.devices.some(d => d.id === 'dev_spark_core_primary');
+      return hasSpark ? 'dev_spark_core_primary' : (this.devices[0] ? this.devices[0].id : null);
+    } else {
+      return this.devices[0] ? this.devices[0].id : null;
+    }
   }
 
   loadProjectName() {
+    const isOwner = supabaseService.isCurrentUserOwner();
     try {
       if (typeof localStorage !== 'undefined') {
         const saved = localStorage.getItem(this.projectKey);
         if (saved) return saved;
       }
     } catch (_) {}
-    return 'SmartRoom IoT Sentinel Multi-Board Project';
+    return isOwner ? 'SmartRoom IoT Sentinel Multi-Board Project' : 'My IoT Hardware Project';
   }
 
-  save() {
+  save(syncCloud = true) {
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(this.storageKey, JSON.stringify(this.devices));
@@ -205,6 +297,14 @@ class DeviceRegistry {
         }
       }
     } catch (_) {}
+
+    // Cloud sync to Supabase if configured
+    if (syncCloud && supabaseService.isConfigured() && this.currentUser?.id) {
+      this.devices.forEach(dev => {
+        supabaseService.syncDeviceToCloud(this.currentUser.id, dev);
+      });
+    }
+
     this.notify();
   }
 
@@ -283,6 +383,13 @@ class DeviceRegistry {
       status: deviceData.status || 'online',
       credentials: deviceData.credentials || {},
       attachedSensors: deviceData.attachedSensors || ['dht11', 'ultrasonic', 'pir_motion', 'ldr_light'],
+      /**
+       * sensorSchema — array of custom sensor definitions for dynamic rendering.
+       * Format: [{ key, label, unit, type, min, max, icon, category }]
+       * Only needed for custom_rest / websocket / server_api devices.
+       * Known devices (Spark Core, Arduino) resolve from AVAILABLE_SENSORS_CATALOG.
+       */
+      sensorSchema: deviceData.sensorSchema || [],
       zone: deviceData.zone || 'Primary Zone',
       lastSeen: new Date().toISOString()
     };
@@ -301,14 +408,18 @@ class DeviceRegistry {
   }
 
   removeDevice(id) {
-    if (this.devices.length <= 1) {
+    const isOwner = supabaseService.isCurrentUserOwner();
+    if (isOwner && this.devices.length <= 1) {
       return false;
     }
     this.devices = this.devices.filter(d => d.id !== id);
     if (this.activeDeviceId === id) {
-      this.activeDeviceId = this.devices[0].id;
+      this.activeDeviceId = this.devices.length > 0 ? this.devices[0].id : null;
     }
     this.save();
+    if (supabaseService.isConfigured()) {
+      supabaseService.deleteDeviceFromCloud(id);
+    }
     return true;
   }
 

@@ -48,12 +48,12 @@ export const DEFAULT_SENSOR_MAPPING = {
   },
   pir_motion: {
     id: 'pir_motion',
-    name: 'HC-SR501 PIR Motion',
+    name: '12V PIR / HC-SR501 Motion',
     pin: 'D3',
     signalType: 'digital_input',
-    voltageReq: '3.3V Logic Output',
+    voltageReq: 'Dry Contact / 3.3V Logic',
     hotkey: 'm',
-    instructions: 'Connected to HC-SR501 Out pin. Outputs 3.3V HIGH when human infrared motion is detected. Built-in 3.3V regulator.',
+    instructions: 'Connected to PIR trigger wire. For 12V PIR, wire dry-contact switch between D3 and GND with INPUT_PULLUP (Active-LOW). For HC-SR501, connect OUT to D3.',
     status: 'healthy'
   },
   rgb_red: {

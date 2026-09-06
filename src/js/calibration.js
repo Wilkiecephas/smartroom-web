@@ -54,7 +54,7 @@ export const SENSOR_CALIBRATION_DEFAULTS = {
     unit: 'state',
     offset: 0,
     gain: 1.0,
-    enabled: true,
+    enabled: false,
     min: 0,
     max: 1,
     step: 1

@@ -30,8 +30,22 @@
   <div id="alarmOverlay" class="alarm-overlay"></div>
 
   <div class="app-container">
-    <!-- Top Header Navigation Bar -->
-    <header class="app-header">
+    <!-- Floating Reduced-Size Corner Brand (Pinned in top-left corner when scrolled down) -->
+    <div id="floatingCornerBrand" class="floating-corner-brand" role="button" tabindex="0" title="SMART IOT HUB • Click to return to top menu">
+      <div class="floating-brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+      </div>
+      <div class="floating-brand-text">
+        <span class="floating-brand-title">SMART IOT HUB</span>
+        <span class="floating-brand-badge" id="floatingBrandStatus"><span class="mini-status-dot"></span> Online</span>
+      </div>
+      <span class="floating-brand-arrow" title="Scroll to Top">▲</span>
+    </div>
+
+    <!-- Top Header Navigation Bar (Scrolls with page to maximize monitoring space) -->
+    <header class="app-header" id="mainAppHeader">
       <div class="header-brand">
         <div class="brand-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -288,6 +302,13 @@
                   <span>Rebrand facility project &amp; ThingSpeak channel API</span>
                 </div>
               </button>
+              <button id="btnSubMenuAccount" class="sub-menu-action-item" type="button">
+                <span class="sub-item-icon" style="color: #38bdf8;">👤</span>
+                <div class="sub-item-text">
+                  <strong>User Accounts &amp; Supabase DB</strong>
+                  <span>Manage accounts, cloud database sync &amp; multi-user isolation</span>
+                </div>
+              </button>
               <button id="btnOpenAboutTekstep" class="sub-menu-action-item" type="button">
                 <span class="sub-item-icon">🇺🇬</span>
                 <div class="sub-item-text">
@@ -311,6 +332,13 @@
           <span>Add Device</span>
         </button>
 
+        <!-- User Account & Supabase Cloud Sync Button -->
+        <button id="btnOpenAccount" class="btn-account-pill" title="User Account &amp; Supabase Database">
+          <span class="user-avatar-badge" id="userAvatarBadge">👤</span>
+          <span class="user-account-name" id="userAccountName">Wilkie (Owner)</span>
+          <span class="user-cloud-indicator offline" id="userCloudIndicator" title="Supabase DB Sync">●</span>
+        </button>
+
         <!-- ThingSpeak Rate-Limit Sync Badge -->
         <div id="tsSyncIndicator" class="metric-badge badge-normal" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 5px 10px; cursor: pointer;" title="ThingSpeak 15s Cloud Sync Countdown">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
@@ -326,6 +354,11 @@
         <!-- Settings Button -->
         <button id="btnOpenSettings" class="btn-icon" title="Cloud API Settings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+
+        <!-- Light / Dark Mode Toggle Button -->
+        <button id="btnToggleColorMode" class="btn-icon theme-mode-toggle" title="Toggle Light / Dark Mode" aria-label="Toggle Color Theme">
+          <span id="iconColorMode">🌙</span>
         </button>
       </div>
     </header>
@@ -404,10 +437,59 @@
             </button>
           </div>
         </div>
+      </div><!-- /compact-sentinel-bar -->
+
+      <!-- Blank Workspace State for New Accounts / Zero Devices -->
+      <div id="blankWorkspaceState" class="blank-workspace-card" style="display: none;">
+        <div class="blank-workspace-badge">DEVELOPER WORKSPACE &bull; CLEAN SLATE</div>
+        <div class="blank-workspace-icon">🛰️</div>
+        <div class="blank-workspace-title">Welcome to SmartRoom IoT Sentinel</div>
+        <div class="blank-workspace-subtitle" id="blankWorkspaceUserGreeting">
+          Your developer workspace is currently empty. Connect your physical microcontroller, IP address, serial port, or custom REST API to start streaming live telemetry.
+        </div>
+
+        <div class="blank-workspace-grid">
+          <button class="blank-action-card" id="blankBtnAddSpark" type="button">
+            <span class="blank-card-icon" style="color: #00f2fe;">⚡</span>
+            <div class="blank-card-text">
+              <strong>Particle Spark Core / Photon</strong>
+              <span>Enter Device ID &amp; Token to link cloud hardware</span>
+            </div>
+          </button>
+
+          <button class="blank-action-card" id="blankBtnAddSerial" type="button">
+            <span class="blank-card-icon" style="color: #ec4899;">🔌</span>
+            <div class="blank-card-text">
+              <strong>USB Serial COM Port</strong>
+              <span>Connect Arduino, STM32, or Pico via WebSerial UART</span>
+            </div>
+          </button>
+
+          <button class="blank-action-card" id="blankBtnAddRest" type="button">
+            <span class="blank-card-icon" style="color: #10b981;">🌐</span>
+            <div class="blank-card-text">
+              <strong>Custom REST / HTTP</strong>
+              <span>Directly poll ESP32, Pico W, or local sensor IP address</span>
+            </div>
+          </button>
+
+          <button class="blank-action-card" id="blankBtnAddWs" type="button">
+            <span class="blank-card-icon" style="color: #38bdf8;">📡</span>
+            <div class="blank-card-text">
+              <strong>WebSocket Streaming</strong>
+              <span>Stream live JSON telemetry from IoT daemons &amp; gateways</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="blank-workspace-footer">
+          <span>Need Wilkie's master hardware station?</span>
+          <button id="blankBtnSwitchWilkie" class="btn-text-link" type="button">👑 Switch to Wilkie (Master Station &bull; Spark Core Active)</button>
+        </div>
       </div>
 
       <!-- Command Dashboard 2-Column Balanced Layout: Left Sensors vs Right Hero Sonar -->
-      <div class="compact-command-layout">
+      <div id="compactCommandLayout" class="compact-command-layout">
         <!-- LEFT COLUMN: 4 Core Environmental Sensor Cards in Balanced 2x2 Grid -->
         <div class="compact-sensors-column">
           <div class="compact-sensors-grid">
@@ -460,13 +542,18 @@
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                   <span>ROOM OCCUPANCY</span>
                 </div>
-                <span id="compactBadgeMotion" class="compact-badge badge-normal">CLEAR</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <button id="btnTogglePirAttached" class="btn-micro-toggle" title="Click to Disconnect or Reconnect PIR Sensor (prevents false alarms when sensor is not plugged in)" style="font-size: 10px; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--text-main); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <span id="txtPirAttachedState">🔌 Wired</span>
+                  </button>
+                  <span id="compactBadgeMotion" class="compact-badge badge-normal">CLEAR</span>
+                </div>
               </div>
               <div class="compact-card-body">
                 <div class="compact-main-val" id="compactValMotionText">
                   <span style="color: var(--accent-emerald);">VACANT</span>
                 </div>
-                <div class="compact-subtext">HC-SR501 Infrared Motion (D3)</div>
+                <div class="compact-subtext">PIR Motion (12V Dry Contact / D3)</div>
                 <div class="motion-pulse-container">
                   <div id="compactMotionIndicator" class="motion-dot clear"></div>
                   <span id="compactMotionSubtext" style="font-size: 11px; color: var(--text-dim);">No human movement detected</span>
@@ -603,6 +690,9 @@
         </div>
       </div>
     </section>
+
+    <!-- Universal IoT: Dynamic Sensor Grid (shown for custom-schema devices) -->
+    <div id="dynamicSensorGrid"></div>
 
     <!-- Telemetry & Event Stream Bar (Area Directly After Settings, Divided with a Column) -->
     <section id="telemetryStreamBar" class="telemetry-stream-bar">
@@ -1055,7 +1145,7 @@
             <!-- PIR Motion Card -->
             <div class="module-card" id="cardModulePir">
               <div class="module-header">
-                <div class="module-name">HC-SR501 PIR Motion</div>
+                <div class="module-name">12V PIR / HC-SR501 Motion</div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span class="port-health-badge pass" id="pingBadge_pir_motion">PASS</span>
                   <span class="module-pin-chip" id="chipPinPir">Pin D3</span>
@@ -1069,7 +1159,7 @@
                 <span class="module-value-num" id="modPirState" style="color: var(--accent-emerald);">CLEAR</span>
               </div>
               <div class="module-instruction-preview" id="instPreviewPir">
-                Infrared pyroelectric sensor. Outputs 3.3V HIGH on motion detection.
+                12V dry contact (pull-up to GND) / HC-SR501 infrared motion detection.
               </div>
               <div class="module-actions-row">
                 <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="pir_motion" title="Ping PIR line">
@@ -1441,6 +1531,134 @@
     </div>
   </div>
 
+  <!-- MODAL: User Accounts & Supabase Database -->
+  <div id="modalAccount" class="modal-overlay">
+    <div class="modal-dialog wide" style="max-width: 800px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-cyan);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          User Accounts &amp; Supabase Database
+        </div>
+        <button id="btnCloseAccountModal" class="btn-icon">✕</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="tabAccountProfile">👤 Active Profile &amp; Switch</button>
+        <button class="modal-tab-btn" data-tab="tabAccountAuth">🔐 Supabase Auth / Sign In</button>
+        <button class="modal-tab-btn" data-tab="tabAccountSupabase">☁️ Supabase Cloud DB</button>
+        <button class="modal-tab-btn" data-tab="tabAccountSql">📜 SQL Migration Schema</button>
+      </div>
+
+      <!-- TAB 1: Profile & Quick Switch -->
+      <div id="tabAccountProfile" class="tab-content-pane active">
+        <div class="account-profile-hero">
+          <div class="account-avatar-large" id="accountAvatarLarge">👤</div>
+          <div class="account-info">
+            <div class="account-name" id="accountProfileName">Wilkie (Master Owner)</div>
+            <div class="account-email" id="accountProfileEmail">wilk@tekstepapps.org</div>
+            <div class="account-badge" id="accountProfileBadge">⚡ Master Station &bull; Spark Core Active</div>
+          </div>
+        </div>
+
+        <div style="margin: 20px 0 10px; font-weight: 700; font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">
+          Workspace Multi-User Switcher
+        </div>
+        <div class="user-switch-cards-grid">
+          <div class="user-switch-card active-user" id="cardSwitchWilkie">
+            <div class="switch-card-header">
+              <span class="user-pill-icon">👑</span>
+              <strong>Wilkie (Primary Owner)</strong>
+            </div>
+            <p>Master account pre-configured with Spark Core (Master Chamber) running live telemetry and all preset sensors.</p>
+            <button id="btnSwitchToWilkie" class="btn-secondary small" type="button">Switch to Wilkie</button>
+          </div>
+
+          <div class="user-switch-card" id="cardSwitchGuest">
+            <div class="switch-card-header">
+              <span class="user-pill-icon">🧪</span>
+              <strong>New Developer / User</strong>
+            </div>
+            <p>Clean blank slate (0 devices). Add your own hardware, IP addresses, serial ports or Particle tokens.</p>
+            <button id="btnSwitchToGuest" class="btn-secondary small" type="button">Switch to Blank Workspace</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 16px;">
+          <div style="font-size: 12px; color: var(--text-dim);">
+            Active Workspace Devices: <strong id="accountDeviceCount" style="color: var(--accent-cyan);">Loading...</strong>
+          </div>
+          <button id="btnSignOutAccount" class="btn-danger-outline small" type="button">Sign Out / Reset Session</button>
+        </div>
+      </div>
+
+      <!-- TAB 2: Supabase Auth (Sign In / Register) -->
+      <div id="tabAccountAuth" class="tab-content-pane">
+        <div style="padding: 12px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-md); margin-bottom: 16px; font-size: 12px; color: var(--text-main);">
+          Sign up with your email to get a personalized cloud account. Each user gets their own dedicated hardware list, completely isolated from other users.
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Full Name / Display Name:</label>
+          <input type="text" id="inputAuthFullName" class="form-input" placeholder="e.g. Alex Maker">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Email Address:</label>
+          <input type="email" id="inputAuthEmail" class="form-input" placeholder="developer@example.com">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Password:</label>
+          <input type="password" id="inputAuthPassword" class="form-input" placeholder="••••••••">
+        </div>
+
+        <div id="authStatusMessage" style="font-size: 12px; margin-bottom: 14px; display: none;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button id="btnAuthSignIn" class="btn-secondary" type="button">Sign In</button>
+          <button id="btnAuthSignUp" class="btn-primary" type="button" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">Create New Account (Blank Slate)</button>
+        </div>
+      </div>
+
+      <!-- TAB 3: Supabase Cloud Database Configuration -->
+      <div id="tabAccountSupabase" class="tab-content-pane">
+        <div style="padding: 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); margin-bottom: 16px; font-size: 12px; color: var(--text-main);">
+          Connect to your Supabase PostgreSQL cloud database for persistent user accounts and device synchronization across all browsers and devices.
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Supabase Project URL:</label>
+          <input type="text" id="inputSupabaseUrl" class="form-input" placeholder="https://your-project.supabase.co" style="font-family: var(--font-mono); font-size: 12px;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Supabase Public Anon Key:</label>
+          <input type="password" id="inputSupabaseAnonKey" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="font-family: var(--font-mono); font-size: 12px;">
+        </div>
+
+        <div id="supabaseStatusText" style="font-size: 12px; margin-bottom: 14px; color: var(--text-dim);">
+          Database Status: <span id="supabaseStatusBadge" class="metric-badge badge-dim">Local Offline Mode</span>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button id="btnTestSupabase" class="btn-secondary" type="button">⚡ Test Connection</button>
+          <button id="btnSaveSupabaseConfig" class="btn-primary" type="button">Save Supabase Cloud Keys</button>
+        </div>
+      </div>
+
+      <!-- TAB 4: SQL Migration Schema -->
+      <div id="tabAccountSql" class="tab-content-pane">
+        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 10px;">
+          Copy this SQL script and execute it in your <strong>Supabase Project -> SQL Editor</strong> to create the <code>profiles</code> and <code>devices</code> tables with Row Level Security (RLS):
+        </div>
+        <pre class="code-snippet-box" id="supabaseSqlSnippet" style="max-height: 260px; overflow-y: auto; font-family: var(--font-mono); font-size: 11px; padding: 12px; background: rgba(0,0,0,0.5); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);"></pre>
+        <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+          <button id="btnCopySupabaseSql" class="btn-secondary" type="button">📋 Copy SQL Schema</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: One-by-One Sensor Calibration Studio -->
   <div id="modalCalibration" class="modal-overlay">
     <div class="modal-dialog wide">
@@ -1532,61 +1750,183 @@
     </div>
   </div>
 
-  <!-- MODAL: Universal Firmware Flasher & Code Generator -->
+  <!-- MODAL: Universal Hardware Connection Hub & Code Generator -->
   <div id="modalFlasher" class="modal-overlay">
-    <div class="modal-dialog wide">
+    <div class="modal-dialog wide" style="max-width: 900px; max-height: 90vh; display: flex; flex-direction: column;">
       <div class="modal-header">
         <div class="modal-title">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          Universal Firmware Flasher & Code Generator
+          Hardware Code Generator &amp; Connection Hub
         </div>
         <button id="btnCloseFlasher" class="btn-icon">✕</button>
       </div>
 
-      <!-- Modal Tabs -->
-      <div class="modal-tabs">
-        <button class="modal-tab-btn active" data-tab="tabFlasherCode">Universal Firmware Sketch</button>
-        <button class="modal-tab-btn" data-tab="tabFlasherWebUsb">Browser WebUSB / WebSerial Flasher</button>
+      <!-- Modal Tabs for Every Platform -->
+      <div class="modal-tabs" style="overflow-x: auto; flex-wrap: nowrap; padding-bottom: 8px;">
+        <button class="modal-tab-btn active" data-tab="tabConnectArduino">🔌 Arduino Uno/Nano (WebSerial)</button>
+        <button class="modal-tab-btn" data-tab="tabConnectEsp32">🌐 ESP32 (Wi-Fi REST)</button>
+        <button class="modal-tab-btn" data-tab="tabConnectEsp32Server">📡 ESP32 (Local Web Server)</button>
+        <button class="modal-tab-btn" data-tab="tabConnectSpark">⚡ Spark Core / Photon (Particle)</button>
+        <button class="modal-tab-btn" data-tab="tabConnectPico">🐍 Pico W (MicroPython)</button>
+        <button class="modal-tab-btn" data-tab="tabFlasherWebUsb">💾 WebUSB Binary Flasher</button>
       </div>
 
-      <!-- TAB 1: Code Generator -->
-      <div id="tabFlasherCode" class="tab-content-pane active">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-          <div id="flasherBoardBanner" style="font-size: 13px; color: var(--accent-cyan); font-weight: 600;">
-            Target: Arduino Uno R3 (ATmega328P) &bull; 5V Native Logic
+      <!-- SCROLLABLE BODY -->
+      <div style="overflow-y: auto; flex: 1; padding-right: 4px;">
+
+        <!-- TAB 1: Arduino Uno / Nano / Mega WebSerial -->
+        <div id="tabConnectArduino" class="tab-content-pane active">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong style="color: var(--accent-cyan); font-size: 14px;">Arduino Uno / Nano / Mega &bull; USB WebSerial UART (115200 Baud)</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">Direct browser communication with zero cloud latency. Streams JSON telemetry at 3.3 pkt/s.</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button id="btnCopyArduinoCode" class="btn-outline" style="padding: 5px 12px; font-size: 11px;">📋 Copy Sketch</button>
+              <button id="btnDownloadArduinoCode" class="btn-primary" style="padding: 5px 12px; font-size: 11px;">💾 Download .ino</button>
+            </div>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button id="btnCopyGeneratedCode" class="btn-outline" style="padding: 4px 10px; font-size: 11px;">Copy Code</button>
-            <button id="btnDownloadSketch" class="btn-primary" style="padding: 4px 10px; font-size: 11px;">Download Sketch (.ino / .py)</button>
+
+          <!-- Quickstart 1-2-3 -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-bottom: 12px;">
+            <div style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+              <strong style="color: var(--accent-cyan);">Step 1: Upload Sketch</strong><br>
+              <span style="color: var(--text-dim);">Paste code into Arduino IDE and upload to your board at 115200 baud.</span>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+              <strong style="color: var(--accent-emerald);">Step 2: Connect Pinout</strong><br>
+              <span style="color: var(--text-dim);">HC-SR04 (Trig: D7, Echo: D8), PIR (D3), Buzzer (D5), LDR (A1), LM35 (A2).</span>
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+              <strong style="color: var(--accent-amber);">Step 3: Connect in Hub</strong><br>
+              <span style="color: var(--text-dim);">Click <strong>"Connect USB COM Port"</strong> in the top menu to stream live!</span>
+            </div>
+          </div>
+
+          <textarea id="txtArduinoCode" class="instruction-textarea" style="height: 280px; font-family: var(--font-mono); font-size: 11px; white-space: pre;" readonly></textarea>
+        </div>
+
+        <!-- TAB 2: ESP32 Wi-Fi REST Client -->
+        <div id="tabConnectEsp32" class="tab-content-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong style="color: var(--accent-cyan); font-size: 14px;">ESP32 Wi-Fi REST Client &bull; Automatic Telemetry POST</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">ESP32 connects to your Wi-Fi and automatically POSTs JSON packets to the IoT Hub every 2s.</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button id="btnCopyEsp32Code" class="btn-outline" style="padding: 5px 12px; font-size: 11px;">📋 Copy Sketch</button>
+              <button id="btnDownloadEsp32Code" class="btn-primary" style="padding: 5px 12px; font-size: 11px;">💾 Download .ino</button>
+            </div>
+          </div>
+
+          <!-- Parameter Customizer -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">⚡ Live Code Customizer (Updates code below in real-time)</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
+              <div>
+                <label style="font-size: 10px; color: var(--text-dim);">Wi-Fi SSID (2.4 GHz):</label>
+                <input type="text" id="cfgEspSsid" class="form-input" style="font-size: 11px; padding: 4px 8px;" value="YOUR_WIFI_SSID">
+              </div>
+              <div>
+                <label style="font-size: 10px; color: var(--text-dim);">Wi-Fi Password:</label>
+                <input type="text" id="cfgEspPass" class="form-input" style="font-size: 11px; padding: 4px 8px;" value="YOUR_WIFI_PASSWORD">
+              </div>
+              <div>
+                <label style="font-size: 10px; color: var(--text-dim);">IoT Hub Telemetry URL:</label>
+                <input type="text" id="cfgEspUrl" class="form-input" style="font-size: 11px; padding: 4px 8px;" value="http://192.168.1.100:5173/api/telemetry?device=dev_esp32_01">
+              </div>
+              <div>
+                <label style="font-size: 10px; color: var(--text-dim);">Device Identifier:</label>
+                <input type="text" id="cfgEspDevId" class="form-input" style="font-size: 11px; padding: 4px 8px;" value="dev_esp32_01">
+              </div>
+            </div>
+          </div>
+
+          <textarea id="txtEsp32Code" class="instruction-textarea" style="height: 280px; font-family: var(--font-mono); font-size: 11px; white-space: pre;" readonly></textarea>
+        </div>
+
+        <!-- TAB 3: ESP32 Local Web Server -->
+        <div id="tabConnectEsp32Server" class="tab-content-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong style="color: var(--accent-cyan); font-size: 14px;">ESP32 Standalone Web Server &bull; Hub Direct Polling</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">ESP32 runs an HTTP server on Port 80. The Smart IoT Hub polls <code>GET /telemetry</code> directly over LAN.</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button id="btnCopyEsp32ServerCode" class="btn-outline" style="padding: 5px 12px; font-size: 11px;">📋 Copy Sketch</button>
+              <button id="btnDownloadEsp32ServerCode" class="btn-primary" style="padding: 5px 12px; font-size: 11px;">💾 Download .ino</button>
+            </div>
+          </div>
+
+          <div style="background: rgba(0, 242, 254, 0.06); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px;">
+            <strong>How to connect:</strong> After uploading, open Serial Monitor to get your ESP32's IP address (e.g. <code>http://192.168.1.145</code>). In Smart IoT Hub, click <strong>"+ Add Device"</strong> -> <strong>"Custom REST / HTTP"</strong>, enter <code>http://192.168.1.145/telemetry</code>, and click Save!
+          </div>
+
+          <textarea id="txtEsp32ServerCode" class="instruction-textarea" style="height: 280px; font-family: var(--font-mono); font-size: 11px; white-space: pre;" readonly></textarea>
+        </div>
+
+        <!-- TAB 4: Spark Core / Particle Photon -->
+        <div id="tabConnectSpark" class="tab-content-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong style="color: var(--accent-cyan); font-size: 14px;">Spark Core &amp; Particle Photon / Argon &bull; Particle Cloud API</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">Worldwide cloud access via Particle variables &amp; functions with anti-floating PIR pull-down protection.</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button id="btnCopySparkCode" class="btn-outline" style="padding: 5px 12px; font-size: 11px;">📋 Copy Firmware</button>
+              <button id="btnDownloadSparkCode" class="btn-primary" style="padding: 5px 12px; font-size: 11px;">💾 Download .ino</button>
+            </div>
+          </div>
+
+          <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px;">
+            <strong>Particle Cloud Credentials:</strong> Flash code using <a href="https://build.particle.io" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">Particle Web IDE</a> or CLI. Obtain your <strong>Device ID</strong> and <strong>Access Token</strong> from the <a href="https://console.particle.io" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">Particle Console</a>, then enter them in "+ Add Device" -> Particle Cloud!
+          </div>
+
+          <textarea id="txtSparkCode" class="instruction-textarea" style="height: 280px; font-family: var(--font-mono); font-size: 11px; white-space: pre;" readonly></textarea>
+        </div>
+
+        <!-- TAB 5: Raspberry Pi Pico W MicroPython -->
+        <div id="tabConnectPico" class="tab-content-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong style="color: var(--accent-cyan); font-size: 14px;">Raspberry Pi Pico W &bull; MicroPython Telemetry Client</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">Native MicroPython script with non-blocking Wi-Fi REST client and ADC sensor acquisition.</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button id="btnCopyPicoCode" class="btn-outline" style="padding: 5px 12px; font-size: 11px;">📋 Copy Python</button>
+              <button id="btnDownloadPicoCode" class="btn-primary" style="padding: 5px 12px; font-size: 11px;">💾 Download .py</button>
+            </div>
+          </div>
+
+          <textarea id="txtPicoCode" class="instruction-textarea" style="height: 280px; font-family: var(--font-mono); font-size: 11px; white-space: pre;" readonly></textarea>
+        </div>
+
+        <!-- TAB 6: WebUSB Flasher -->
+        <div id="tabFlasherWebUsb" class="tab-content-pane">
+          <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+            Directly flash pre-compiled <code>.bin</code> or <code>.hex</code> firmware files to your microcontroller over WebUSB / WebSerial without installing Arduino IDE!
+          </div>
+
+          <div id="flashDropZone" class="flash-drop-zone">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-cyan); margin-bottom: 10px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Drag & Drop .bin / .hex Firmware File Here</div>
+            <div style="font-size: 12px; color: var(--text-dim);">or click to select file from your computer</div>
+            <input type="file" id="inputFileFirmware" accept=".bin,.hex" style="display: none;">
+          </div>
+
+          <div id="flashFileInfo" style="display: none; margin-top: 12px; padding: 10px; background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12px;"></div>
+
+          <div class="progress-bar-container" id="flashProgressBox" style="display: none;">
+            <div class="progress-bar-fill" id="flashProgressBar"></div>
+          </div>
+          <div id="flashProgressText" style="display: none; font-size: 11px; font-family: var(--font-mono); color: var(--accent-cyan); margin-top: 6px; text-align: center;">0% Complete</div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+            <button id="btnStartFlashUsb" class="btn-primary" disabled>Flash Firmware over WebUSB</button>
           </div>
         </div>
-        <textarea id="txtGeneratedFirmware" class="instruction-textarea" style="height: 320px; font-family: var(--font-mono); font-size: 11px; white-space: pre;" readonly></textarea>
-      </div>
 
-      <!-- TAB 2: WebUSB Flasher -->
-      <div id="tabFlasherWebUsb" class="tab-content-pane">
-        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
-          Directly flash pre-compiled <code>.bin</code> or <code>.hex</code> firmware files to your microcontroller over WebUSB / WebSerial without installing Arduino IDE!
-        </div>
-
-        <div id="flashDropZone" class="flash-drop-zone">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-cyan); margin-bottom: 10px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Drag & Drop .bin / .hex Firmware File Here</div>
-          <div style="font-size: 12px; color: var(--text-dim);">or click to select file from your computer</div>
-          <input type="file" id="inputFileFirmware" accept=".bin,.hex" style="display: none;">
-        </div>
-
-        <div id="flashFileInfo" style="display: none; margin-top: 12px; padding: 10px; background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12px;"></div>
-
-        <div class="progress-bar-container" id="flashProgressBox" style="display: none;">
-          <div class="progress-bar-fill" id="flashProgressBar"></div>
-        </div>
-        <div id="flashProgressText" style="display: none; font-size: 11px; font-family: var(--font-mono); color: var(--accent-cyan); margin-top: 6px; text-align: center;">0% Complete</div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-          <button id="btnStartFlashUsb" class="btn-primary" disabled>Flash Firmware over WebUSB</button>
-        </div>
-      </div>
+      </div><!-- /scrollable body -->
     </div>
   </div>
 
@@ -2051,11 +2391,15 @@
         Connect your physical microcontroller or launch a virtual simulation device to monitor live telemetry in <strong>SMART IOT HUB</strong> (<a href="https://tekstepapps.org" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">tekstepapps.org</a>).
       </div>
 
-      <div class="modal-tabs">
+      <div class="modal-tabs" style="flex-wrap: wrap;">
         <button class="modal-tab-btn active" data-tab="tabAddSpark">⚡ Spark Core (User Hardware)</button>
         <button class="modal-tab-btn" data-tab="tabAddVirtual">💻 Virtual Simulation Device</button>
         <button class="modal-tab-btn" data-tab="tabAddSerial">🔌 USB Serial COM Port</button>
         <button class="modal-tab-btn" data-tab="tabAddWireless">📶 WiFi / Wireless Board</button>
+        <button class="modal-tab-btn" data-tab="tabAddRest">🌐 Custom REST / HTTP</button>
+        <button class="modal-tab-btn" data-tab="tabAddWs">📡 WebSocket Stream</button>
+        <button class="modal-tab-btn" data-tab="tabAddMqtt">📨 MQTT Broker</button>
+        <button class="modal-tab-btn" data-tab="tabAutoDiscover">🔍 Auto-Discover</button>
       </div>
 
       <!-- TAB 1: Spark Core Hardware (The User's Device) -->
@@ -2090,7 +2434,10 @@
           <input type="text" id="inputAddSparkZone" class="form-input" value="Master Lab / Chamber">
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+          <button type="button" id="btnLinkSparkToCode" class="btn-outline" style="font-size: 12px; padding: 10px 16px;">
+            📋 View Particle Firmware &amp; Guide
+          </button>
           <button id="btnSubmitAddSpark" class="btn-primary" style="background: linear-gradient(135deg, #00f2fe, #4facfe); color: #040914; font-weight: 700; padding: 10px 20px;">
             ⚡ Connect My Spark Core Hardware
           </button>
@@ -2157,7 +2504,10 @@
           <input type="text" id="inputAddSerialName" class="form-input" value="USB Serial Controller">
         </div>
 
-        <div style="display: flex; justify-content: flex-end;">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+          <button type="button" id="btnLinkSerialToCode" class="btn-outline" style="font-size: 12px; padding: 10px 16px;">
+            📋 View Arduino / MCU Sketch
+          </button>
           <button id="btnSubmitAddSerial" class="btn-primary" style="padding: 10px 20px;">
             🔌 Pair Web Serial Port &amp; Connect
           </button>
@@ -2186,10 +2536,305 @@
           </button>
         </div>
       </div>
+
+      <!-- TAB 5: Custom REST / HTTP Device -->
+      <div id="tabAddRest" class="tab-content-pane">
+        <div style="padding: 14px; background: rgba(0, 242, 254, 0.06); border: 1px solid rgba(0, 242, 254, 0.25); border-radius: var(--radius-md); margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px;">🌐 Custom REST / HTTP Polling</div>
+          <div style="font-size: 12px; color: var(--text-main); line-height: 1.5;">
+            Browser polls your device's own HTTP endpoint for sensor JSON. Works with any device that serves <code>GET /telemetry</code> on a local IP or public URL — no Particle servers needed.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Device Name / Label:</label>
+          <input type="text" id="inputAddRestName" class="form-input" value="Custom REST Sensor Node" placeholder="e.g. ESP32 Lab Sensor">
+        </div>
+
+        <div class="two-point-grid" style="gap: 12px; margin-bottom: 12px;">
+          <div class="form-group">
+            <label class="form-label">Telemetry Endpoint URL:</label>
+            <input type="text" id="inputAddRestEndpoint" class="form-input" value="" placeholder="http://192.168.1.100/telemetry" style="font-family: var(--font-mono); font-size: 12px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Poll Interval (ms):</label>
+            <input type="number" id="inputAddRestInterval" class="form-input" value="3000" min="500" max="60000">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Sensor Schema (JSON Array) — optional but enables live dynamic cards:</label>
+          <textarea id="textareaAddRestSchema" class="form-input" rows="5" style="font-family: var(--font-mono); font-size: 11px; resize: vertical;" placeholder='[{"key":"temp","label":"Temperature","unit":"°C","type":"gauge","min":0,"max":60,"icon":"🌡️","dangerAbove":35}]'></textarea>
+          <p class="schema-hint" style="margin-top: 6px;">Tip: Each object needs <code>key</code> (JSON field name), <code>label</code>, <code>unit</code>, <code>min</code>, <code>max</code>, <code>icon</code>. Optional: <code>dangerAbove</code>, <code>warnAbove</code>, <code>dangerLabel</code>, <code>normalLabel</code>.</p>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+          <button type="button" id="btnLinkRestToCode" class="btn-outline" style="font-size: 12px; padding: 10px 16px;">
+            📋 View ESP32 REST / Server Sketch
+          </button>
+          <button id="btnSubmitAddRest" class="btn-primary" style="padding: 10px 20px; background: linear-gradient(135deg, #06b6d4, #3b82f6);">
+            🌐 Connect REST Device
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 6: WebSocket Streaming Device -->
+      <div id="tabAddWs" class="tab-content-pane">
+        <div style="padding: 14px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #10b981; margin-bottom: 6px;">📡 WebSocket Live Streaming</div>
+          <div style="font-size: 12px; color: var(--text-main); line-height: 1.5;">
+            Connect to a device that pushes sensor data over WebSocket (<code>ws://</code> or <code>wss://</code>). Data is streamed live without polling. Works great with ESP32 WebServer or Node.js socket.io.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Device Name:</label>
+          <input type="text" id="inputAddWsName" class="form-input" value="WebSocket Sensor Node" placeholder="e.g. ESP32 WS Server">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">WebSocket Endpoint:</label>
+          <input type="text" id="inputAddWsEndpoint" class="form-input" value="" placeholder="ws://192.168.1.100:81" style="font-family: var(--font-mono); font-size: 12px;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Sensor Schema (JSON Array) — optional:</label>
+          <textarea id="textareaAddWsSchema" class="form-input" rows="5" style="font-family: var(--font-mono); font-size: 11px; resize: vertical;" placeholder='[{"key":"temp","label":"Temperature","unit":"°C","min":0,"max":60,"icon":"🌡️"}]'></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="btnSubmitAddWs" class="btn-primary" style="padding: 10px 20px; background: linear-gradient(135deg, #10b981, #06b6d4);">
+            📡 Connect WebSocket Device
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 7: MQTT over WebSocket (Stub) -->
+      <div id="tabAddMqtt" class="tab-content-pane">
+        <div style="padding: 14px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-md); margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent-amber); margin-bottom: 6px;">📨 MQTT over WebSocket</div>
+          <div style="font-size: 12px; color: var(--text-main); line-height: 1.5;">
+            Connect to an MQTT broker (Mosquitto, HiveMQ, EMQX) over WebSocket. Subscribe to sensor topics for live data. Requires MQTT over WS support (port 9001 typically).
+          </div>
+        </div>
+
+        <div class="two-point-grid" style="gap: 12px; margin-bottom: 12px;">
+          <div class="form-group">
+            <label class="form-label">Device / Node Name:</label>
+            <input type="text" id="inputAddMqttName" class="form-input" value="MQTT Sensor Node" placeholder="e.g. Greenhouse Monitor">
+          </div>
+          <div class="form-group">
+            <label class="form-label">MQTT Broker WS URL:</label>
+            <input type="text" id="inputAddMqttBroker" class="form-input" placeholder="ws://broker.local:9001" style="font-family: var(--font-mono); font-size: 12px;">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Subscribe Topic:</label>
+          <input type="text" id="inputAddMqttTopic" class="form-input" placeholder="smartroom/sensors/#" style="font-family: var(--font-mono); font-size: 12px;">
+        </div>
+
+        <div style="padding: 12px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; font-size: 11px; color: var(--text-dim); margin-bottom: 16px;">
+          ⚠️ MQTT support requires the <a href="https://github.com/mqttjs/MQTT.js" target="_blank" style="color: var(--accent-cyan);">mqtt.js</a> browser library. Run <code>npm install mqtt</code> and import it, then this will activate automatically.
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="btnSubmitAddMqtt" class="btn-primary" style="padding: 10px 20px; background: linear-gradient(135deg, #f59e0b, #ef4444); opacity: 0.7; cursor: not-allowed;" disabled title="MQTT coming soon — requires mqtt.js">
+            📨 Connect MQTT Broker (Coming Soon)
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 8: Auto-Discover / Self-Registration -->
+      <div id="tabAutoDiscover" class="tab-content-pane">
+        <div style="padding: 14px; background: rgba(168, 85, 247, 0.06); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: var(--radius-md); margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #a855f7; margin-bottom: 6px;">🔍 Auto-Discover / Self-Registration</div>
+          <div style="font-size: 12px; color: var(--text-main); line-height: 1.5;">
+            Add a small registration snippet to your firmware. When your device boots, it POSTs its own metadata to this dashboard and auto-appears in the device list — no configuration needed!
+          </div>
+        </div>
+
+        <!-- Option A: Paste JSON registration payload manually -->
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Option A: Paste Device Registration Payload</div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <textarea id="inputAutoDiscoverJson" class="form-input" rows="6" style="font-family: var(--font-mono); font-size: 11px; resize: vertical;" placeholder='{"id":"my_device_001","name":"My Custom Node","firmware":"arduino","connectionMethod":"custom_rest","endpoint":"http://192.168.1.100/telemetry","zone":"Lab Room A","sensorSchema":[{"key":"temp","label":"Temperature","unit":"°C","min":0,"max":60,"icon":"🌡️"}]}'></textarea>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center;">
+          <button id="btnAutoDiscoverApply" class="btn-primary" style="padding: 8px 18px;">🔍 Register Device from JSON</button>
+          <span id="autoDiscoverStatusText" style="font-size: 11px; color: var(--text-dim);">Paste registration JSON above and click Register.</span>
+        </div>
+
+        <!-- Option B: Listen for inbound registrations from /api/register -->
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Option B: Listen for Incoming Device Registration (via /api/register)</div>
+        <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+          <button id="btnListenForDevices" class="btn-outline" style="padding: 8px 16px; font-size: 12px;">📻 Listen for Devices</button>
+        </div>
+
+        <!-- Option C: Firmware code generator -->
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Option C: Get Firmware Registration Snippet</div>
+        <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
+          <label class="form-label" style="margin:0; white-space: nowrap;">Firmware language:</label>
+          <select id="selectFirmwareLang" class="form-input" style="max-width: 200px;">
+            <option value="arduino">Arduino C++ (ESP32 / Uno / Mega)</option>
+            <option value="micropython">MicroPython / CircuitPython</option>
+            <option value="particle">Particle (Photon / Argon)</option>
+            <option value="nodemcu_lua">NodeMCU Lua (ESP8266)</option>
+            <option value="node_js">Node.js (Raspberry Pi / SBC)</option>
+          </select>
+          <button id="btnCopyRegSnippet" class="btn-outline" style="padding: 6px 12px; font-size: 11px;">📋 Copy Code</button>
+        </div>
+        <pre id="autoDiscoverSnippet" class="auto-discover-snippet">// Loading snippet...</pre>
+      </div>
+
     </div>
   </div>
 
-  <!-- MODAL: Add Sensor or Peripheral to Active Device -->
+  <!-- MODAL: AI &amp; Intelligence Panel -->
+  <div id="modalAiPanel" class="modal-overlay modal-ai-panel">
+    <div class="modal-dialog wide modal-inner" style="max-width: 680px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span style="font-size: 20px;">🤖</span>
+          AI &amp; Intelligence Center
+        </div>
+        <button id="btnCloseAiPanel" class="btn-icon">✕</button>
+      </div>
+
+      <!-- AI Tabs -->
+      <div class="ai-tabs">
+        <button class="ai-tab-btn active" data-ai-tab="aiTabChat">💬 AI Chat</button>
+        <button class="ai-tab-btn" data-ai-tab="aiTabAnomaly">🚨 Anomaly Detection</button>
+        <button class="ai-tab-btn" data-ai-tab="aiTabTrend">📊 Trend Forecast</button>
+        <button class="ai-tab-btn" data-ai-tab="aiTabSettings">⚙️ AI Settings</button>
+        <button class="ai-tab-btn" data-ai-tab="aiTabFuture">🔮 Future AI</button>
+      </div>
+
+      <!-- AI Chat Tab -->
+      <div id="aiTabChat" class="ai-tab-content active">
+        <div id="aiChatMessages" class="ai-chat-messages"></div>
+        <div class="ai-chat-input-row">
+          <input type="text" id="inputAiChat" placeholder="Ask about your sensor data, anomalies, or device health...">
+          <button id="btnAiChatSend" class="btn-primary" style="padding: 8px 16px; white-space: nowrap;">Send ↵</button>
+        </div>
+        <div style="font-size: 10px; color: var(--text-dim); margin-top: 6px;">No API key needed for basic analysis. Add Gemini/OpenAI key in AI Settings for advanced responses.</div>
+      </div>
+
+      <!-- Anomaly Detection Tab -->
+      <div id="aiTabAnomaly" class="ai-tab-content">
+        <div class="ai-toggle-row">
+          <div>
+            <div class="ai-toggle-label">🤖 AI Anomaly Detection</div>
+            <div class="ai-toggle-sub">Z-score analysis on all sensor channels. Alerts when readings deviate by 3σ from baseline.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkAiAnomaly">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin: 12px 0 6px;">Anomaly Event Log</div>
+        <div id="aiAnomalyLog" class="ai-anomaly-log">
+          <div style="color: var(--text-dim); font-size: 10px;">Enable anomaly detection above and keep sensors streaming to see alerts here.</div>
+        </div>
+      </div>
+
+      <!-- Trend Forecast Tab -->
+      <div id="aiTabTrend" class="ai-tab-content">
+        <div class="ai-toggle-row" style="margin-bottom: 12px;">
+          <div>
+            <div class="ai-toggle-label">📊 Predictive Trend Analysis</div>
+            <div class="ai-toggle-sub">Linear regression on sensor stream. Forecasts next 60 seconds.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkAiTrend">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); margin-bottom: 8px;">FORECAST CHANNEL</div>
+        <div class="ai-trend-row">
+          <select id="aiTrendChannel" class="form-input" style="max-width: 180px;">
+            <option value="temperature">Temperature</option>
+            <option value="humidity">Humidity</option>
+            <option value="distance">Distance (Sonar)</option>
+            <option value="light">Ambient Light</option>
+          </select>
+          <button id="btnGetTrend" class="btn-primary" style="padding: 8px 14px;">📊 Get Forecast</button>
+          <div id="aiTrendResult" class="ai-trend-result">Enable trend tracking and stream sensors for a moment, then click Get Forecast.</div>
+        </div>
+        <div style="font-size: 10px; color: var(--text-dim); margin-top: 10px;">Trend uses simple linear regression over the last 30 readings. More accurate with longer streaming windows.</div>
+      </div>
+
+      <!-- AI Settings Tab -->
+      <div id="aiTabSettings" class="ai-tab-content">
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.6;">
+          Connect an AI API key to unlock intelligent sensor analysis, natural language queries, and conversational diagnostics. Your key is stored locally in your browser.
+        </div>
+        <div class="two-point-grid" style="gap: 12px; margin-bottom: 14px;">
+          <div class="form-group">
+            <label class="form-label">AI Provider:</label>
+            <select id="selectAiProvider" class="form-input">
+              <option value="gemini">Google Gemini (gemini-2.0-flash)</option>
+              <option value="openai">OpenAI (gpt-4o-mini)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">API Key:</label>
+            <input type="password" id="inputAiApiKey" class="form-input" placeholder="Your Gemini or OpenAI API key..." style="font-family: var(--font-mono); font-size: 12px;">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="btnSaveAiSettings" class="btn-primary" style="padding: 8px 20px;">💾 Save AI Settings</button>
+        </div>
+        <div style="margin-top: 14px; padding: 10px 14px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; font-size: 11px; color: var(--text-dim); line-height: 1.6;">
+          <strong style="color: var(--accent-cyan);">No API key?</strong> The AI chat still works in local mode — answering questions using sensor data heuristics and predefined rules. Add a key only if you want AI-generated natural language responses.
+        </div>
+      </div>
+
+      <!-- Future AI Tab -->
+      <div id="aiTabFuture" class="ai-tab-content">
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">Upcoming AI & future technology integrations planned for SMART IoT HUB:</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="ai-toggle-row" style="opacity: 0.6; cursor: not-allowed;">
+            <div>
+              <div class="ai-toggle-label">🧠 Edge AI — TensorFlow.js Model Inference</div>
+              <div class="ai-toggle-sub">Load custom .tflite models to classify sensor data or camera streams in-browser. Zero cloud dependency.</div>
+            </div>
+            <span style="font-size: 10px; padding: 2px 8px; border: 1px solid rgba(168,85,247,0.4); border-radius: 4px; color: #a855f7;">COMING SOON</span>
+          </div>
+          <div class="ai-toggle-row" style="opacity: 0.6; cursor: not-allowed;">
+            <div>
+              <div class="ai-toggle-label">🔮 Digital Twin Sync — AWS IoT / Azure IoT Hub</div>
+              <div class="ai-toggle-sub">Mirror your physical sensors to a cloud digital twin for simulation and remote monitoring from anywhere.</div>
+            </div>
+            <span style="font-size: 10px; padding: 2px 8px; border: 1px solid rgba(168,85,247,0.4); border-radius: 4px; color: #a855f7;">COMING SOON</span>
+          </div>
+          <div class="ai-toggle-row" style="opacity: 0.6; cursor: not-allowed;">
+            <div>
+              <div class="ai-toggle-label">🌡️ Thermal Camera AI — AMG8833 Gesture & Heat Map</div>
+              <div class="ai-toggle-sub">Run gesture recognition and object detection on 8×8 IR thermal grids using on-device neural nets.</div>
+            </div>
+            <span style="font-size: 10px; padding: 2px 8px; border: 1px solid rgba(168,85,247,0.4); border-radius: 4px; color: #a855f7;">COMING SOON</span>
+          </div>
+          <div class="ai-toggle-row" style="opacity: 0.6; cursor: not-allowed;">
+            <div>
+              <div class="ai-toggle-label">🚁 Drone AI — MAVLink Path Planning & Autonomy</div>
+              <div class="ai-toggle-sub">AI-assisted route planning, obstacle avoidance, and flight anomaly detection via MAVLink protocol stream.</div>
+            </div>
+            <span style="font-size: 10px; padding: 2px 8px; border: 1px solid rgba(168,85,247,0.4); border-radius: 4px; color: #a855f7;">COMING SOON</span>
+          </div>
+          <div class="ai-toggle-row" style="opacity: 0.6; cursor: not-allowed;">
+            <div>
+              <div class="ai-toggle-label">💬 Natural Language Device Control</div>
+              <div class="ai-toggle-sub">Type "Turn on the fan if temperature exceeds 30°C" and the AI translates it into device API commands.</div>
+            </div>
+            <span style="font-size: 10px; padding: 2px 8px; border: 1px solid rgba(168,85,247,0.4); border-radius: 4px; color: #a855f7;">COMING SOON</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
   <div id="modalAddSensor" class="modal-overlay">
     <div class="modal-dialog wide" style="max-width: 850px;">
       <div class="modal-header">
@@ -2553,6 +3198,10 @@
     <button id="mBtnTools" class="mobile-nav-btn" title="Developer Tools & Schematics">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       <span>Developer</span>
+    </button>
+    <button id="mBtnTheme" class="mobile-nav-btn" title="Toggle Light / Dark Mode">
+      <span id="mIconTheme" style="font-size: 18px; line-height: 20px;">🌙</span>
+      <span>Theme</span>
     </button>
     <button id="mBtnSilence" class="mobile-nav-btn silence-btn" title="Silence Active Alarm">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
