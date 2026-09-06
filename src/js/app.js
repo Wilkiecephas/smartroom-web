@@ -2421,10 +2421,14 @@ class SmartRoomApp {
           if (customUuid && this.dom.inputBleServiceUuid) {
             this.dom.inputBleServiceUuid.value = customUuid;
           }
-          await wirelessManager.connectBluetooth();
+          const res = await wirelessManager.connectBleDevice(customUuid);
+          if (!res.success) {
+            this.log(`Bluetooth BLE: ${res.error}`, 'error');
+            return;
+          }
           const dev = deviceRegistry.registerDevice({
             id: 'dev_ble_' + Date.now(),
-            name,
+            name: (res.deviceName && res.deviceName !== 'Unnamed BLE Peripheral') ? res.deviceName : name,
             type: 'ble_peripheral',
             boardProfileId: 'esp32',
             connectionMethod: 'web_ble',
@@ -2433,7 +2437,7 @@ class SmartRoomApp {
           });
           deviceRegistry.setActiveDevice(dev.id);
           if (this.dom.modalAddDevice) this.dom.modalAddDevice.classList.remove('active');
-          this.log(`🦷 Bluetooth BLE Device Registered & Connected: ${name}`, 'success');
+          this.log(`🦷 Bluetooth BLE Device Connected & Registered: ${dev.name}`, 'success');
         } catch (err) {
           this.log(`Bluetooth connection: ${err.message}`, 'error');
         }

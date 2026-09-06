@@ -113,20 +113,56 @@ export class WirelessManager {
   }
 
   // --- 2. Web Bluetooth (BLE) Management ---
-  async connectBleDevice() {
+  async connectBleDevice(customServiceUuid = null) {
     if (typeof navigator === 'undefined' || !navigator.bluetooth) {
-      return { success: false, error: 'Web Bluetooth is not supported in this browser. Use Chrome or Edge.' };
+      return { 
+        success: false, 
+        error: 'Web Bluetooth is not supported in this browser. Please use Google Chrome, Microsoft Edge, or Opera on Windows/Mac/Android.' 
+      };
+    }
+
+    if (navigator.bluetooth.getAvailability) {
+      try {
+        const available = await navigator.bluetooth.getAvailability();
+        if (!available) {
+          return { 
+            success: false, 
+            error: 'Bluetooth is turned OFF or no Bluetooth adapter is available on this computer. Please enable Bluetooth in your OS settings.' 
+          };
+        }
+      } catch (_) {}
+    }
+
+    // Comprehensive standard & common vendor BLE service UUIDs
+    const optionalServices = [
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART Service (NUS)
+      '0000ffe0-0000-1000-8000-00805f9b34fb', // TI CC2541 / HM-10 / AT-09 Serial
+      '0000ffe1-0000-1000-8000-00805f9b34fb',
+      '4fafc201-1fb5-459e-8fcc-c5c9c331914b', // ESP32 sample BLE service
+      '0000fff0-0000-1000-8000-00805f9b34fb', // Generic custom BLE UART
+      '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Microchip RN4870
+      '0000fefb-0000-1000-8000-00805f9b34fb', // Telit Terminal I/O
+      'environmental_sensing',
+      'heart_rate',
+      'battery_service',
+      'generic_access',
+      'generic_attribute',
+      'health_thermometer',
+      'user_data'
+    ];
+
+    if (customServiceUuid && typeof customServiceUuid === 'string') {
+      const cleanUuid = customServiceUuid.trim().toLowerCase();
+      if (cleanUuid && !optionalServices.includes(cleanUuid)) {
+        optionalServices.push(cleanUuid);
+      }
     }
 
     try {
+      // Prompt native browser BLE device picker
       const device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
-        optionalServices: [
-          '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART Service (NUS)
-          'environmental_sensing',
-          'heart_rate',
-          'battery_service'
-        ]
+        optionalServices
       });
 
       this.bleDevice = device;
@@ -138,22 +174,64 @@ export class WirelessManager {
       const server = await device.gatt.connect();
       this.bleServer = server;
 
-      // Obtain NUS service and characteristics
-      const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-      this.bleTxChar = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // Notify
-      this.bleRxChar = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e'); // Write
+      // Dynamically discover primary service
+      let activeService = null;
 
-      // Enable notifications for incoming data
-      await this.bleTxChar.startNotifications();
-      this.bleTxChar.addEventListener('characteristicvaluechanged', event => {
-        const value = new TextDecoder().decode(event.target.value);
+      if (customServiceUuid) {
         try {
-          const json = JSON.parse(value);
-          if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', data: json });
-        } catch (_) {
-          if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', raw: value });
+          activeService = await server.getPrimaryService(customServiceUuid.trim().toLowerCase());
+        } catch (_) {}
+      }
+
+      if (!activeService) {
+        // Probe known services in order
+        for (const sId of optionalServices) {
+          try {
+            activeService = await server.getPrimaryService(sId);
+            if (activeService) break;
+          } catch (_) {}
         }
-      });
+      }
+
+      if (!activeService) {
+        // Fallback: try querying all primary services from peripheral
+        try {
+          const services = await server.getPrimaryServices();
+          if (services && services.length > 0) {
+            activeService = services[0];
+          }
+        } catch (_) {}
+      }
+
+      // Discover notify and write characteristics
+      if (activeService) {
+        try {
+          const chars = await activeService.getCharacteristics();
+          for (const c of chars) {
+            if (c.properties.notify || c.properties.indicate) {
+              this.bleTxChar = c;
+              await c.startNotifications();
+              c.addEventListener('characteristicvaluechanged', event => {
+                const value = new TextDecoder().decode(event.target.value);
+                try {
+                  const json = JSON.parse(value);
+                  if (window.smartRoomApp && window.smartRoomApp.updateDashboard) {
+                    window.smartRoomApp.updateDashboard(json);
+                  }
+                  if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', data: json });
+                } catch (_) {
+                  if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', raw: value });
+                }
+              });
+            }
+            if (c.properties.write || c.properties.writeWithoutResponse) {
+              this.bleRxChar = c;
+            }
+          }
+        } catch (charErr) {
+          console.warn('[BLE] Could not enumerate characteristics:', charErr);
+        }
+      }
 
       this.isBleConnected = true;
       this.notify();
@@ -161,8 +239,15 @@ export class WirelessManager {
     } catch (err) {
       this.isBleConnected = false;
       this.notify();
+      if (err.name === 'NotFoundError') {
+        return { success: false, error: 'Device selection was cancelled.' };
+      }
       return { success: false, error: err.message };
     }
+  }
+
+  connectBluetooth(customServiceUuid = null) {
+    return this.connectBleDevice(customServiceUuid);
   }
 
   disconnectBle() {
