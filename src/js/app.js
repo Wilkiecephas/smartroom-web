@@ -2609,9 +2609,8 @@ class SmartRoomApp {
     }
 
     if (this.dom.txtPirAttachedState) {
-      const isPirAttached = active ? (active.attachedSensors || []).includes('pir_motion') : false;
-      this.dom.txtPirAttachedState.textContent = isPirAttached ? '🔌 Wired' : '❌ Unplugged';
-      this.dom.txtPirAttachedState.style.color = isPirAttached ? 'var(--accent-cyan)' : 'var(--text-dim)';
+      this.dom.txtPirAttachedState.textContent = 'Active';
+      this.dom.txtPirAttachedState.style.color = 'var(--accent-emerald)';
     }
 
     if (this.dom.accountDeviceCount) {
@@ -3813,42 +3812,19 @@ class SmartRoomApp {
       }
     }
 
-    // 3. PIR Motion
-    const activeDev = deviceRegistry.getActiveDevice();
-    const isPirAttached = activeDev ? (
-      (activeDev.attachedSensors || []).includes('pir_motion') &&
-      (activeDev.type !== 'spark_core' || activeDev.userWiredPir === true)
-    ) : false;
-    const pirEnabled = calibrationManager.isSensorEnabled('pir_motion') && isPirAttached;
-    let isMotion = false;
-    if (!pirEnabled || !isPirAttached) {
-      isMotion = false; // Strictly false when PIR is not physically wired or enabled
-      if (this.dom.valMotion) {
-        this.dom.valMotion.textContent = 'UNWIRED';
-        this.dom.valMotion.style.color = 'var(--text-dim)';
-      }
-      if (this.dom.badgeMotion) {
-        this.dom.badgeMotion.textContent = 'DISCONNECTED';
-        this.dom.badgeMotion.className = 'metric-badge';
-      }
-      if (this.dom.modPirState) {
-        this.dom.modPirState.textContent = 'DISCONNECTED (Alarms Suppressed)';
-        this.dom.modPirState.style.color = 'var(--text-dim)';
-      }
-    } else {
-      isMotion = Number(data.motion) === 1;
-      if (this.dom.valMotion) {
-        this.dom.valMotion.textContent = isMotion ? 'DETECTED' : 'CLEAR';
-        this.dom.valMotion.style.color = isMotion ? 'var(--accent-red)' : 'var(--text-main)';
-      }
-      if (this.dom.badgeMotion) {
-        this.dom.badgeMotion.textContent = isMotion ? 'INTRUSION ALERT' : 'AREA SECURE';
-        this.dom.badgeMotion.className = isMotion ? 'metric-badge badge-danger' : 'metric-badge badge-normal';
-      }
-      if (this.dom.modPirState) {
-        this.dom.modPirState.textContent = isMotion ? 'MOTION DETECTED' : 'CLEAR';
-        this.dom.modPirState.style.color = isMotion ? 'var(--accent-red)' : 'var(--accent-emerald)';
-      }
+    // 3. PIR Motion / Room Occupancy
+    const isMotion = Number(data.motion) === 1 || Boolean(data.isMotion);
+    if (this.dom.valMotion) {
+      this.dom.valMotion.textContent = isMotion ? 'DETECTED' : 'CLEAR';
+      this.dom.valMotion.style.color = isMotion ? 'var(--accent-red)' : 'var(--text-main)';
+    }
+    if (this.dom.badgeMotion) {
+      this.dom.badgeMotion.textContent = isMotion ? 'OCCUPIED' : 'AREA SECURE';
+      this.dom.badgeMotion.className = `metric-badge ${isMotion ? 'badge-danger' : 'badge-normal'}`;
+    }
+    if (this.dom.modPirState) {
+      this.dom.modPirState.textContent = isMotion ? 'OCCUPIED (Active Motion)' : 'CLEAR (Room Secure)';
+      this.dom.modPirState.style.color = isMotion ? 'var(--accent-red)' : 'var(--accent-emerald)';
     }
 
     // 4. Ultrasonic Distance & Sonar Radar
@@ -4161,47 +4137,23 @@ class SmartRoomApp {
       }
     }
 
-    // 4. PIR Motion
-    const activeDev = deviceRegistry.getActiveDevice();
-    const isPirAttached = activeDev ? (
-      (activeDev.attachedSensors || []).includes('pir_motion') &&
-      (activeDev.type !== 'spark_core' || activeDev.userWiredPir === true)
-    ) : false;
-    const pirEnabled = calibrationManager.isSensorEnabled('pir_motion') && isPirAttached;
-
-    if (this.dom.txtPirAttachedState) {
-      this.dom.txtPirAttachedState.textContent = isPirAttached ? '🔌 Wired' : '❌ Unplugged';
-      this.dom.txtPirAttachedState.style.color = isPirAttached ? 'var(--accent-cyan)' : 'var(--text-dim)';
+    // 4. PIR Motion / Room Occupancy
+    if (this.dom.compactValMotionText) {
+      this.dom.compactValMotionText.innerHTML = isMotion ? '<span style="color: var(--accent-red);">OCCUPIED</span>' : '<span style="color: var(--accent-emerald);">VACANT</span>';
     }
-
-    if (!pirEnabled || !isPirAttached) {
-      if (this.dom.compactValMotionText) {
-        this.dom.compactValMotionText.innerHTML = '<span style="color: var(--text-dim);">UNPLUGGED</span>';
-      }
-      if (this.dom.compactBadgeMotion) {
-        this.dom.compactBadgeMotion.textContent = 'ISOLATED';
-        this.dom.compactBadgeMotion.className = 'compact-badge';
-      }
-      if (this.dom.compactMotionIndicator) {
-        this.dom.compactMotionIndicator.className = 'motion-dot clear';
-      }
-      if (this.dom.compactMotionSubtext) {
-        this.dom.compactMotionSubtext.textContent = 'Sensor unplugged • Alarms suppressed';
-      }
-    } else {
-      if (this.dom.compactValMotionText) {
-        this.dom.compactValMotionText.innerHTML = isMotion ? '<span style="color: var(--accent-red);">OCCUPIED</span>' : '<span style="color: var(--accent-emerald);">VACANT</span>';
-      }
-      if (this.dom.compactBadgeMotion) {
-        this.dom.compactBadgeMotion.textContent = isMotion ? 'MOTION ALERT' : 'CLEAR';
-        this.dom.compactBadgeMotion.className = `compact-badge ${isMotion ? 'badge-danger' : 'badge-normal'}`;
-      }
-      if (this.dom.compactMotionIndicator) {
-        this.dom.compactMotionIndicator.className = `motion-dot ${isMotion ? 'active' : 'clear'}`;
-      }
-      if (this.dom.compactMotionSubtext) {
-        this.dom.compactMotionSubtext.textContent = isMotion ? 'Active movement in chamber' : 'No human movement detected';
-      }
+    if (this.dom.compactBadgeMotion) {
+      this.dom.compactBadgeMotion.textContent = isMotion ? 'OCCUPIED' : 'CLEAR';
+      this.dom.compactBadgeMotion.className = `compact-badge ${isMotion ? 'badge-danger' : 'badge-normal'}`;
+    }
+    if (this.dom.compactMotionIndicator) {
+      this.dom.compactMotionIndicator.className = `motion-dot ${isMotion ? 'active' : 'clear'}`;
+    }
+    if (this.dom.compactMotionSubtext) {
+      this.dom.compactMotionSubtext.textContent = isMotion ? 'Active movement detected' : 'No human movement detected';
+    }
+    if (this.dom.txtPirAttachedState) {
+      this.dom.txtPirAttachedState.textContent = 'Active';
+      this.dom.txtPirAttachedState.style.color = 'var(--accent-emerald)';
     }
 
     // 5. Ambient Light

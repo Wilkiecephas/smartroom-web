@@ -46,12 +46,15 @@ export const PRESET_DEVICES = [
     attachedSensors: [
       'dht11',
       'ultrasonic',
+      'pir_motion',
+      'ir_receiver',
       'ldr_light',
       'lm35_temp',
       'potentiometer',
       'buzzer',
       'rgb_led'
     ],
+    userWiredPir: true,
     sensorSchema: [], // Known sensors resolved from AVAILABLE_SENSORS_CATALOG
     zone: 'Master Lab / Chamber',
     lastSeen: new Date().toISOString()
@@ -226,9 +229,10 @@ class DeviceRegistry {
                     };
                     modified = true;
                   }
-                  // Self-heal: ensure disconnected PIR sensor does not trigger false intrusion alerts
-                  if (!dev.userWiredPir && Array.isArray(dev.attachedSensors) && dev.attachedSensors.includes('pir_motion')) {
-                    dev.attachedSensors = dev.attachedSensors.filter(s => s !== 'pir_motion');
+                  if (Array.isArray(dev.attachedSensors)) {
+                    if (!dev.attachedSensors.includes('pir_motion')) dev.attachedSensors.push('pir_motion');
+                    if (!dev.attachedSensors.includes('ir_receiver')) dev.attachedSensors.push('ir_receiver');
+                    dev.userWiredPir = true;
                     modified = true;
                   }
                 }
