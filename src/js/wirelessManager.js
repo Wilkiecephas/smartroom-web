@@ -137,9 +137,26 @@ export class WirelessManager {
 
       const server = await device.gatt.connect();
       this.bleServer = server;
+
+      // Obtain NUS service and characteristics
+      const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+      this.bleTxChar = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); // Notify
+      this.bleRxChar = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e'); // Write
+
+      // Enable notifications for incoming data
+      await this.bleTxChar.startNotifications();
+      this.bleTxChar.addEventListener('characteristicvaluechanged', event => {
+        const value = new TextDecoder().decode(event.target.value);
+        try {
+          const json = JSON.parse(value);
+          if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', data: json });
+        } catch (_) {
+          if (window.sensorRegistry) window.sensorRegistry._emit({ type: 'ble', raw: value });
+        }
+      });
+
       this.isBleConnected = true;
       this.notify();
-
       return { success: true, deviceName: device.name || 'Unnamed BLE Peripheral' };
     } catch (err) {
       this.isBleConnected = false;
