@@ -490,6 +490,10 @@ class SmartRoomApp {
     this.dom.btnHeaderAddDevice  = document.getElementById('btnHeaderAddDevice');
 
     // Active Connected Device & Project Status Banner
+    this.dom.activeDevicesBar        = document.getElementById('activeDevicesBar');
+    this.dom.activeDevicesLine       = document.getElementById('activeDevicesLine');
+    this.dom.activeDevicesLineBanner = document.getElementById('activeDevicesLineBanner');
+    this.dom.btnLineAddDevice        = document.getElementById('btnLineAddDevice');
     this.dom.activeDeviceBanner      = document.getElementById('activeDeviceBanner');
     this.dom.activeProjectName       = document.getElementById('activeProjectName');
     this.dom.btnStartNewProject      = document.getElementById('btnStartNewProject');
@@ -2266,6 +2270,7 @@ class SmartRoomApp {
     if (this.dom.btnHeaderAddDevice) this.dom.btnHeaderAddDevice.addEventListener('click', openAddDevice);
     if (this.dom.btnOpenAddDeviceModal) this.dom.btnOpenAddDeviceModal.addEventListener('click', openAddDevice);
     if (this.dom.btnMgrAddNewDevice) this.dom.btnMgrAddNewDevice.addEventListener('click', openAddDevice);
+    if (this.dom.btnLineAddDevice) this.dom.btnLineAddDevice.addEventListener('click', openAddDevice);
 
     if (this.dom.btnCloseAddDevice) {
       this.dom.btnCloseAddDevice.addEventListener('click', () => {
@@ -2664,6 +2669,96 @@ class SmartRoomApp {
         }).join('');
       }
     }
+
+    // Update active devices line chips
+    this.renderActiveDevicesLine();
+  }
+
+  selectActiveDevice(devId) {
+    if (!devId) return;
+    const currentActive = deviceRegistry.getActiveDevice();
+    if (currentActive && currentActive.id === devId) return;
+
+    deviceRegistry.setActiveDevice(devId);
+    const newActive = deviceRegistry.getActiveDevice();
+    if (!newActive) return;
+
+    if (newActive.connectionMethod === 'virtual_simulation') {
+      this.switchMode('simulation');
+    } else if (newActive.type === 'spark_core' || newActive.connectionMethod === 'particle_cloud') {
+      if (newActive.credentials && newActive.credentials.deviceId) {
+        particleApi.setCredentials(newActive.credentials.deviceId, newActive.credentials.token);
+      }
+      this.switchBoardProfile('spark_core');
+      this.switchMode('live');
+    } else if (newActive.connectionMethod === 'web_serial') {
+      this.switchBoardProfile(newActive.boardProfileId || 'arduino_uno');
+    }
+
+    this.log(`Switched active device to: ${newActive.name}`, 'success');
+    this.renderActiveDeviceBanner();
+    this.renderDeviceManagerList();
+  }
+
+  renderActiveDevicesLine() {
+    const devices = deviceRegistry.getDevices();
+    const active = deviceRegistry.getActiveDevice();
+
+    const targets = [this.dom.activeDevicesLine, this.dom.activeDevicesLineBanner].filter(Boolean);
+    if (targets.length === 0) return;
+
+    if (devices.length === 0) {
+      const emptyHtml = `<span style="font-size: 11px; color: var(--text-dim); padding: 4px 6px;">No devices registered. Click "+ Add Device" to connect hardware.</span>`;
+      targets.forEach(t => { t.innerHTML = emptyHtml; });
+      return;
+    }
+
+    const getIcon = (dev) => {
+      const method = dev.connectionMethod || dev.type;
+      if (method === 'particle_cloud' || dev.type === 'spark_core') return '⚡';
+      if (method === 'web_serial' || dev.type === 'arduino_uno') return '🔌';
+      if (method === 'web_ble' || dev.type === 'ble') return '🦷';
+      if (method === 'custom_rest' || method === 'rest_wifi' || method === 'wifi') return '🌐';
+      if (method === 'virtual_simulation') return '💻';
+      return '📡';
+    };
+
+    const html = devices.map(dev => {
+      const isActive = Boolean(active && dev.id === active.id);
+      const icon = getIcon(dev);
+      return `
+        <div class="device-line-chip ${isActive ? 'is-active' : ''}" data-dev-id="${dev.id}" role="button" tabindex="0" title="${dev.name} (${dev.connectionMethod || dev.type})">
+          <span class="device-line-chip-icon">${icon}</span>
+          <span class="device-line-chip-name">${dev.name}</span>
+          ${isActive 
+            ? `<span class="device-line-chip-selector active">Active</span>`
+            : `<button class="device-line-chip-selector select-btn" data-dev-id="${dev.id}">Select</button>`
+          }
+        </div>
+      `;
+    }).join('');
+
+    targets.forEach(target => {
+      target.innerHTML = html;
+
+      target.querySelectorAll('.device-line-chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+          const devId = chip.getAttribute('data-dev-id');
+          if (devId) {
+            this.selectActiveDevice(devId);
+          }
+        });
+        chip.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const devId = chip.getAttribute('data-dev-id');
+            if (devId) {
+              this.selectActiveDevice(devId);
+            }
+          }
+        });
+      });
+    });
   }
 
   openAddSensorModal() {
@@ -2816,23 +2911,7 @@ class SmartRoomApp {
     this.dom.deviceManagerList.querySelectorAll('.btn-switch-to-dev').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const devId = e.currentTarget.getAttribute('data-dev-id');
-        deviceRegistry.setActiveDevice(devId);
-        const newActive = deviceRegistry.getActiveDevice();
-
-        if (newActive.connectionMethod === 'virtual_simulation') {
-          this.switchMode('simulation');
-        } else if (newActive.type === 'spark_core') {
-          if (newActive.credentials && newActive.credentials.deviceId) {
-            particleApi.setCredentials(newActive.credentials.deviceId, newActive.credentials.token);
-          }
-          this.switchBoardProfile('spark_core');
-          this.switchMode('live');
-        } else if (newActive.connectionMethod === 'web_serial') {
-          this.switchBoardProfile(newActive.boardProfileId || 'arduino_uno');
-        }
-
-        this.log(`Switched active device to: ${newActive.name}`, 'success');
-        this.renderDeviceManagerList();
+        this.selectActiveDevice(devId);
       });
     });
 

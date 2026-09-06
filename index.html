@@ -363,6 +363,23 @@
       </div>
     </header>
 
+    <!-- Dedicated Active Devices Selection Strip -->
+    <section id="activeDevicesBar" class="active-devices-strip">
+      <div class="active-devices-strip-inner">
+        <div class="active-devices-strip-header">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/></svg>
+          <span>ACTIVE DEVICES:</span>
+        </div>
+        <div class="active-devices-line" id="activeDevicesLine">
+          <!-- Dynamically populated with device chips: name & select controls -->
+        </div>
+        <button id="btnLineAddDevice" class="btn-line-add-device" title="Add or connect another device to this project">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          <span>+ Add Device</span>
+        </button>
+      </div>
+    </section>
+
     <!-- ==================================================================== -->
     <!-- COMPACT MONITORING DASHBOARD (Clean, high-visibility monitoring mode)-->
     <!-- ==================================================================== -->
@@ -760,6 +777,14 @@
             <button id="btnStartNewProject" class="btn-mini-tool" style="font-size: 11px; padding: 2px 8px; color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); cursor: pointer;" title="Clear all boards and devices to start a clean new project">
               + New Project
             </button>
+          </div>
+
+          <!-- Active Devices Selector Line -->
+          <div class="banner-devices-line-row" id="bannerDevicesLineRow" style="display: flex; align-items: center; gap: 8px; margin: 4px 0 6px 0; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 700; color: var(--text-dim); font-family: var(--font-mono); text-transform: uppercase;">Devices:</span>
+            <div class="active-devices-line" id="activeDevicesLineBanner">
+              <!-- Dynamically populated -->
+            </div>
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
