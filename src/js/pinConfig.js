@@ -26,34 +26,74 @@ export const DEFAULT_SENSOR_MAPPING = {
     instructions: 'Built-in on 9-in-1 shield at pin D5. Driven by an onboard NPN transistor switch. Active high or square-wave driven.',
     status: 'healthy'
   },
-  ultrasonic_trig: {
-    id: 'ultrasonic_trig',
-    name: 'HC-SR04 Trig',
-    pin: 'D0',
-    signalType: 'digital_output',
-    voltageReq: '3.3V Output (TTL High)',
-    hotkey: 'u',
-    instructions: 'Connected to HC-SR04 Trig pin. Sends 10µs ultrasonic trigger pulse. TTL logic compatible.',
-    status: 'healthy'
-  },
   ultrasonic_echo: {
     id: 'ultrasonic_echo',
-    name: 'HC-SR04 Echo',
-    pin: 'D1',
+    name: 'HC-SR04 Echo (TX/D0)',
+    pin: 'D0',
     signalType: 'digital_input',
     voltageReq: '5V Output (Tolerant Pin Req)',
     hotkey: 'e',
-    instructions: 'Connected to HC-SR04 Echo pin. Must connect to a 5V tolerant pin as sensor outputs 5V pulse.',
+    instructions: 'Connected to 9-in-1 D0 (Shield TX). Receives 5V Echo pulse safely into 5V-tolerant Spark Core pin D0.',
+    status: 'healthy'
+  },
+  ultrasonic_trig: {
+    id: 'ultrasonic_trig',
+    name: 'HC-SR04 Trig (RX/D1)',
+    pin: 'D1',
+    signalType: 'digital_output',
+    voltageReq: '3.3V Output (TTL High)',
+    hotkey: 'u',
+    instructions: 'Connected to 9-in-1 D1 (Shield RX). Sends 10µs ultrasonic trigger pulse from Spark Core pin D1.',
     status: 'healthy'
   },
   pir_motion: {
     id: 'pir_motion',
-    name: '12V PIR / HC-SR501 Motion',
+    name: 'External Sensor / PIR / Dry Contact (D3)',
     pin: 'D3',
     signalType: 'digital_input',
-    voltageReq: 'Dry Contact / 3.3V Logic',
+    voltageReq: '5V Tolerant / Dry Contact (Pull-Up)',
     hotkey: 'm',
-    instructions: 'Connected to PIR trigger wire. For 12V PIR, wire dry-contact switch between D3 and GND with INPUT_PULLUP (Active-LOW). For HC-SR501, connect OUT to D3.',
+    instructions: 'Spark Core D3 is free from 9-in-1 shield. Connect external 12V PIR (dry contact to GND), HC-SR501, Flame DO, or Vibration sensor.',
+    status: 'healthy'
+  },
+  aux_relay_d7: {
+    id: 'aux_relay_d7',
+    name: 'Aux Relay / Onboard Blue LED (D7)',
+    pin: 'D7',
+    signalType: 'digital_output',
+    voltageReq: '3.3V/5V Digital Out',
+    hotkey: 'o',
+    instructions: 'Spark Core D7 is free from 9-in-1 shield. Drives onboard Blue LED and 5V/3.3V relay module for lights, fans, or sirens.',
+    status: 'healthy'
+  },
+  aux_gas_a3: {
+    id: 'aux_gas_a3',
+    name: 'Aux Analog 1 / MQ-2 Gas (A3)',
+    pin: 'A3',
+    signalType: 'analog_input',
+    voltageReq: '0 - 3.3V Analog ADC',
+    hotkey: 'a',
+    instructions: 'Spark Core A3 / 9-in-1 header A3. Connect MQ-2 smoke/gas, sound sensor analog out, or light probe.',
+    status: 'healthy'
+  },
+  aux_soil_a6: {
+    id: 'aux_soil_a6',
+    name: 'Aux Analog 2 / Soil Moisture (A6)',
+    pin: 'A6',
+    signalType: 'analog_input',
+    voltageReq: '0 - 3.3V Analog ADC',
+    hotkey: 's',
+    instructions: 'Spark Core A6 is completely free (unrouted to 9-in-1). 12-bit ADC / DAC / PWM. Great for soil moisture or current sensor.',
+    status: 'healthy'
+  },
+  aux_flame_a7: {
+    id: 'aux_flame_a7',
+    name: 'Aux Analog 3 / Flame Sensor (A7)',
+    pin: 'A7',
+    signalType: 'analog_input',
+    voltageReq: '0 - 3.3V Analog ADC',
+    hotkey: 'f',
+    instructions: 'Spark Core A7 is completely free. 12-bit ADC / Hardware Wakeup. Ideal for optical flame detector or battery monitor.',
     status: 'healthy'
   },
   rgb_red: {

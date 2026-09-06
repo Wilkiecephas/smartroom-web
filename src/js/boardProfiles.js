@@ -36,20 +36,21 @@ export const BOARD_PROFILES = {
       { name: 'RX', type: 'serial',  is5V: true,  desc: 'USART Serial RX, 5V Tolerant' },
     ],
     defaultMapping: {
+      ultrasonic_echo: 'D0',
+      ultrasonic_trig: 'D1',
+      btn_key1: 'D2',
+      pir_motion: 'D3',
       dht11: 'D4',
       buzzer: 'D5',
-      ultrasonic_trig: 'D0',
-      ultrasonic_echo: 'D1',
-      pir_motion: 'D3',
-      rgb_red: 'A5',
-      rgb_green: 'A6',
-      rgb_blue: 'A7',
-      ldr_light: 'A1',
-      lm35_temp: 'A2',
+      btn_key2: 'D6',
+      aux_relay_d7: 'D7',
       potentiometer: 'A0',
       sz_hs100: 'A0',
-      btn_key1: 'D2',
-      btn_key2: 'D6'
+      ldr_light: 'A1',
+      lm35_temp: 'A2',
+      aux_gas_a3: 'A3',
+      aux_soil_a6: 'A6',
+      aux_flame_a7: 'A7'
     }
   },
 
