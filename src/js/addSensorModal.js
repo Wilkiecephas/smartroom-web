@@ -2,6 +2,8 @@
 // UI modal for adding new sensor devices (BLE, WebSocket, Smartwatch)
 
 import { SensorAdapter } from './sensorAdapter.js';
+import { postDevice } from './api.js';
+import { showToast } from './toast.js';
 
 export class AddSensorModal {
   constructor() {
@@ -38,33 +40,31 @@ export class AddSensorModal {
 
   async handleSubmit(data) {
     const type = data.get('sensor-type');
-    const connection = data.get('connection-method');
-    let adapter;
+    // Build config based on type
+    const config = {};
+    if (type === 'mqtt') {
+      config.broker = data.get('mqtt-broker');
+      config.clientId = data.get('mqtt-clientid');
+      config.username = data.get('mqtt-username');
+      config.password = data.get('mqtt-password');
+      config.topic = data.get('mqtt-topic');
+    }
+    // For BLE, WebSocket, Smartwatch we could extend config later
     try {
-      if (type === 'ble' && connection === 'bluetooth') {
-        adapter = await SensorAdapter.createBleAdapter();
-        await adapter.connect();
-      } else if (type === 'websocket' && connection === 'ws') {
-        const url = data.get('ws-url');
-        adapter = SensorAdapter.createWebSocketAdapter(url);
-        await adapter.connect();
-      } else if (type === 'smartwatch' && connection === 'bluetooth') {
-        adapter = await SensorAdapter.createSmartwatchAdapter();
-        await adapter.connect();
-      }
-      // Register data flow to sensorRegistry
-      if (adapter) {
+      // Register device via backend
+      const result = await postDevice({ type, config });
+      if (result.success) {
         const sensorId = `${type}-${Date.now()}`;
         window.sensorRegistry.addSensor(sensorId, type);
-        adapter.onData(payload => {
-          window.sensorRegistry.updateData(sensorId, payload);
-        });
         this.addSensorToList(sensorId, type);
+        showToast('Device registered successfully', 'success');
         this.close();
+      } else {
+        showToast('Failed to register device', 'error');
       }
     } catch (err) {
-      console.error('Sensor connection failed', err);
-      alert('Failed to connect sensor: ' + err.message);
+      console.error('Device registration error', err);
+      showToast('Error registering device', 'error');
     }
   }
 

@@ -3211,5 +3211,43 @@
 
   <!-- Module Entry Script -->
   <script type="module" src="/src/js/app.js"></script>
+        <!-- Add Device Modal -->
+        <div id="addSensorModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+          <div class="modal-content glassmorphic" style="background:rgba(255,255,255,0.9); padding:20px; border-radius:8px; max-width:400px; width:100%;">
+            <span class="modal-close" style="float:right; cursor:pointer; font-weight:bold;">&times;</span>
+            <h3>Add New Sensor Device</h3>
+            <form id="addSensorForm">
+              <label for="sensor-type">Sensor Type:</label>
+              <select name="sensor-type" id="sensor-type" required>
+                <option value="ble">BLE</option>
+                <option value="mqtt">MQTT</option>
+                <option value="websocket">WebSocket</option>
+                <option value="smartwatch">Smartwatch</option>
+              </select>
+              <br/><br/>
+              <div id="mqtt-fields" style="display:none;">
+                <label for="mqtt-broker">Broker URL:</label>
+                <input type="url" id="mqtt-broker" name="mqtt-broker" placeholder="ws://broker.hivemq.com:8000/mqtt" />
+                <br/><br/>
+                <label for="mqtt-clientid">Client ID:</label>
+                <input type="text" id="mqtt-clientid" name="mqtt-clientid" />
+                <br/><br/>
+                <label for="mqtt-username">Username (optional):</label>
+                <input type="text" id="mqtt-username" name="mqtt-username" />
+                <br/><br/>
+                <label for="mqtt-password">Password (optional):</label>
+                <input type="password" id="mqtt-password" name="mqtt-password" />
+                <br/><br/>
+                <label for="mqtt-topic">Topic:</label>
+                <input type="text" id="mqtt-topic" name="mqtt-topic" placeholder="sensors/room1" />
+                <br/><br/>
+              </div>
+              <div id="ble-fields" style="display:none;">
+                <!-- BLE specific fields could be added here if needed -->
+              </div>
+              <button type="submit" class="btn-primary" style="margin-top:10px;">Add Device</button>
+            </form>
+          </div>
+        </div>
 </body>
 </html>
