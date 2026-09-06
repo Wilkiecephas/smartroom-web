@@ -2395,6 +2395,7 @@
         <button class="modal-tab-btn active" data-tab="tabAddSpark">⚡ Spark Core (User Hardware)</button>
         <button class="modal-tab-btn" data-tab="tabAddVirtual">💻 Virtual Simulation Device</button>
         <button class="modal-tab-btn" data-tab="tabAddSerial">🔌 USB Serial COM Port</button>
+        <button class="modal-tab-btn" data-tab="tabAddBle">🦷 Web Bluetooth (BLE)</button>
         <button class="modal-tab-btn" data-tab="tabAddWireless">📶 WiFi / Wireless Board</button>
         <button class="modal-tab-btn" data-tab="tabAddRest">🌐 Custom REST / HTTP</button>
         <button class="modal-tab-btn" data-tab="tabAddWs">📡 WebSocket Stream</button>
@@ -2475,32 +2476,63 @@
       <!-- TAB 3: USB Serial Port -->
       <div id="tabAddSerial" class="tab-content-pane">
         <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
-          Connect microcontrollers directly via Chrome / Edge Web Serial API (Arduino Uno/Nano, ESP32, STM32, Pi Pico):
+          Auto-detect and stream microcontrollers via Chrome / Edge Web Serial API with hardware chip identification:
+        </div>
+
+        <!-- Dynamic Serial Port Detection Section -->
+        <div class="form-group" style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0;">Connected Serial Port Device:</label>
+            <span id="serialPortDetectionBadge" class="badge badge-normal" style="font-size: 10px; background: rgba(0, 242, 254, 0.1); color: var(--accent-cyan);">Auto-Detect Ready</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="selectConnectedSerialPorts" class="board-select-dropdown" style="flex: 1;">
+              <option value="">Scanning for connected serial ports...</option>
+            </select>
+            <button type="button" id="btnScanPairSerialPort" class="btn-primary" style="padding: 8px 14px; font-size: 12px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" title="Scan and authorize a USB serial COM port">
+              <span>🔍 Scan &amp; Pair Port</span>
+            </button>
+            <button type="button" id="btnRefreshSerialPorts" class="btn-icon" style="padding: 8px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md);" title="Refresh connected port list">
+              🔄
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Hardware Chip Info Card -->
+        <div id="serialPortHardwareInfo" style="padding: 10px 14px; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: var(--radius-md); font-size: 12px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">🔌</span>
+            <span id="serialPortInfoText" style="color: var(--text-dim);">No port selected. Click <strong>"Scan &amp; Pair Port"</strong> to detect your plugged hardware.</span>
+          </div>
+          <span id="serialPortVidPidPill" class="badge" style="display: none; font-family: var(--font-mono); font-size: 10px; background: rgba(0, 242, 254, 0.15); color: var(--accent-cyan);"></span>
         </div>
 
         <div class="two-point-grid" style="gap: 12px; margin-bottom: 12px;">
           <div class="form-group">
-            <label class="form-label">Board Profile:</label>
+            <label class="form-label">Target MCU Profile:</label>
             <select id="selectAddSerialProfile" class="board-select-dropdown" style="width: 100%;">
-              <option value="arduino_uno">Arduino Uno R3</option>
-              <option value="arduino_nano">Arduino Nano</option>
-              <option value="esp32">ESP32 NodeMCU</option>
-              <option value="stm32_bluepill">STM32 Blue Pill</option>
-              <option value="raspberry_pi_pico">Raspberry Pi Pico</option>
+              <option value="arduino_uno">Arduino Uno R3 (ATmega328P)</option>
+              <option value="arduino_nano">Arduino Nano (ATmega328P)</option>
+              <option value="arduino_mega">Arduino Mega 2560</option>
+              <option value="esp32">ESP32 NodeMCU (WROOM-32)</option>
+              <option value="esp8266">ESP8266 NodeMCU</option>
+              <option value="stm32_bluepill">STM32F103 Blue Pill</option>
+              <option value="raspberry_pi_pico">Raspberry Pi Pico (RP2040)</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">Baud Rate:</label>
             <select id="selectAddSerialBaud" class="board-select-dropdown" style="width: 100%;">
-              <option value="9600" selected>9600 Baud (Standard)</option>
-              <option value="115200">115200 Baud (High Speed)</option>
+              <option value="115200" selected>115200 Baud (High Speed)</option>
+              <option value="9600">9600 Baud (Standard)</option>
               <option value="57600">57600 Baud</option>
+              <option value="19200">19200 Baud</option>
             </select>
           </div>
         </div>
 
         <div class="form-group" style="margin-bottom: 18px;">
-          <label class="form-label">Device Name:</label>
+          <label class="form-label">Device Name / Label:</label>
           <input type="text" id="inputAddSerialName" class="form-input" value="USB Serial Controller">
         </div>
 
@@ -2509,7 +2541,35 @@
             📋 View Arduino / MCU Sketch
           </button>
           <button id="btnSubmitAddSerial" class="btn-primary" style="padding: 10px 20px;">
-            🔌 Pair Web Serial Port &amp; Connect
+            ⚡ Connect &amp; Register Serial Device
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB: Web Bluetooth (BLE) -->
+      <div id="tabAddBle" class="tab-content-pane">
+        <div style="padding: 14px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-md); margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #60a5fa; margin-bottom: 6px;">
+            <span>🦷</span> Web Bluetooth (BLE GATT) Peripheral
+          </div>
+          <div style="font-size: 12px; color: var(--text-main); line-height: 1.5;">
+            Scan and pair Bluetooth Low Energy environmental beacons, ESP32 BLE GATT servers, and smart sensors directly in the browser.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label">Device Name / Label:</label>
+          <input type="text" id="inputAddBleName" class="form-input" value="Bluetooth BLE Sensor Node">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label">GATT Service UUID (Optional / Custom):</label>
+          <input type="text" id="inputAddBleServiceUuid" class="form-input" placeholder="e.g. 0000ffe0-0000-1000-8000-00805f9b34fb" style="font-family: var(--font-mono); font-size: 12px;">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button id="btnSubmitAddBle" class="btn-primary" style="background: linear-gradient(135deg, #3b82f6, #06b6d4); color: #040914; font-weight: 700; padding: 10px 20px;">
+            🦷 Scan &amp; Pair BLE Device
           </button>
         </div>
       </div>

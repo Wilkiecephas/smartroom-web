@@ -39,6 +39,78 @@ export class WebSerialManager {
     this.statusCallbacks.forEach(fn => fn({ status, detail, isConnected: this.isConnected, baudRate: this.baudRate }));
   }
 
+  /**
+   * Returns list of previously authorized Web Serial ports with USB metadata
+   */
+  async getPairedPorts() {
+    if (!('serial' in navigator)) return [];
+    try {
+      const ports = await navigator.serial.getPorts();
+      return ports.map((port, index) => {
+        const info = port.getInfo ? port.getInfo() : {};
+        return {
+          port,
+          index,
+          usbVendorId: info.usbVendorId,
+          usbProductId: info.usbProductId
+        };
+      });
+    } catch (err) {
+      console.warn('Failed to query paired serial ports:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Prompts user with native browser device picker to pair and authorize a new COM port
+   */
+  async requestAndAddPort(filters = []) {
+    if (!('serial' in navigator)) {
+      throw new Error('Web Serial API is not supported in this browser. Please use Google Chrome, Microsoft Edge, or Opera.');
+    }
+    const port = await navigator.serial.requestPort({ filters });
+    const info = port.getInfo ? port.getInfo() : {};
+    return {
+      port,
+      usbVendorId: info.usbVendorId,
+      usbProductId: info.usbProductId
+    };
+  }
+
+  /**
+   * Connect to a specific SerialPort instance
+   */
+  async connectToPort(selectedPort, baudRate = 115200) {
+    this.baudRate = parseInt(baudRate, 10);
+    if (!selectedPort) {
+      throw new Error('No serial port selected.');
+    }
+
+    if (this.isConnected) {
+      await this.disconnect();
+    }
+
+    this.port = selectedPort;
+    try {
+      await this.port.open({
+        baudRate: this.baudRate,
+        dataBits: 8,
+        stopBits: 1,
+        parity: 'none',
+        flowControl: 'none'
+      });
+
+      this.isConnected = true;
+      this.notifyStatus('connected', `Connected at ${this.baudRate} baud`);
+      this.startReadLoop();
+      return true;
+    } catch (err) {
+      this.isConnected = false;
+      this.notifyStatus('error', err.message);
+      throw err;
+    }
+  }
+
   async connect(baudRate = 115200) {
     this.baudRate = parseInt(baudRate, 10);
 

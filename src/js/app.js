@@ -52,6 +52,7 @@ class SmartRoomApp {
     this.dashboardViewMode = localStorage.getItem('sr_dashboard_view_mode') || 'monitor';
     this.activeHumiditySource = 'dht11';
     this.lastGatheredMapping = null;
+    this.currentPairedPorts = [];
 
     this.dom = {};
   }
@@ -517,13 +518,19 @@ class SmartRoomApp {
     this.dom.inputAddSimName        = document.getElementById('inputAddSimName');
     this.dom.inputAddSimZone        = document.getElementById('inputAddSimZone');
     this.dom.btnSubmitAddSim        = document.getElementById('btnSubmitAddSim');
-    this.dom.selectAddSerialProfile = document.getElementById('selectAddSerialProfile');
-    this.dom.selectAddSerialBaud    = document.getElementById('selectAddSerialBaud');
-    this.dom.inputAddSerialName     = document.getElementById('inputAddSerialName');
-    this.dom.btnSubmitAddSerial     = document.getElementById('btnSubmitAddSerial');
-    this.dom.inputAddWirelessName   = document.getElementById('inputAddWirelessName');
-    this.dom.inputAddWirelessUrl    = document.getElementById('inputAddWirelessUrl');
-    this.dom.btnSubmitAddWireless   = document.getElementById('btnSubmitAddWireless');
+    this.dom.selectConnectedSerialPorts = document.getElementById('selectConnectedSerialPorts');
+    this.dom.btnScanPairSerialPort      = document.getElementById('btnScanPairSerialPort');
+    this.dom.btnRefreshSerialPorts     = document.getElementById('btnRefreshSerialPorts');
+    this.dom.selectAddSerialProfile     = document.getElementById('selectAddSerialProfile');
+    this.dom.selectAddSerialBaud        = document.getElementById('selectAddSerialBaud');
+    this.dom.inputAddSerialName         = document.getElementById('inputAddSerialName');
+    this.dom.btnSubmitAddSerial         = document.getElementById('btnSubmitAddSerial');
+    this.dom.inputAddBleName            = document.getElementById('inputAddBleName');
+    this.dom.inputAddBleServiceUuid     = document.getElementById('inputAddBleServiceUuid');
+    this.dom.btnSubmitAddBle            = document.getElementById('btnSubmitAddBle');
+    this.dom.inputAddWirelessName       = document.getElementById('inputAddWirelessName');
+    this.dom.inputAddWirelessUrl        = document.getElementById('inputAddWirelessUrl');
+    this.dom.btnSubmitAddWireless       = document.getElementById('btnSubmitAddWireless');
 
     // Modal: Add Sensor to Device
     this.dom.modalAddSensor            = document.getElementById('modalAddSensor');
@@ -2256,9 +2263,61 @@ class SmartRoomApp {
           this.dom.modalAddDevice.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
           this.dom.modalAddDevice.querySelectorAll('.tab-content-pane').forEach(p => p.classList.remove('active'));
           btn.classList.add('active');
-          const pane = document.getElementById(btn.getAttribute('data-tab'));
+          const tabId = btn.getAttribute('data-tab');
+          const pane = document.getElementById(tabId);
           if (pane) pane.classList.add('active');
+          if (tabId === 'tabAddSerial') {
+            this.refreshConnectedSerialPorts();
+          }
         });
+      });
+    }
+
+    // Web Serial Port Auto-Detection & Hotplug listeners
+    if ('serial' in navigator) {
+      navigator.serial.addEventListener('connect', () => {
+        this.refreshConnectedSerialPorts();
+        this.log('🔌 USB Serial device plugged in!', 'info');
+      });
+      navigator.serial.addEventListener('disconnect', () => {
+        this.refreshConnectedSerialPorts();
+        this.log('⚠️ USB Serial device disconnected.', 'warn');
+      });
+    }
+
+    if (this.dom.btnScanPairSerialPort) {
+      this.dom.btnScanPairSerialPort.addEventListener('click', async () => {
+        try {
+          const res = await webSerialManager.requestAndAddPort();
+          this.log(`USB Serial Port authorized: VID ${res.usbVendorId || 'Generic'}`, 'success');
+          await this.refreshConnectedSerialPorts();
+          if (this.currentPairedPorts && this.currentPairedPorts.length > 0) {
+            const lastIdx = (this.currentPairedPorts.length - 1).toString();
+            if (this.dom.selectConnectedSerialPorts) {
+              this.dom.selectConnectedSerialPorts.value = lastIdx;
+            }
+            this.updateSelectedSerialPortDetails(parseInt(lastIdx, 10));
+          }
+        } catch (err) {
+          if (err.name !== 'NotFoundError') {
+            this.log(`Serial port pairing error: ${err.message}`, 'error');
+          }
+        }
+      });
+    }
+
+    if (this.dom.btnRefreshSerialPorts) {
+      this.dom.btnRefreshSerialPorts.addEventListener('click', () => {
+        this.refreshConnectedSerialPorts();
+      });
+    }
+
+    if (this.dom.selectConnectedSerialPorts) {
+      this.dom.selectConnectedSerialPorts.addEventListener('change', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) {
+          this.updateSelectedSerialPortDetails(val);
+        }
       });
     }
 
@@ -2266,8 +2325,8 @@ class SmartRoomApp {
     if (this.dom.btnSubmitAddSpark) {
       this.dom.btnSubmitAddSpark.addEventListener('click', () => {
         const name = this.dom.inputAddSparkName ? this.dom.inputAddSparkName.value.trim() : 'Spark Core (Master Chamber)';
-        const devId = this.dom.inputAddSparkId ? this.dom.inputAddSparkId.value.trim() : '53ff6e066667574849402567';
-        const token = this.dom.inputAddSparkToken ? this.dom.inputAddSparkToken.value.trim() : '2bb1082c94a974b77f88427f7fb28469ad46dc75';
+        const devId = this.dom.inputAddSparkId ? this.dom.inputAddSparkId.value.trim() : '54ff74066678574924331067';
+        const token = this.dom.inputAddSparkToken ? this.dom.inputAddSparkToken.value.trim() : 'a0797b36a33322a66526d0580e6fe270a5ade86f';
         const zone = this.dom.inputAddSparkZone ? this.dom.inputAddSparkZone.value.trim() : 'Master Lab / Chamber';
 
         particleApi.setCredentials(devId, token);
@@ -2311,27 +2370,73 @@ class SmartRoomApp {
       });
     }
 
-    // 7. Submit USB Serial
+    // 7. Submit USB Serial (Auto-Listed Port Connect & Register)
     if (this.dom.btnSubmitAddSerial) {
       this.dom.btnSubmitAddSerial.addEventListener('click', async () => {
+        const portIdx = this.dom.selectConnectedSerialPorts ? parseInt(this.dom.selectConnectedSerialPorts.value, 10) : NaN;
         const profile = this.dom.selectAddSerialProfile ? this.dom.selectAddSerialProfile.value : 'arduino_uno';
-        const baud = this.dom.selectAddSerialBaud ? parseInt(this.dom.selectAddSerialBaud.value) : 9600;
-        const name = this.dom.inputAddSerialName ? this.dom.inputAddSerialName.value.trim() : 'USB Serial Controller';
+        const baud = this.dom.selectAddSerialBaud ? parseInt(this.dom.selectAddSerialBaud.value, 10) : 115200;
+        const name = this.dom.inputAddSerialName ? this.dom.inputAddSerialName.value.trim() : 'USB Serial Device';
 
-        const dev = deviceRegistry.registerDevice({
-          id: 'dev_serial_' + Date.now(),
-          name,
-          type: 'usb_serial',
-          boardProfileId: profile,
-          connectionMethod: 'web_serial',
-          status: 'online',
-          credentials: { baudRate: baud }
-        });
+        let targetPort = null;
+        if (!isNaN(portIdx) && this.currentPairedPorts && this.currentPairedPorts[portIdx]) {
+          targetPort = this.currentPairedPorts[portIdx].port;
+        }
 
-        this.switchBoardProfile(profile);
-        this.dom.modalAddDevice.classList.remove('active');
-        this.log(`🔌 Serial Device Registered: ${name} (${baud} Baud). Opening COM Port...`, 'info');
-        this.handleSerialConnectClick();
+        try {
+          if (targetPort) {
+            await webSerialManager.connectToPort(targetPort, baud);
+          } else {
+            await webSerialManager.connect(baud);
+          }
+
+          const dev = deviceRegistry.registerDevice({
+            id: 'dev_serial_' + Date.now(),
+            name,
+            type: 'usb_serial',
+            boardProfileId: profile,
+            connectionMethod: 'web_serial',
+            status: 'online',
+            credentials: { baudRate: baud }
+          });
+
+          deviceRegistry.setActiveDevice(dev.id);
+          this.switchBoardProfile(profile);
+          this.switchMode('live');
+          if (this.dom.modalAddDevice) this.dom.modalAddDevice.classList.remove('active');
+          this.log(`🔌 Serial Device Connected & Registered: ${name} (${baud} Baud)`, 'success');
+        } catch (err) {
+          this.log(`Failed to connect serial port: ${err.message}`, 'error');
+        }
+      });
+    }
+
+    // Submit Bluetooth BLE
+    if (this.dom.btnSubmitAddBle) {
+      this.dom.btnSubmitAddBle.addEventListener('click', async () => {
+        const name = this.dom.inputAddBleName ? this.dom.inputAddBleName.value.trim() : 'Bluetooth BLE Sensor Node';
+        const customUuid = this.dom.inputAddBleServiceUuid ? this.dom.inputAddBleServiceUuid.value.trim() : '';
+
+        try {
+          if (customUuid && this.dom.inputBleServiceUuid) {
+            this.dom.inputBleServiceUuid.value = customUuid;
+          }
+          await wirelessManager.connectBluetooth();
+          const dev = deviceRegistry.registerDevice({
+            id: 'dev_ble_' + Date.now(),
+            name,
+            type: 'ble_peripheral',
+            boardProfileId: 'esp32',
+            connectionMethod: 'web_ble',
+            status: 'online',
+            credentials: { serviceUuid: customUuid }
+          });
+          deviceRegistry.setActiveDevice(dev.id);
+          if (this.dom.modalAddDevice) this.dom.modalAddDevice.classList.remove('active');
+          this.log(`🦷 Bluetooth BLE Device Registered & Connected: ${name}`, 'success');
+        } catch (err) {
+          this.log(`Bluetooth connection: ${err.message}`, 'error');
+        }
       });
     }
 
@@ -2859,6 +2964,113 @@ class SmartRoomApp {
     webSerialManager.onData(({ raw }) => {
       this.logSerial(raw);
     });
+  }
+
+  async refreshConnectedSerialPorts() {
+    const select = this.dom.selectConnectedSerialPorts;
+    const badge = document.getElementById('serialPortDetectionBadge');
+    const infoText = document.getElementById('serialPortInfoText');
+    const vidPidPill = document.getElementById('serialPortVidPidPill');
+    if (!select) return;
+
+    if (!('serial' in navigator)) {
+      select.innerHTML = '<option value="">Web Serial not supported in this browser</option>';
+      if (badge) {
+        badge.textContent = 'Unsupported Browser';
+        badge.style.background = 'rgba(239, 68, 68, 0.15)';
+        badge.style.color = '#ef4444';
+      }
+      if (infoText) {
+        infoText.innerHTML = 'Web Serial requires Google Chrome, Microsoft Edge, or Opera.';
+      }
+      return;
+    }
+
+    try {
+      if (badge) badge.textContent = 'Scanning Ports...';
+      const pairedPorts = await webSerialManager.getPairedPorts();
+      this.currentPairedPorts = pairedPorts || [];
+
+      select.innerHTML = '';
+
+      if (this.currentPairedPorts.length === 0) {
+        select.innerHTML = '<option value="">No authorized ports found (Click "Scan & Pair Port" 👉)</option>';
+        if (badge) {
+          badge.textContent = '0 Paired Ports';
+          badge.style.background = 'rgba(245, 158, 11, 0.15)';
+          badge.style.color = 'var(--accent-amber)';
+        }
+        if (infoText) {
+          infoText.innerHTML = 'No authorized serial device detected. Click <strong>"Scan &amp; Pair Port"</strong> to detect plugged hardware.';
+        }
+        if (vidPidPill) vidPidPill.style.display = 'none';
+        return;
+      }
+
+      if (badge) {
+        badge.textContent = `${this.currentPairedPorts.length} Detected Port${this.currentPairedPorts.length === 1 ? '' : 's'}`;
+        badge.style.background = 'rgba(16, 185, 129, 0.15)';
+        badge.style.color = '#10b981';
+      }
+
+      this.currentPairedPorts.forEach((item, i) => {
+        const idResult = driverHelper.identifyUsbDevice(item.usbVendorId, item.usbProductId);
+        const opt = document.createElement('option');
+        opt.value = i.toString();
+        const label = idResult.matched
+          ? `Port #${i + 1}: ${idResult.vendor} — ${idResult.chip} (${idResult.boardLabel})`
+          : (item.usbVendorId
+              ? `Port #${i + 1}: USB Serial Device (VID: ${idResult.vendorId}, PID: ${idResult.productId})`
+              : `Port #${i + 1}: Standard COM Serial Port`);
+        opt.textContent = label;
+        select.appendChild(opt);
+      });
+
+      select.value = '0';
+      this.updateSelectedSerialPortDetails(0);
+    } catch (err) {
+      console.warn('[Serial] Port listing error:', err);
+      select.innerHTML = '<option value="">Error scanning ports</option>';
+    }
+  }
+
+  updateSelectedSerialPortDetails(index) {
+    const infoText = document.getElementById('serialPortInfoText');
+    const vidPidPill = document.getElementById('serialPortVidPidPill');
+    const item = this.currentPairedPorts && this.currentPairedPorts[index];
+    if (!item) {
+      if (infoText) infoText.innerHTML = 'No port selected. Click <strong>"Scan &amp; Pair Port"</strong> to detect hardware.';
+      if (vidPidPill) vidPidPill.style.display = 'none';
+      return;
+    }
+
+    const idResult = driverHelper.identifyUsbDevice(item.usbVendorId, item.usbProductId);
+    if (infoText) {
+      if (idResult.matched) {
+        infoText.innerHTML = `<strong style="color: var(--accent-cyan);">${idResult.vendor} (${idResult.chip})</strong> &bull; Recommended MCU: <strong>${idResult.boardLabel}</strong>`;
+      } else {
+        infoText.textContent = idResult.detail || 'Generic USB Serial device.';
+      }
+    }
+
+    if (vidPidPill) {
+      if (idResult.vendorId) {
+        vidPidPill.textContent = `VID: ${idResult.vendorId} | PID: ${idResult.productId}`;
+        vidPidPill.style.display = 'inline-block';
+      } else {
+        vidPidPill.style.display = 'none';
+      }
+    }
+
+    // Auto-fill suggested board profile and device name
+    if (idResult.suggestedBoardId && this.dom.selectAddSerialProfile) {
+      this.dom.selectAddSerialProfile.value = idResult.suggestedBoardId;
+    }
+    if (this.dom.inputAddSerialName) {
+      this.dom.inputAddSerialName.value = idResult.matched
+        ? `${idResult.vendor} ${idResult.chip}`
+        : `USB COM Port #${index + 1}`;
+    }
   }
 
   initPortPingerCallbacks() {
@@ -5497,6 +5709,9 @@ class SmartRoomApp {
       const panes = this.dom.modalAddDevice.querySelectorAll('.tab-content-pane');
       tabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === tabName));
       panes.forEach(p => p.classList.toggle('active', p.id === tabName));
+      if (tabName === 'tabAddSerial') {
+        this.refreshConnectedSerialPorts();
+      }
     };
 
     if (this.dom.blankBtnAddSpark) {

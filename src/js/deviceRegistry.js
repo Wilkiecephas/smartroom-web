@@ -227,11 +227,6 @@ class DeviceRegistry {
                 }
               });
 
-              if (!parsed.some(d => d.id === 'dev_arduino_uno_primary' || d.type === 'arduino_uno')) {
-                parsed.push(PRESET_DEVICES[1]);
-                modified = true;
-              }
-
               if (modified) {
                 localStorage.setItem(this.storageKey, JSON.stringify(parsed));
               }
