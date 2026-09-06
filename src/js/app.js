@@ -489,12 +489,13 @@ class SmartRoomApp {
     this.dom.textToggleMenu      = document.getElementById('textToggleMenu');
     this.dom.btnHeaderAddDevice  = document.getElementById('btnHeaderAddDevice');
 
-    // Active Connected Device & Project Status Banner
-    this.dom.activeDevicesBar        = document.getElementById('activeDevicesBar');
-    this.dom.activeDevicesLine       = document.getElementById('activeDevicesLine');
-    this.dom.activeDevicesLineBanner = document.getElementById('activeDevicesLineBanner');
-    this.dom.btnLineAddDevice        = document.getElementById('btnLineAddDevice');
-    this.dom.activeDeviceBanner      = document.getElementById('activeDeviceBanner');
+    // Connected Hardware Explorer (Windows Explorer Style: USB, BLE, Wi-Fi)
+    this.dom.devicesExplorerSection    = document.getElementById('devicesExplorerSection');
+    this.dom.devicesExplorerGrid       = document.getElementById('devicesExplorerGrid');
+    this.dom.explorerDeviceCountBadge  = document.getElementById('explorerDeviceCountBadge');
+    this.dom.btnExplorerScan           = document.getElementById('btnExplorerScan');
+    this.dom.btnExplorerAddDevice      = document.getElementById('btnExplorerAddDevice');
+    this.dom.activeDeviceBanner        = document.getElementById('activeDeviceBanner');
     this.dom.activeProjectName       = document.getElementById('activeProjectName');
     this.dom.btnStartNewProject      = document.getElementById('btnStartNewProject');
     this.dom.activeDeviceName        = document.getElementById('activeDeviceName');
@@ -2270,7 +2271,14 @@ class SmartRoomApp {
     if (this.dom.btnHeaderAddDevice) this.dom.btnHeaderAddDevice.addEventListener('click', openAddDevice);
     if (this.dom.btnOpenAddDeviceModal) this.dom.btnOpenAddDeviceModal.addEventListener('click', openAddDevice);
     if (this.dom.btnMgrAddNewDevice) this.dom.btnMgrAddNewDevice.addEventListener('click', openAddDevice);
-    if (this.dom.btnLineAddDevice) this.dom.btnLineAddDevice.addEventListener('click', openAddDevice);
+    if (this.dom.btnExplorerAddDevice) this.dom.btnExplorerAddDevice.addEventListener('click', openAddDevice);
+    if (this.dom.btnExplorerScan) {
+      this.dom.btnExplorerScan.addEventListener('click', () => {
+        this.refreshConnectedSerialPorts();
+        this.renderDevicesExplorer();
+        this.log('Scanning for connected hardware devices...', 'info');
+      });
+    }
 
     if (this.dom.btnCloseAddDevice) {
       this.dom.btnCloseAddDevice.addEventListener('click', () => {
@@ -2670,8 +2678,8 @@ class SmartRoomApp {
       }
     }
 
-    // Update active devices line chips
-    this.renderActiveDevicesLine();
+    // Update categorized hardware devices explorer
+    this.renderDevicesExplorer();
   }
 
   selectActiveDevice(devId) {
@@ -2700,63 +2708,132 @@ class SmartRoomApp {
     this.renderDeviceManagerList();
   }
 
-  renderActiveDevicesLine() {
+  categorizeDevices(devices) {
+    const groups = [
+      { id: 'usb', title: 'USB Serial Devices', icon: '🔌', emptyMsg: 'No USB serial hardware connected', actionText: '+ Pair Port', actionTab: 'tabAddSerial', devices: [] },
+      { id: 'ble', title: 'Bluetooth Devices (BLE)', icon: '🦷', emptyMsg: 'No Bluetooth BLE peripherals paired', actionText: '+ Pair BLE', actionTab: 'tabAddBle', devices: [] },
+      { id: 'wifi', title: 'Wi-Fi & Cloud Devices', icon: '🌐', emptyMsg: 'No Wi-Fi or Cloud endpoints registered', actionText: '+ Connect Wi-Fi', actionTab: 'tabAddWireless', devices: [] },
+      { id: 'virtual', title: 'Virtual Simulation Devices', icon: '💻', emptyMsg: 'No virtual twins created', actionText: '+ Add Sim', actionTab: 'tabAddSim', devices: [] }
+    ];
+
+    devices.forEach(dev => {
+      const method = (dev.connectionMethod || '').toLowerCase();
+      const type = (dev.type || '').toLowerCase();
+
+      if (method === 'web_serial' || type.includes('serial') || type.includes('arduino') || type.includes('com')) {
+        groups[0].devices.push(dev);
+      } else if (method === 'web_ble' || type.includes('ble') || type.includes('bluetooth')) {
+        groups[1].devices.push(dev);
+      } else if (method === 'virtual_simulation' || type.includes('simulation') || type.includes('sim')) {
+        groups[3].devices.push(dev);
+      } else {
+        // Wi-Fi, Cloud, Particle, REST, MQTT, etc.
+        groups[2].devices.push(dev);
+      }
+    });
+
+    return groups;
+  }
+
+  renderDevicesExplorer() {
+    if (!this.dom.devicesExplorerGrid) return;
     const devices = deviceRegistry.getDevices();
     const active = deviceRegistry.getActiveDevice();
 
-    const targets = [this.dom.activeDevicesLine, this.dom.activeDevicesLineBanner].filter(Boolean);
-    if (targets.length === 0) return;
-
-    if (devices.length === 0) {
-      const emptyHtml = `<span style="font-size: 11px; color: var(--text-dim); padding: 4px 6px;">No devices registered. Click "+ Add Device" to connect hardware.</span>`;
-      targets.forEach(t => { t.innerHTML = emptyHtml; });
-      return;
+    if (this.dom.explorerDeviceCountBadge) {
+      this.dom.explorerDeviceCountBadge.textContent = `${devices.length} ${devices.length === 1 ? 'DEVICE' : 'DEVICES'} CONNECTED`;
     }
 
-    const getIcon = (dev) => {
-      const method = dev.connectionMethod || dev.type;
-      if (method === 'particle_cloud' || dev.type === 'spark_core') return '⚡';
-      if (method === 'web_serial' || dev.type === 'arduino_uno') return '🔌';
-      if (method === 'web_ble' || dev.type === 'ble') return '🦷';
-      if (method === 'custom_rest' || method === 'rest_wifi' || method === 'wifi') return '🌐';
-      if (method === 'virtual_simulation') return '💻';
-      return '📡';
-    };
+    const groups = this.categorizeDevices(devices);
 
-    const html = devices.map(dev => {
-      const isActive = Boolean(active && dev.id === active.id);
-      const icon = getIcon(dev);
+    this.dom.devicesExplorerGrid.innerHTML = groups.map(group => {
+      const hasDevs = group.devices.length > 0;
       return `
-        <div class="device-line-chip ${isActive ? 'is-active' : ''}" data-dev-id="${dev.id}" role="button" tabindex="0" title="${dev.name} (${dev.connectionMethod || dev.type})">
-          <span class="device-line-chip-icon">${icon}</span>
-          <span class="device-line-chip-name">${dev.name}</span>
-          ${isActive 
-            ? `<span class="device-line-chip-selector active">Active</span>`
-            : `<button class="device-line-chip-selector select-btn" data-dev-id="${dev.id}">Select</button>`
-          }
+        <div class="explorer-category-group" data-group-id="${group.id}">
+          <div class="explorer-category-header">
+            <span class="cat-label">${group.icon} ${group.title}</span>
+            <span class="cat-count">${group.devices.length} Connected</span>
+          </div>
+          ${hasDevs ? `
+            <div class="explorer-device-grid">
+              ${group.devices.map(dev => {
+                const isActive = Boolean(active && dev.id === active.id);
+                const attachedCount = (dev.attachedSensors || []).length;
+                let meta = `Zone: ${dev.zone || 'Primary'}`;
+                if (group.id === 'usb') {
+                  meta = `Baud: ${dev.credentials?.baudRate || '115200'} &bull; ${attachedCount} sensor${attachedCount === 1 ? '' : 's'}`;
+                } else if (group.id === 'ble') {
+                  meta = `GATT Peripheral &bull; ${attachedCount} sensor${attachedCount === 1 ? '' : 's'}`;
+                } else if (group.id === 'wifi') {
+                  meta = `${dev.connectionMethod === 'particle_cloud' ? 'Particle Cloud' : 'Wi-Fi/REST'} &bull; ${attachedCount} sensor${attachedCount === 1 ? '' : 's'}`;
+                } else if (group.id === 'virtual') {
+                  meta = `Digital Twin &bull; ${attachedCount} sensor${attachedCount === 1 ? '' : 's'}`;
+                }
+
+                return `
+                  <div class="explorer-device-tile ${isActive ? 'is-active' : ''}" data-dev-id="${dev.id}" role="button" tabindex="0" title="Click to select ${dev.name}">
+                    <div class="tile-icon-box">${group.icon}</div>
+                    <div class="tile-content">
+                      <div class="tile-device-name">${dev.name}</div>
+                      <div class="tile-device-meta">${meta}</div>
+                    </div>
+                    <div class="tile-actions">
+                      <button class="btn-outline btn-force-inspect-dev" data-dev-id="${dev.id}" style="padding: 4px 8px; font-size: 10px; color: var(--accent-cyan);" title="Inspect services & capabilities">⚡</button>
+                      ${isActive 
+                        ? '<span class="tile-active-badge">Active</span>' 
+                        : `<button class="btn-tile-select" data-dev-id="${dev.id}">Select</button>`
+                      }
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : `
+            <div class="explorer-empty-cat">
+              <span>${group.emptyMsg}</span>
+              <button class="btn-mini-tool btn-group-quick-add" data-tab="${group.actionTab}" style="color: var(--accent-cyan); border-color: rgba(0, 242, 254, 0.3); font-size: 10px;">${group.actionText}</button>
+            </div>
+          `}
         </div>
       `;
     }).join('');
 
-    targets.forEach(target => {
-      target.innerHTML = html;
+    // Wire clicks
+    this.dom.devicesExplorerGrid.querySelectorAll('.explorer-device-tile').forEach(tile => {
+      tile.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-force-inspect-dev')) return;
+        const devId = tile.getAttribute('data-dev-id');
+        if (devId) this.selectActiveDevice(devId);
+      });
+      tile.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const devId = tile.getAttribute('data-dev-id');
+          if (devId) this.selectActiveDevice(devId);
+        }
+      });
+    });
 
-      target.querySelectorAll('.device-line-chip').forEach(chip => {
-        chip.addEventListener('click', (e) => {
-          const devId = chip.getAttribute('data-dev-id');
-          if (devId) {
-            this.selectActiveDevice(devId);
+    this.dom.devicesExplorerGrid.querySelectorAll('.btn-force-inspect-dev').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const devId = btn.getAttribute('data-dev-id');
+        const dev = deviceRegistry.getDevice(devId);
+        if (dev) universalServiceInspector.inspectDevice(dev);
+      });
+    });
+
+    this.dom.devicesExplorerGrid.querySelectorAll('.btn-group-quick-add').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tabId = btn.getAttribute('data-tab');
+        if (this.dom.modalAddDevice) {
+          this.dom.modalAddDevice.classList.add('active');
+          if (tabId) {
+            const targetTabBtn = this.dom.modalAddDevice.querySelector(`.modal-tab-btn[data-tab="${tabId}"]`);
+            if (targetTabBtn) targetTabBtn.click();
           }
-        });
-        chip.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            const devId = chip.getAttribute('data-dev-id');
-            if (devId) {
-              this.selectActiveDevice(devId);
-            }
-          }
-        });
+        }
       });
     });
   }
@@ -2868,30 +2945,43 @@ class SmartRoomApp {
       return;
     }
 
-    this.dom.deviceManagerList.innerHTML = devices.map(dev => {
-      const isActive = active && dev.id === active.id;
-      const isSim = dev.connectionMethod === 'virtual_simulation';
-      const attachedCount = (dev.attachedSensors || []).length;
+    const groups = this.categorizeDevices(devices);
 
+    this.dom.deviceManagerList.innerHTML = groups.map(group => {
+      if (group.devices.length === 0) return '';
       return `
-        <div style="background: ${isActive ? 'rgba(0, 242, 254, 0.06)' : 'rgba(255, 255, 255, 0.02)'}; border: 1px solid ${isActive ? 'rgba(0, 242, 254, 0.4)' : 'var(--border-subtle)'}; border-radius: var(--radius-md); padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 26px;">${isSim ? '💻' : '⚡'}</span>
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 14px; font-weight: 700; color: var(--text-main);">${dev.name}</span>
-                ${isActive ? '<span class="badge badge-normal" style="background: rgba(0,242,254,0.15); color: var(--accent-cyan); font-size: 10px;">ACTIVE CONTROLLER</span>' : ''}
-              </div>
-              <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">
-                Zone: ${dev.zone || 'Primary'} &bull; ${dev.connectionMethod} &bull; ${attachedCount} attached sensor${attachedCount === 1 ? '' : 's'}
-              </div>
-            </div>
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 11px; font-weight: 700; font-family: var(--font-mono); color: var(--accent-cyan); text-transform: uppercase;">
+            <span>${group.icon} ${group.title}</span>
+            <span style="color: var(--text-dim); font-size: 10px;">${group.devices.length} DEVICE${group.devices.length === 1 ? '' : 'S'}</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="btn-outline btn-force-inspect-dev" data-dev-id="${dev.id}" style="padding: 6px 10px; font-size: 11px; color: var(--accent-cyan); border-color: rgba(0, 242, 254, 0.4);" title="Force-Get & Enumerate All Services, Characteristics, and Control Endpoints">⚡ Force-Get</button>
-            ${!isActive ? `<button class="btn-primary btn-switch-to-dev" data-dev-id="${dev.id}" style="padding: 6px 12px; font-size: 11px;">Switch to This</button>` : ''}
-            <button class="btn-outline btn-mgr-add-sensor" data-dev-id="${dev.id}" style="padding: 6px 10px; font-size: 11px;">+ Sensors</button>
-            ${devices.length > 1 ? `<button class="btn-outline btn-remove-dev" data-dev-id="${dev.id}" style="padding: 6px 10px; font-size: 11px; color: var(--accent-rose);" title="Remove Device">Remove</button>` : ''}
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${group.devices.map(dev => {
+              const isActive = active && dev.id === active.id;
+              const attachedCount = (dev.attachedSensors || []).length;
+              return `
+                <div style="background: ${isActive ? 'rgba(0, 242, 254, 0.06)' : 'rgba(255, 255, 255, 0.02)'}; border: 1px solid ${isActive ? 'rgba(0, 242, 254, 0.4)' : 'var(--border-subtle)'}; border-radius: var(--radius-md); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 22px;">${group.icon}</span>
+                    <div>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">${dev.name}</span>
+                        ${isActive ? '<span class="badge badge-normal" style="background: rgba(0,242,254,0.15); color: var(--accent-cyan); font-size: 9px;">ACTIVE</span>' : ''}
+                      </div>
+                      <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">
+                        Zone: ${dev.zone || 'Primary'} &bull; ${dev.connectionMethod} &bull; ${attachedCount} attached sensor${attachedCount === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn-outline btn-force-inspect-dev" data-dev-id="${dev.id}" style="padding: 5px 9px; font-size: 11px; color: var(--accent-cyan); border-color: rgba(0, 242, 254, 0.4);" title="Force-Get & Enumerate Services">⚡ Force-Get</button>
+                    ${!isActive ? `<button class="btn-primary btn-switch-to-dev" data-dev-id="${dev.id}" style="padding: 5px 11px; font-size: 11px;">Select</button>` : ''}
+                    <button class="btn-outline btn-mgr-add-sensor" data-dev-id="${dev.id}" style="padding: 5px 9px; font-size: 11px;">+ Sensors</button>
+                    ${devices.length > 1 ? `<button class="btn-outline btn-remove-dev" data-dev-id="${dev.id}" style="padding: 5px 9px; font-size: 11px; color: var(--accent-rose);" title="Remove Device">Remove</button>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       `;
