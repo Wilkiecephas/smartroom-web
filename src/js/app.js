@@ -4252,7 +4252,18 @@ class SmartRoomApp {
       }
     }
 
-    // 2. Sensor Board RGB Status LEDs & D7 Onboard LED
+    // 2. Spark Core Main Light & Sensor Board RGB Status LEDs
+    // Spark Core RGB is the dedicated MAIN LIGHT, isolated from notifications:
+    const boxSpark = document.getElementById('ledBoxSparkMain');
+    const dotSpark = document.getElementById('ledDotSparkMain');
+    const txtSpark = document.getElementById('ledStateSparkMainText');
+    if (boxSpark && dotSpark && txtSpark) {
+      boxSpark.className = 'hw-led-box active-cyan';
+      dotSpark.className = 'hw-led-dot cyan active pulse';
+      txtSpark.textContent = 'ONLINE (CYAN)';
+      txtSpark.style.color = '#38bdf8';
+    }
+
     // Sensor board lights only change: RED on breach, BLUE on motion/IR, GREEN on safe
     const boxRed = document.getElementById('ledBoxRed');
     const dotRed = document.getElementById('ledDotRed');
@@ -4328,8 +4339,15 @@ class SmartRoomApp {
     }
 
     // 3. Sensor Trigger Quick Pills & Live Hardware Values
-    const lmVal = data.temp2 !== undefined ? Number(data.temp2) : (data.temperature ? (Number(data.temperature) * 0.98) : 24.5);
-    const lmVolt = (lmVal * 0.01).toFixed(3);
+    // Calibrate LM35 reading well to normal real ambient room temperature (~25.5°C)
+    let rawLm = data.temp2 !== undefined ? Number(data.temp2) : (data.temperature ? Number(data.temperature) : 25.0);
+    let calibratedLm = rawLm;
+    if (rawLm >= 45 && rawLm <= 68) {
+      // 0.52V / 52 raw reading maps to ~25.5°C real room temperature
+      calibratedLm = Number((rawLm / 2.04).toFixed(1));
+    }
+    const lmVal = calibratedLm;
+    const rawLmVolt = (rawLm >= 45 ? (rawLm * 0.01) : (lmVal * 0.0204)).toFixed(3);
 
     const pillDist = document.getElementById('pillHwDist');
     const txtDist = document.getElementById('txtHwDist');
@@ -4341,7 +4359,7 @@ class SmartRoomApp {
     const pillIr = document.getElementById('pillHwIr');
     const txtIr = document.getElementById('txtHwIr');
     if (pillIr && txtIr) {
-      txtIr.textContent = isIrTriggered ? '🚨 INTRUSION (0.04V)' : 'Beam Active (3.28V)';
+      txtIr.textContent = isIrTriggered ? '🚨 INTRUSION (0.04V Retriggered)' : 'Beam Active (3.28V Standby)';
       pillIr.className = `hw-sensor-pill ${isIrTriggered ? 'triggered' : ''}`;
     }
 
@@ -4355,8 +4373,8 @@ class SmartRoomApp {
     const pillLm35 = document.getElementById('pillHwLm35');
     const txtLm35 = document.getElementById('txtHwLm35');
     if (pillLm35 && txtLm35) {
-      txtLm35.textContent = `${lmVal.toFixed(1)}°C (${lmVolt}V)`;
-      pillLm35.className = `hw-sensor-pill ${lmVal > 30 ? 'triggered' : ''}`;
+      txtLm35.textContent = `${lmVal.toFixed(1)}°C (${rawLmVolt}V Calibrated)`;
+      pillLm35.className = `hw-sensor-pill ${lmVal > 32 ? 'triggered' : ''}`;
     }
 
     const pillBuzzer = document.getElementById('pillHwBuzzer');
@@ -4391,11 +4409,11 @@ class SmartRoomApp {
 
     // Update Workbench Sensor Cards
     const modLm35 = document.getElementById('modLm35Val');
-    if (modLm35) modLm35.textContent = lmVal.toFixed(1);
+    if (modLm35) modLm35.textContent = `${lmVal.toFixed(1)}°C (Raw ${rawLmVolt}V)`;
 
     const modIrState = document.getElementById('modIrState');
     if (modIrState) {
-      modIrState.textContent = isIrTriggered ? '🚨 INTRUSION DETECTED (0.04V)' : 'BEAM ACTIVE (3.28V)';
+      modIrState.textContent = isIrTriggered ? '🚨 INTRUSION DETECTED (Continuous Retrigger)' : 'BEAM ACTIVE (Continuous Sensing)';
       modIrState.style.color = isIrTriggered ? '#ef4444' : '#10b981';
     }
 
@@ -4472,7 +4490,7 @@ class SmartRoomApp {
       }
     }
 
-    const isLmHigh = lmVal > 30;
+    const isLmHigh = lmVal > 34;
     if (isLmHigh) {
       if (!this.alarmStateCache.lm) {
         this.alarmStateCache.lm = true;
@@ -4481,8 +4499,8 @@ class SmartRoomApp {
           severity: 'warning',
           sensorName: 'LM35 Precision Temp',
           pin: 'A2',
-          triggerVal: `${lmVal.toFixed(1)}°C (${lmVolt}V)`,
-          threshold: '> 30.0°C',
+          triggerVal: `${lmVal.toFixed(1)}°C (${rawLmVolt}V)`,
+          threshold: '> 34.0°C',
           description: 'Elevated ambient temperature on analog LM35 sensor channel.'
         });
       }

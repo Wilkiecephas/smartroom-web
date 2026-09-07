@@ -390,7 +390,15 @@
           </div>
 
           <!-- Interactive LED Status Lights -->
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+            <!-- Spark Core Dedicated Main Light (Always Low Smooth Cyan Glow - Isolated from notifications) -->
+            <div class="hw-led-box active-cyan" id="ledBoxSparkMain" style="padding: 6px 8px; border-color: rgba(0, 242, 254, 0.45); background: rgba(0, 242, 254, 0.08);">
+              <div class="hw-led-dot cyan active pulse" id="ledDotSparkMain" style="background: #00f2fe; box-shadow: 0 0 10px rgba(0, 242, 254, 0.8);"></div>
+              <div class="hw-led-info">
+                <span class="hw-led-name" style="font-size: 9px; color: #00f2fe;">SPARK CORE</span>
+                <span class="hw-led-state" id="ledStateSparkMainText" style="font-size: 10px; color: #38bdf8;">CYAN GLOW</span>
+              </div>
+            </div>
             <!-- Red LED -->
             <div class="hw-led-box" id="ledBoxRed" style="padding: 6px 8px;">
               <div class="hw-led-dot red" id="ledDotRed"></div>
@@ -428,9 +436,9 @@
           <!-- Sensor Trigger Quick Status Pills -->
           <div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 10px;">
             <div class="hw-sensor-pill" id="pillHwDist">📡 HC-SR04: <span id="txtHwDist">223 cm (Normal)</span></div>
-            <div class="hw-sensor-pill" id="pillHwIr">👁️ IR D6: <span id="txtHwIr">Beam Active (Secure)</span></div>
+            <div class="hw-sensor-pill" id="pillHwIr">👁️ IR D6: <span id="txtHwIr">Beam Active (Auto-Retrigger)</span></div>
             <div class="hw-sensor-pill" id="pillHwPir">🏃 PIR D3: <span id="txtHwPir">Standby</span></div>
-            <div class="hw-sensor-pill" id="pillHwLm35">🌡️ LM35 A2: <span id="txtHwLm35">24.5°C (0.245V)</span></div>
+            <div class="hw-sensor-pill" id="pillHwLm35">🌡️ LM35 A2: <span id="txtHwLm35">25.5°C (0.520V Calibrated)</span></div>
             <div class="hw-sensor-pill" id="pillHwTemp">🌡️ DHT11: <span id="txtHwTemp">29.0°C / 54%</span></div>
             <div class="hw-sensor-pill" id="pillHwLdr">☀️ LDR A1: <span id="txtHwLdr">💡 Ambient</span></div>
             <div class="hw-sensor-pill" id="pillHwPot">🎛️ POT A0: <span id="txtHwPot">50%</span></div>

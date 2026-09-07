@@ -193,8 +193,12 @@ export class ParticleApi {
       const cardinalDirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
       const cardinalBearing = cardinalDirs[Math.floor((headingDeg + 11.25) / 22.5) % 16];
 
-      // Secondary Temp & Aux Analog Channels
-      const temperature2 = temp2 !== null ? Number(temp2) : (this.lastGoodReadings.temp2 || 28.0);
+      // Secondary Temp (LM35 A2) & Aux Analog Channels
+      let temperature2 = temp2 !== null ? Number(temp2) : (this.lastGoodReadings.temp2 || 25.5);
+      // Calibrate if received in raw uncalibrated shield format (~45-65°C raw 0.52V -> ~25.5°C real temp)
+      if (temperature2 >= 45 && temperature2 <= 65) {
+        temperature2 = Number((temperature2 / 2.04).toFixed(1));
+      }
       const auxAnalog3 = aux3 !== null ? Number(aux3) : (this.lastGoodReadings.aux3 || 2200);
       const auxAnalog4 = aux4 !== null ? Number(aux4) : (this.lastGoodReadings.aux4 || 1600);
 

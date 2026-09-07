@@ -36,9 +36,18 @@ export class SensorSimulator {
       motion: this.motion,
       light: this.light,
       pot: 2048,
-      temp2: Math.round((this.temperature * 0.98) * 10) / 10,
+      temp2: Math.round((this.temperature * 1.01) * 10) / 10,
+      isIrBroken: this.isIrBroken || false,
       timestamp: Date.now()
     };
+  }
+
+  triggerIrBreak(durationMs = 900) {
+    this.isIrBroken = true;
+    if (this.irTimeout) clearTimeout(this.irTimeout);
+    this.irTimeout = setTimeout(() => {
+      this.isIrBroken = false;
+    }, durationMs);
   }
 
   setManualValue(field, value) {
@@ -54,18 +63,18 @@ export class SensorSimulator {
     this.activeScenario = scenarioName;
 
     if (scenarioName === 'intruder') {
-      // Scenario: Intruder approaches sensor (<20cm) and triggers PIR motion
+      // Scenario: Intruder approaches sensor (<20cm) and triggers PIR motion & IR tripwire
       let step = 0;
       const sequence = [
-        { dist: 160, motion: 0 },
-        { dist: 120, motion: 0 },
-        { dist: 75,  motion: 1 },
-        { dist: 35,  motion: 1 },
-        { dist: 14,  motion: 1 }, // BREACH (<20cm)
-        { dist: 10,  motion: 1 }, // IN CLOSE PROXIMITY
-        { dist: 8,   motion: 1 },
-        { dist: 40,  motion: 1 },
-        { dist: 150, motion: 0 }
+        { dist: 160, motion: 0, ir: false },
+        { dist: 120, motion: 0, ir: false },
+        { dist: 75,  motion: 1, ir: true },  // IR tripwire triggered
+        { dist: 35,  motion: 1, ir: true },  // IR sustained break
+        { dist: 14,  motion: 1, ir: true },  // BREACH (<20cm)
+        { dist: 10,  motion: 1, ir: true },  // IN CLOSE PROXIMITY
+        { dist: 8,   motion: 1, ir: false },
+        { dist: 40,  motion: 1, ir: false },
+        { dist: 150, motion: 0, ir: false }
       ];
 
       this.scenarioTimer = setInterval(() => {
@@ -75,6 +84,7 @@ export class SensorSimulator {
         }
         this.distance = sequence[step].dist;
         this.motion = sequence[step].motion;
+        this.isIrBroken = sequence[step].ir;
         step++;
         if (onTickCallback) onTickCallback(this.getSnapshot(), 'intruder');
       }, 900);
