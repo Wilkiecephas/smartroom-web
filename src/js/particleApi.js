@@ -156,15 +156,20 @@ export class ParticleApi {
   async readAllSensors() {
     try {
       // Parallel fetch across cloud variables
-      const [temp, hum, dist, motion] = await Promise.all([
+      const [temp, hum, dist, motion, pot, light, temp2, aux3, aux4] = await Promise.all([
         this.readVariable('temp'),
         this.readVariable('hum'),
         this.readVariable('dist'),
-        this.readVariable('motion')
+        this.readVariable('motion'),
+        this.readVariable('pot'),
+        this.readVariable('light'),
+        this.readVariable('temp2'),
+        this.readVariable('aux3'),
+        this.readVariable('aux4')
       ]);
 
-      // If all are null, retain last known good readings with slight variation to keep UI responsive
-      const hasAny = (temp !== null || hum !== null || dist !== null || motion !== null);
+      // If all are null, retain last known good readings
+      const hasAny = (temp !== null || hum !== null || dist !== null || motion !== null || pot !== null || light !== null || temp2 !== null);
       if (!hasAny) {
         return {
           ...this.lastGoodReadings,
@@ -176,6 +181,23 @@ export class ParticleApi {
       const humidity = hum !== null ? Number(hum) : this.lastGoodReadings.humidity;
       const distance = dist !== null ? Number(dist) : this.lastGoodReadings.distance;
       const rawMotion = motion !== null ? Number(motion) : this.lastGoodReadings.rawMotionMask || 0;
+
+      // Unpack 10-bit scaled LDR light (bits 11-20) and Pot rotation (bits 21-30) from rawMotion
+      const rawLight10 = (rawMotion >> 11) & 0x3FF;
+      const rawPot10 = (rawMotion >> 21) & 0x3FF;
+      const lightVal = (light !== null && light !== undefined) ? Number(light) : (rawLight10 * 4);
+      const potVal = (pot !== null && pot !== undefined) ? Number(pot) : (rawPot10 * 4);
+
+      // Potentiometer Heading Direction (0-360 degrees & cardinal compass bearing)
+      const headingDeg = Math.min(359, Math.max(0, Math.round((potVal / 4095) * 360)));
+      const cardinalDirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+      const cardinalBearing = cardinalDirs[Math.floor((headingDeg + 11.25) / 22.5) % 16];
+
+      // Secondary Temp & Aux Analog Channels
+      const temperature2 = temp2 !== null ? Number(temp2) : (this.lastGoodReadings.temp2 || 28.0);
+      const auxAnalog3 = aux3 !== null ? Number(aux3) : (this.lastGoodReadings.aux3 || 2200);
+      const auxAnalog4 = aux4 !== null ? Number(aux4) : (this.lastGoodReadings.aux4 || 1600);
+
       const isMotion = (rawMotion & 1) !== 0;
       const isProximity = (rawMotion & 2) !== 0 || (distance > 0 && distance < 20); // 20cm per user request
       const isBuzzerOn = (rawMotion & 4) !== 0 || isProximity;
@@ -187,12 +209,7 @@ export class ParticleApi {
       const isPirTriggered = (rawMotion & 256) !== 0;
       const isRotationTriggered = (rawMotion & 512) !== 0;
       const isLdrShadow = (rawMotion & 1024) !== 0;
-
-      // Unpack 10-bit scaled LDR light (bits 11-20) and Pot rotation (bits 21-30)
-      const rawLight10 = (rawMotion >> 11) & 0x3FF;
-      const rawPot10 = (rawMotion >> 21) & 0x3FF;
-      const lightVal = rawLight10 > 0 ? (rawLight10 * 4) : (this.lastGoodReadings.light || 800);
-      const potVal = rawPot10 > 0 ? (rawPot10 * 4) : (this.lastGoodReadings.pot || 2048);
+      const isNight = isLdrShadow || lightVal < 350;
 
       const snapshot = {
         temperature,
@@ -210,8 +227,14 @@ export class ParticleApi {
         isPirTriggered,
         isRotationTriggered,
         isLdrShadow,
+        isNight,
         light: lightVal,
         pot: potVal,
+        direction: headingDeg,
+        cardinalBearing,
+        temp2: temperature2,
+        aux3: auxAnalog3,
+        aux4: auxAnalog4,
         timestamp: Date.now()
       };
 

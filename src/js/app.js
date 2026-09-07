@@ -3935,34 +3935,36 @@ class SmartRoomApp {
     } else if (data.light !== undefined && data.light !== null) {
       const calLdr = calibrationManager.apply('ldr_light', data.light);
       const lightVal = Math.round(calLdr.value !== null ? calLdr.value : data.light);
-      if (this.dom.valLight) this.dom.valLight.textContent = lightVal;
+      const lightInfo = this.getLdrLightClassification(lightVal);
+      if (this.dom.valLight) this.dom.valLight.textContent = `${lightVal} ADC (${lightInfo.phase})`;
       if (this.dom.modLdrVal) this.dom.modLdrVal.textContent = lightVal;
 
       if (this.dom.badgeLight) {
-        if (lightVal > 1500) {
-          this.dom.badgeLight.textContent = 'BRIGHT DAYLIGHT';
-          this.dom.badgeLight.className = 'metric-badge badge-normal';
-        } else if (lightVal > 400) {
-          this.dom.badgeLight.textContent = 'INDOOR AMBIENT';
-          this.dom.badgeLight.className = 'metric-badge badge-normal';
-        } else {
-          this.dom.badgeLight.textContent = 'DIM / DARK';
-          this.dom.badgeLight.className = 'metric-badge badge-warning';
-        }
+        this.dom.badgeLight.textContent = lightInfo.label;
+        this.dom.badgeLight.className = lightInfo.badgeClass;
       }
     }
 
-    // 7. Potentiometer
+    // 7. Potentiometer (A0)
     const potEnabled = calibrationManager.isSensorEnabled('potentiometer');
+    const rawPotAdc = (data.pot !== undefined && data.pot !== null) ? Number(data.pot) : (data.rawMotionMask ? ((data.rawMotionMask >> 21) & 0x3FF) * 4 : 2048);
+    const potPercent = Math.min(100, Math.max(0, Math.round((rawPotAdc / 4095) * 100)));
+
     if (!potEnabled) {
       if (this.dom.modPotVal) this.dom.modPotVal.textContent = 'OFF';
-    } else if (data.distance !== null && data.distance !== undefined) {
-      const rawPot = Math.round(Math.min(100, Math.max(0, (data.distance / 250) * 100)));
-      const calPot = calibrationManager.apply('potentiometer', rawPot);
+    } else {
+      const calPot = calibrationManager.apply('potentiometer', potPercent);
+      const finalPotPct = Math.round(calPot.value !== null ? calPot.value : potPercent);
       if (this.dom.modPotVal) {
-        this.dom.modPotVal.textContent = `${Math.round(calPot.value !== null ? calPot.value : rawPot)}%`;
+        this.dom.modPotVal.textContent = `${finalPotPct}% (${rawPotAdc} ADC)`;
       }
     }
+
+    // Update Potentiometer Metric Card (A0)
+    const valPot = document.getElementById('valPotLevel');
+    const badgePot = document.getElementById('badgePotLevel');
+    if (valPot) valPot.textContent = `${potPercent}%`;
+    if (badgePot) badgePot.textContent = `${rawPotAdc} ADC`;
 
     // Render active extensions widgets (Drones, Thermal, GPS, NPK, Power, Biometrics)
     this.renderActiveExtensions(data);
@@ -4156,14 +4158,40 @@ class SmartRoomApp {
       this.dom.txtPirAttachedState.style.color = 'var(--accent-emerald)';
     }
 
-    // 5. Ambient Light
-    if (this.dom.compactValLight && data.light !== undefined && data.light !== null) {
-      const l = data.light;
-      this.dom.compactValLight.textContent = l;
+    // 5. Ambient Light (Multi-tier Day / Night / Low-Light ADC Classifier)
+    if (data.light !== undefined && data.light !== null) {
+      const l = Number(data.light);
+      const lightInfo = this.getLdrLightClassification(l);
+
+      if (this.dom.compactValLight) {
+        this.dom.compactValLight.textContent = l;
+      }
+      const phaseEl = document.getElementById('compactLightPhase');
+      if (phaseEl) {
+        phaseEl.textContent = `• ${lightInfo.phaseTag}`;
+        phaseEl.style.color = lightInfo.color;
+      }
+      if (this.dom.compactBadgeLight) {
+        this.dom.compactBadgeLight.textContent = lightInfo.label;
+        this.dom.compactBadgeLight.className = lightInfo.badgeClass;
+      }
       if (this.dom.compactBarLight) {
         this.dom.compactBarLight.style.width = `${Math.min(100, Math.max(5, (l / 4095) * 100))}%`;
+        this.dom.compactBarLight.style.background = lightInfo.barGradient;
+      }
+      const sub = document.getElementById('compactLightSubtext');
+      if (sub) {
+        sub.textContent = lightInfo.subtext;
       }
     }
+
+    // 6. Potentiometer Metric Card (A0)
+    const rawPotAdc = (data.pot !== undefined && data.pot !== null) ? Number(data.pot) : (data.rawMotionMask ? ((data.rawMotionMask >> 21) & 0x3FF) * 4 : 2048);
+    const potPercent = Math.min(100, Math.max(0, Math.round((rawPotAdc / 4095) * 100)));
+    const valPot = document.getElementById('valPotLevel');
+    const badgePot = document.getElementById('badgePotLevel');
+    if (valPot) valPot.textContent = `${potPercent}%`;
+    if (badgePot) badgePot.textContent = `${rawPotAdc} ADC`;
 
     // Sentinel Status Pill
     if (this.dom.compactSecurityPill) {
@@ -4328,6 +4356,23 @@ class SmartRoomApp {
       txtTemp.textContent = `${(data.temperature || 25).toFixed(1)}°C / ${(data.humidity || 50).toFixed(0)}%`;
     }
 
+    const pillLdr = document.getElementById('pillHwLdr');
+    const txtLdr = document.getElementById('txtHwLdr');
+    if (pillLdr && txtLdr && data.light !== undefined && data.light !== null) {
+      const l = Number(data.light);
+      const lightInfo = this.getLdrLightClassification(l);
+      txtLdr.textContent = `${lightInfo.pillText} (${l} ADC)`;
+      pillLdr.className = lightInfo.pillClass;
+    }
+
+    const pillPot = document.getElementById('pillHwPot');
+    const txtPot = document.getElementById('txtHwPot');
+    if (pillPot && txtPot && data.pot !== undefined && data.pot !== null) {
+      const p = Number(data.pot);
+      const potPct = Math.round((p / 4095) * 100);
+      txtPot.textContent = `${potPct}% (${p} ADC)`;
+    }
+
     // 4. Update New Metric Cards
     const valIr = document.getElementById('valIrState');
     const badgeIr = document.getElementById('badgeIrState');
@@ -4346,6 +4391,71 @@ class SmartRoomApp {
         badgeIr.className = 'metric-badge badge-normal';
         if (cardIr) cardIr.style.borderColor = '';
       }
+    }
+  }
+
+  getLdrLightClassification(adcVal) {
+    const l = Number(adcVal) || 0;
+    if (l >= 2400) {
+      return {
+        phase: 'DAY',
+        phaseTag: '☀️ DAY',
+        label: '☀️ BRIGHT DAY',
+        subtext: 'High Solar / Full Daylight (>2400 ADC)',
+        badgeClass: 'compact-badge badge-normal',
+        color: 'var(--accent-amber)',
+        barGradient: 'linear-gradient(90deg, #f59e0b, #fbbf24)',
+        pillText: '☀️ Daylight',
+        pillClass: 'hw-sensor-pill'
+      };
+    } else if (l >= 1200) {
+      return {
+        phase: 'DAY',
+        phaseTag: '⛅ DAY',
+        label: '⛅ DAY (INDOOR)',
+        subtext: 'Normal Daylight / Chamber Well-Lit (1200-2400 ADC)',
+        badgeClass: 'compact-badge badge-normal',
+        color: 'var(--accent-emerald)',
+        barGradient: 'linear-gradient(90deg, #10b981, #f59e0b)',
+        pillText: '⛅ Day',
+        pillClass: 'hw-sensor-pill'
+      };
+    } else if (l >= 600) {
+      return {
+        phase: 'LOW_LIGHT',
+        phaseTag: '🕯️ LOW LIGHT',
+        label: '🕯️ LOW LIGHT',
+        subtext: 'Twilight / Dim Ambient Lighting (600-1200 ADC)',
+        badgeClass: 'compact-badge badge-warning',
+        color: 'var(--accent-cyan)',
+        barGradient: 'linear-gradient(90deg, #06b6d4, #3b82f6)',
+        pillText: '🕯️ Low Light',
+        pillClass: 'hw-sensor-pill active-blue'
+      };
+    } else if (l >= 250) {
+      return {
+        phase: 'DUSK',
+        phaseTag: '🌆 DUSK',
+        label: '🌆 DUSK / SHADOW',
+        subtext: 'Deep Dusk / Hand Shadow Detected (250-600 ADC)',
+        badgeClass: 'compact-badge badge-warning',
+        color: '#f97316',
+        barGradient: 'linear-gradient(90deg, #8b5cf6, #f97316)',
+        pillText: '🌆 Dusk',
+        pillClass: 'hw-sensor-pill triggered'
+      };
+    } else {
+      return {
+        phase: 'NIGHT',
+        phaseTag: '🌙 NIGHT',
+        label: '🌙 NIGHT (DARK)',
+        subtext: 'Pitch Darkness / Night Mode Active (<250 ADC)',
+        badgeClass: 'compact-badge badge-danger',
+        color: '#a855f7',
+        barGradient: 'linear-gradient(90deg, #4338ca, #6366f1)',
+        pillText: '🌙 Night',
+        pillClass: 'hw-sensor-pill triggered'
+      };
     }
   }
 
