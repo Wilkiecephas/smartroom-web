@@ -148,6 +148,7 @@ body {
   letter-spacing: 0.4px;
   background: linear-gradient(90deg, #ffffff, #93c5fd, #00f2fe);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   white-space: nowrap;
 }
@@ -232,6 +233,7 @@ body {
   letter-spacing: -0.5px;
   background: linear-gradient(90deg, #ffffff, #93c5fd, #00f2fe);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1175,6 +1177,7 @@ body {
   letter-spacing: 0.5px;
   background: linear-gradient(90deg, #ffffff, #00f2fe);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1218,6 +1221,7 @@ body {
 [data-color-mode="light"] .floating-brand-title {
   background: linear-gradient(90deg, #0f172a, #0284c7);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1690,6 +1694,7 @@ body {
 [data-color-mode="light"] .floating-brand-title {
   background: linear-gradient(90deg, #0f172a, #0284c7) !important;
   -webkit-background-clip: text !important;
+  background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
 
