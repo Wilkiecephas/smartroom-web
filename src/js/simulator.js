@@ -35,6 +35,8 @@ export class SensorSimulator {
       distance: Math.round(this.distance * 10) / 10,
       motion: this.motion,
       light: this.light,
+      pot: 2048,
+      temp2: Math.round((this.temperature * 0.98) * 10) / 10,
       timestamp: Date.now()
     };
   }

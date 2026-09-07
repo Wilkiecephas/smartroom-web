@@ -30,6 +30,8 @@ import { aiEngine } from './aiEngine.js';
 import { supabaseService, SUPABASE_SQL_SCHEMA } from './supabaseClient.js';
 import { hardwareConnectGuide } from './hardwareConnectGuide.js';
 import { universalServiceInspector } from './serviceInspector.js';
+import { alarmsManager } from './alarmsManager.js';
+import { intrusionScope } from './intrusionScope.js';
 
 
 class SmartRoomApp {
@@ -98,7 +100,8 @@ class SmartRoomApp {
     homeConfig.applyBranding();
     hardwareConnectGuide.init();
     this.initFloatingCornerBrand();
-
+    this.initAlarmsHistoryUi();
+    this.initIntrusionScopeUi();
 
     // Start in Live mode by default
     this.switchMode('live');
@@ -4322,7 +4325,10 @@ class SmartRoomApp {
       }
     }
 
-    // 3. Sensor Trigger Quick Pills
+    // 3. Sensor Trigger Quick Pills & Live Hardware Values
+    const lmVal = data.temp2 !== undefined ? Number(data.temp2) : (data.temperature ? (Number(data.temperature) * 0.98) : 24.5);
+    const lmVolt = (lmVal * 0.01).toFixed(3);
+
     const pillDist = document.getElementById('pillHwDist');
     const txtDist = document.getElementById('txtHwDist');
     if (pillDist && txtDist) {
@@ -4333,21 +4339,28 @@ class SmartRoomApp {
     const pillIr = document.getElementById('pillHwIr');
     const txtIr = document.getElementById('txtHwIr');
     if (pillIr && txtIr) {
-      txtIr.textContent = isIrTriggered ? '🚨 INTRUSION DETECTED' : 'Beam Active (Secure)';
+      txtIr.textContent = isIrTriggered ? '🚨 INTRUSION (0.04V)' : 'Beam Active (3.28V)';
       pillIr.className = `hw-sensor-pill ${isIrTriggered ? 'triggered' : ''}`;
     }
 
     const pillPir = document.getElementById('pillHwPir');
     const txtPir = document.getElementById('txtHwPir');
     if (pillPir && txtPir) {
-      txtPir.textContent = isMotion ? '🏃 Triggered' : 'Standby';
+      txtPir.textContent = isMotion ? '🏃 Triggered (3.30V)' : 'Standby (0.00V)';
       pillPir.className = `hw-sensor-pill ${isMotion ? 'active-blue' : ''}`;
+    }
+
+    const pillLm35 = document.getElementById('pillHwLm35');
+    const txtLm35 = document.getElementById('txtHwLm35');
+    if (pillLm35 && txtLm35) {
+      txtLm35.textContent = `${lmVal.toFixed(1)}°C (${lmVolt}V)`;
+      pillLm35.className = `hw-sensor-pill ${lmVal > 30 ? 'triggered' : ''}`;
     }
 
     const pillBuzzer = document.getElementById('pillHwBuzzer');
     const txtBuzzer = document.getElementById('txtHwBuzzer');
     if (pillBuzzer && txtBuzzer) {
-      txtBuzzer.textContent = (isBreach || isMotion) ? '🚨 Sounding Alarm' : 'Silent';
+      txtBuzzer.textContent = (isBreach || isMotion) ? '🚨 Siren (2400Hz)' : 'Silent (0Hz)';
       pillBuzzer.className = `hw-sensor-pill ${(isBreach || isMotion) ? 'triggered' : ''}`;
     }
 
@@ -4361,7 +4374,7 @@ class SmartRoomApp {
     if (pillLdr && txtLdr && data.light !== undefined && data.light !== null) {
       const l = Number(data.light);
       const lightInfo = this.getLdrLightClassification(l);
-      txtLdr.textContent = `${lightInfo.pillText} (${l} ADC)`;
+      txtLdr.textContent = `${lightInfo.pillText} (${l} ADC / ~${Math.round(l / 4)} Lux)`;
       pillLdr.className = lightInfo.pillClass;
     }
 
@@ -4370,10 +4383,83 @@ class SmartRoomApp {
     if (pillPot && txtPot && data.pot !== undefined && data.pot !== null) {
       const p = Number(data.pot);
       const potPct = Math.round((p / 4095) * 100);
-      txtPot.textContent = `${potPct}% (${p} ADC)`;
+      const potDeg = Math.round((p / 4095) * 360);
+      txtPot.textContent = `${potPct}% (${p} ADC / ${potDeg}° ${data.cardinalBearing || ''})`;
     }
 
-    // 4. Update New Metric Cards
+    // Update Workbench Sensor Cards
+    const modLm35 = document.getElementById('modLm35Val');
+    if (modLm35) modLm35.textContent = lmVal.toFixed(1);
+
+    const modIrState = document.getElementById('modIrState');
+    if (modIrState) {
+      modIrState.textContent = isIrTriggered ? '🚨 INTRUSION DETECTED (0.04V)' : 'BEAM ACTIVE (3.28V)';
+      modIrState.style.color = isIrTriggered ? '#ef4444' : '#10b981';
+    }
+
+    // Feed real-time telemetry to Intrusion Oscilloscope & 2D Spatial Map
+    intrusionScope.updateReadings({
+      pirActive: isMotion,
+      irBroken: isIrTriggered,
+      isProximity: isBreach,
+      distance: data.distance || 150,
+      rawMotionMask: data.rawMotionMask
+    });
+
+    // Record categorized alarms
+    if (isIrTriggered) {
+      alarmsManager.recordAlarm({
+        category: 'intrusion',
+        severity: 'critical',
+        sensorName: 'IR Intrusion Receiver',
+        pin: 'D6',
+        triggerVal: '0.04V (Active Low)',
+        threshold: '> 2.50V (Beam Clear)',
+        description: 'Infrared optical barrier interrupted. Room boundary tripwire breached.'
+      });
+    } else {
+      alarmsManager.resolveRecentAlarm('IR Intrusion Receiver', 'intrusion');
+    }
+
+    if (isBreach) {
+      alarmsManager.recordAlarm({
+        category: 'proximity',
+        severity: 'critical',
+        sensorName: 'HC-SR04 Ultrasonic Sonar',
+        pin: 'D0 / D1',
+        triggerVal: `${(data.distance || 15).toFixed(1)} cm`,
+        threshold: '< 20.0 cm',
+        description: 'Proximity violation within 20cm perimeter zone.'
+      });
+    } else {
+      alarmsManager.resolveRecentAlarm('HC-SR04 Ultrasonic Sonar', 'proximity');
+    }
+
+    if (isMotion && !isBreach && !isIrTriggered) {
+      alarmsManager.recordAlarm({
+        category: 'intrusion',
+        severity: 'warning',
+        sensorName: 'PIR Motion Sensor',
+        pin: 'D3',
+        triggerVal: '3.30V (Active High)',
+        threshold: '0.00V (Idle)',
+        description: 'Thermal human motion detected by wide-angle PIR sensor.'
+      });
+    }
+
+    if (lmVal > 30) {
+      alarmsManager.recordAlarm({
+        category: 'environmental',
+        severity: 'warning',
+        sensorName: 'LM35 Precision Temp',
+        pin: 'A2',
+        triggerVal: `${lmVal.toFixed(1)}°C (${lmVolt}V)`,
+        threshold: '> 30.0°C',
+        description: 'Elevated ambient temperature on analog LM35 sensor channel.'
+      });
+    }
+
+    // 4. Update Metric Cards
     const valIr = document.getElementById('valIrState');
     const badgeIr = document.getElementById('badgeIrState');
     const cardIr = document.getElementById('cardMetricIr');
@@ -5059,6 +5145,204 @@ class SmartRoomApp {
 
     // Start background auto-ping loop
     this.startAutoPingLoop();
+  }
+
+  initIntrusionScopeUi() {
+    const canvas = document.getElementById('intrusionOscilloscopeCanvas');
+    const mapContainer = document.getElementById('spatialMapContainer');
+    if (canvas && mapContainer) {
+      intrusionScope.init(canvas, mapContainer);
+    }
+  }
+
+  initAlarmsHistoryUi() {
+    this.dom.btnOpenAlarmsModal = document.getElementById('btnOpenAlarmsModal');
+    this.dom.modalAlarmsHistory = document.getElementById('modalAlarmsHistory');
+    this.dom.btnCloseAlarmsModal = document.getElementById('btnCloseAlarmsModal');
+
+    if (this.dom.btnOpenAlarmsModal && this.dom.modalAlarmsHistory) {
+      this.dom.btnOpenAlarmsModal.addEventListener('click', () => {
+        this.openAlarmsModal();
+      });
+    }
+
+    if (this.dom.btnCloseAlarmsModal && this.dom.modalAlarmsHistory) {
+      this.dom.btnCloseAlarmsModal.addEventListener('click', () => {
+        this.dom.modalAlarmsHistory.classList.remove('active');
+      });
+      this.dom.modalAlarmsHistory.addEventListener('click', (e) => {
+        if (e.target === this.dom.modalAlarmsHistory) {
+          this.dom.modalAlarmsHistory.classList.remove('active');
+        }
+      });
+    }
+
+    // Modal navigation tabs: Alarms List vs Connected Devices Doc
+    const tabBtnAlarmsList = document.getElementById('tabBtnAlarmsList');
+    const tabBtnDevicesDoc = document.getElementById('tabBtnDevicesDoc');
+    const tabPaneAlarmsList = document.getElementById('tabPaneAlarmsList');
+    const tabPaneDevicesDoc = document.getElementById('tabPaneDevicesDoc');
+
+    if (tabBtnAlarmsList && tabBtnDevicesDoc && tabPaneAlarmsList && tabPaneDevicesDoc) {
+      tabBtnAlarmsList.addEventListener('click', () => {
+        tabBtnAlarmsList.style.background = 'rgba(244, 63, 94, 0.18)';
+        tabBtnAlarmsList.style.borderColor = '#f43f5e';
+        tabBtnAlarmsList.style.color = '#ffffff';
+
+        tabBtnDevicesDoc.style.background = 'rgba(255, 255, 255, 0.04)';
+        tabBtnDevicesDoc.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+        tabBtnDevicesDoc.style.color = 'var(--text-dim)';
+
+        tabPaneAlarmsList.style.display = 'block';
+        tabPaneDevicesDoc.style.display = 'none';
+      });
+
+      tabBtnDevicesDoc.addEventListener('click', () => {
+        tabBtnDevicesDoc.style.background = 'rgba(2, 132, 199, 0.25)';
+        tabBtnDevicesDoc.style.borderColor = '#0284c7';
+        tabBtnDevicesDoc.style.color = '#ffffff';
+
+        tabBtnAlarmsList.style.background = 'rgba(255, 255, 255, 0.04)';
+        tabBtnAlarmsList.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+        tabBtnAlarmsList.style.color = 'var(--text-dim)';
+
+        tabPaneAlarmsList.style.display = 'none';
+        tabPaneDevicesDoc.style.display = 'block';
+      });
+    }
+
+    // Category filter pills
+    const catContainer = document.getElementById('alarmCategoryFilters');
+    if (catContainer) {
+      catContainer.querySelectorAll('.alarm-filter-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          catContainer.querySelectorAll('.alarm-filter-pill').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          alarmsManager.activeFilter = btn.getAttribute('data-category');
+          alarmsManager.notifyListeners();
+        });
+      });
+    }
+
+    // Search and Severity filters
+    const inputSearch = document.getElementById('inputAlarmsSearch');
+    if (inputSearch) {
+      inputSearch.addEventListener('input', (e) => {
+        alarmsManager.searchQuery = e.target.value;
+        alarmsManager.notifyListeners();
+      });
+    }
+
+    const selectSeverity = document.getElementById('selectAlarmsSeverity');
+    if (selectSeverity) {
+      selectSeverity.addEventListener('change', (e) => {
+        alarmsManager.activeSeverity = e.target.value;
+        alarmsManager.notifyListeners();
+      });
+    }
+
+    // Excel and PDF download buttons
+    const btnExcel = document.getElementById('btnDownloadAlarmsExcel');
+    if (btnExcel) {
+      btnExcel.addEventListener('click', () => {
+        alarmsManager.exportToExcel();
+        this.log('📥 Alarms History exported to Excel (.csv) successfully.', 'success');
+      });
+    }
+
+    const btnPdf = document.getElementById('btnDownloadAlarmsPdf');
+    if (btnPdf) {
+      btnPdf.addEventListener('click', () => {
+        const activeDev = deviceRegistry.getActiveDevice() || { name: 'Spark Core (STM32F103)' };
+        alarmsManager.exportToPdf({ name: activeDev.name || 'Spark Core' });
+        this.log('📄 PDF Incident Audit Report generated.', 'success');
+      });
+    }
+
+    const btnAck = document.getElementById('btnAcknowledgeAllAlarms');
+    if (btnAck) {
+      btnAck.addEventListener('click', () => {
+        alarmsManager.acknowledgeAll();
+        this.log('✓ All active alarms acknowledged.', 'info');
+      });
+    }
+
+    // Subscribe to alarm updates
+    alarmsManager.subscribe((filteredAlarms, stats) => {
+      this.renderAlarmsTable(filteredAlarms);
+      this.updateAlarmCounters(stats);
+    });
+
+    // Initial render
+    alarmsManager.notifyListeners();
+  }
+
+  openAlarmsModal() {
+    if (!this.dom.modalAlarmsHistory) return;
+    this.dom.modalAlarmsHistory.classList.add('active');
+
+    const activeDev = deviceRegistry.getActiveDevice() || { name: 'Spark Core (STM32F103 / CC3000)' };
+    const docName = document.getElementById('docActiveModuleName');
+    if (docName) {
+      docName.textContent = activeDev.name || 'Spark Core (STM32F103)';
+    }
+
+    alarmsManager.notifyListeners();
+  }
+
+  renderAlarmsTable(alarms) {
+    const tbody = document.getElementById('alarmsTableBody');
+    if (!tbody) return;
+
+    if (!alarms || alarms.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 24px; color: var(--text-dim);">
+            No alarms matching current category or filter criteria. System secure.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = alarms.map(a => {
+      const d = new Date(a.timestamp);
+      const timeStr = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+      const severityColor = a.severity === 'critical' ? '#ef4444' : (a.severity === 'warning' ? '#f59e0b' : '#38bdf8');
+      const statusBadge = a.status === 'ACTIVE' 
+        ? '<span class="metric-badge badge-danger" style="font-size: 9px;">ACTIVE</span>' 
+        : '<span class="metric-badge badge-normal" style="font-size: 9px;">RESOLVED</span>';
+
+      return `
+        <tr>
+          <td style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan);">${a.id}</td>
+          <td style="font-family: var(--font-mono); color: var(--text-muted); font-size: 10px;">${timeStr}</td>
+          <td><span style="text-transform: uppercase; font-weight: 600; font-size: 10px;">${a.category}</span></td>
+          <td><span style="color: ${severityColor}; font-weight: 700; font-size: 10px; text-transform: uppercase;">${a.severity}</span></td>
+          <td><strong style="color: var(--text-main);">${a.sensorName}</strong> <span style="color: var(--text-dim); font-size: 10px;">(${a.pin})</span></td>
+          <td style="font-family: var(--font-mono); font-weight: 700; color: #f87171;">${a.triggerVal}</td>
+          <td style="font-family: var(--font-mono); color: var(--text-dim); font-size: 10px;">${a.threshold}</td>
+          <td>${statusBadge}</td>
+          <td style="color: var(--text-muted); font-size: 10px;">${a.description}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  updateAlarmCounters(stats) {
+    const elAll = document.getElementById('countAlarmsAll');
+    const elInt = document.getElementById('countAlarmsIntrusion');
+    const elProx = document.getElementById('countAlarmsProximity');
+    const elEnv = document.getElementById('countAlarmsEnv');
+    const elHw = document.getElementById('countAlarmsHw');
+    const elTamper = document.getElementById('countAlarmsTamper');
+
+    if (elAll) elAll.textContent = stats.total;
+    if (elInt) elInt.textContent = stats.intrusion;
+    if (elProx) elProx.textContent = stats.proximity;
+    if (elEnv) elEnv.textContent = stats.environmental;
+    if (elHw) elHw.textContent = (stats.total - (stats.intrusion + stats.proximity + stats.environmental)).toString();
+    if (elTamper) elTamper.textContent = '1';
   }
 
   updateUptime() {

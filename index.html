@@ -430,10 +430,11 @@
             <div class="hw-sensor-pill" id="pillHwDist">📡 HC-SR04: <span id="txtHwDist">223 cm (Normal)</span></div>
             <div class="hw-sensor-pill" id="pillHwIr">👁️ IR D6: <span id="txtHwIr">Beam Active (Secure)</span></div>
             <div class="hw-sensor-pill" id="pillHwPir">🏃 PIR D3: <span id="txtHwPir">Standby</span></div>
+            <div class="hw-sensor-pill" id="pillHwLm35">🌡️ LM35 A2: <span id="txtHwLm35">24.5°C (0.245V)</span></div>
+            <div class="hw-sensor-pill" id="pillHwTemp">🌡️ DHT11: <span id="txtHwTemp">29.0°C / 54%</span></div>
             <div class="hw-sensor-pill" id="pillHwLdr">☀️ LDR A1: <span id="txtHwLdr">💡 Ambient</span></div>
             <div class="hw-sensor-pill" id="pillHwPot">🎛️ POT A0: <span id="txtHwPot">50%</span></div>
             <div class="hw-sensor-pill" id="pillHwBuzzer">🔊 Buzzer D5: <span id="txtHwBuzzer">Silent</span></div>
-            <div class="hw-sensor-pill" id="pillHwTemp">🌡️ DHT11: <span id="txtHwTemp">29.0°C / 54%</span></div>
           </div>
         </div>
 
@@ -469,6 +470,10 @@
             <button id="btnOpenPingDetailsModal" class="btn-brief-details-link" title="Open Full Sensor Health &amp; Device Ping Breakdown">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               Sensor Details &amp; Health Map
+            </button>
+            <button id="btnOpenAlarmsModal" class="btn-brief-details-link" title="Open Alarms History, Incident Logs &amp; Connected Devices Documentation" style="margin-top: 5px; border-color: rgba(244, 63, 94, 0.4); color: #f43f5e;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              Alarms History &amp; Devices
             </button>
           </div>
         </div>
@@ -726,6 +731,60 @@
 
     <!-- Universal IoT: Dynamic Sensor Grid (shown for custom-schema devices) -->
     <div id="dynamicSensorGrid"></div>
+
+    <!-- ==================================================================== -->
+    <!-- PIR & IR SECURITY SENTINEL: REAL-TIME VOLTAGE GRAPHS & SPATIAL MAP   -->
+    <!-- ==================================================================== -->
+    <section class="security-sentinel-panel" id="securitySentinelSection">
+      <div class="security-sentinel-header">
+        <div class="security-sentinel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>PIR &amp; IR SECURITY SENTINEL: DUAL VOLTAGE OSCILLOSCOPE &amp; 2D INTRUSION MAP</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="channel-pill ch1-pir">PIR (D3): <strong id="txtScopePirVoltage">0.04V</strong></span>
+          <span class="channel-pill ch2-ir">IR (D6): <strong id="txtScopeIrVoltage">3.28V</strong></span>
+          <span id="badgeSentinelSync" class="metric-badge badge-normal" style="font-size: 10px;">60 FPS REAL-TIME</span>
+        </div>
+      </div>
+
+      <div class="security-sentinel-grid">
+        <!-- Left: Dual-Channel Real-Time Oscilloscope -->
+        <div class="oscilloscope-card">
+          <div class="oscilloscope-top">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text-main);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <span>DUAL VOLTAGE WAVEFORM (0.00V – 3.30V)</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <span id="badgeScopePirState" class="metric-badge badge-cyan" style="font-size: 9px;">IDLE / ARMED (LOW)</span>
+              <span id="badgeScopeIrState" class="metric-badge badge-normal" style="font-size: 9px;">OPTICAL CLEAR (HIGH)</span>
+            </div>
+          </div>
+          <div class="oscilloscope-canvas-wrapper">
+            <canvas id="intrusionOscilloscopeCanvas" class="oscilloscope-canvas" width="600" height="190"></canvas>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 10px; color: var(--text-dim); font-family: var(--font-mono);">
+            <span>TIMEBASE: 50ms / div &bull; 0 - 3.3V TTL</span>
+            <span>CH1: D3 (PIR) &bull; CH2: D6 (IR Active-Low)</span>
+          </div>
+        </div>
+
+        <!-- Right: 2D Spatial Intrusion Floorplan Map -->
+        <div class="oscilloscope-card">
+          <div class="oscilloscope-top">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text-main);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              <span>2D SPATIAL INTRUSION MAP &amp; LASER TRIPWIRE</span>
+            </div>
+            <span class="badge badge-normal" style="font-size: 9px;">ZONE-A PERIMETER</span>
+          </div>
+          <div id="spatialMapContainer">
+            <!-- Rendered by intrusionScope.js -->
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Telemetry & Event Stream Bar (Area Directly After Settings, Divided with a Column) -->
     <section id="telemetryStreamBar" class="telemetry-stream-bar">
@@ -1245,6 +1304,33 @@
               </div>
               <div class="module-actions-row">
                 <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="pir_motion" title="Ping PIR line">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Ping Port
+                </button>
+              </div>
+            </div>
+
+            <!-- IR Optical Intrusion Sensor Card -->
+            <div class="module-card" id="cardModuleIr">
+              <div class="module-header">
+                <div class="module-name">IR Optical Intrusion Barrier</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="port-health-badge pass" id="pingBadge_ir_intrusion">PASS</span>
+                  <span class="module-pin-chip" id="chipPinIr">Pin D6</span>
+                  <label class="switch-toggle" title="Isolate / Toggle Sensor On/Off">
+                    <input type="checkbox" class="sensor-enable-toggle" data-sensor-id="ir_intrusion" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="module-value-row">
+                <span class="module-value-num" id="modIrState" style="color: #10b981;">BEAM ACTIVE (3.28V)</span>
+              </div>
+              <div class="module-instruction-preview" id="instPreviewIr">
+                Active-LOW infrared receiver on D6. Immediate microsecond response on tripwire beam interruption.
+              </div>
+              <div class="module-actions-row">
+                <button class="btn-mini-tool btn-ping-sensor" data-sensor-id="ir_intrusion" title="Ping IR line">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                   Ping Port
                 </button>
@@ -3168,6 +3254,219 @@
               <!-- Dynamically rendered by app.js renderPingDetailsTable -->
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- ALARMS HISTORY, INCIDENT LOGS & CONNECTED DEVICES MODAL              -->
+  <!-- ==================================================================== -->
+  <div id="modalAlarmsHistory" class="modal-overlay modal-backdrop">
+    <div class="modal-card" style="max-width: 960px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="flex-wrap: wrap; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 12px;">
+        <div class="modal-title" style="color: #f43f5e; display: flex; align-items: center; gap: 10px; font-size: 15px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span>ALARMS HISTORY, AUDIT LOGS &amp; CONNECTED DEVICES</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+          <div style="display: flex; gap: 6px;">
+            <button id="btnDownloadAlarmsExcel" class="btn-export-action btn-export-excel" title="Download Categorized Alarm List as Excel / CSV Spreadsheet">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Download Excel</span>
+            </button>
+            <button id="btnDownloadAlarmsPdf" class="btn-export-action btn-export-pdf" title="Generate &amp; Print Official PDF Incident Audit Report">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              <span>Download PDF</span>
+            </button>
+          </div>
+          <button id="btnCloseAlarmsModal" class="modal-close">&times;</button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs Inside Modal -->
+      <div style="display: flex; gap: 10px; padding: 10px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); background: rgba(0,0,0,0.18);">
+        <button id="tabBtnAlarmsList" class="btn-mini-tool" style="background: rgba(244, 63, 94, 0.18); border-color: #f43f5e; color: #ffffff; padding: 6px 14px; font-weight: 700;">
+          🚨 Categorized Alarms History
+        </button>
+        <button id="tabBtnDevicesDoc" class="btn-mini-tool" style="background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.15); color: var(--text-dim); padding: 6px 14px; font-weight: 700;">
+          📋 Connected Devices Documentation
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 16px 18px; overflow-y: auto;">
+        <!-- TAB 1: ALARMS LIST & CATEGORIES -->
+        <div id="tabPaneAlarmsList">
+          <!-- Filter by Alarm Category -->
+          <div class="alarm-filter-strip" id="alarmCategoryFilters">
+            <button class="alarm-filter-pill active" data-category="all">All Alarms (<span id="countAlarmsAll">0</span>)</button>
+            <button class="alarm-filter-pill" data-category="intrusion">🚨 Intrusion &amp; Security (<span id="countAlarmsIntrusion">0</span>)</button>
+            <button class="alarm-filter-pill" data-category="proximity">⚠️ Proximity (&lt;20cm) (<span id="countAlarmsProximity">0</span>)</button>
+            <button class="alarm-filter-pill" data-category="environmental">🌡️ Environmental &amp; LM35 (<span id="countAlarmsEnv">0</span>)</button>
+            <button class="alarm-filter-pill" data-category="hardware">⚡ Hardware &amp; Voltage (<span id="countAlarmsHw">0</span>)</button>
+            <button class="alarm-filter-pill" data-category="tamper">🔕 Mute &amp; Tamper (<span id="countAlarmsTamper">0</span>)</button>
+          </div>
+
+          <!-- Secondary Toolbar: Search, Severity Filter & Clear -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; max-width: 380px;">
+              <input type="text" id="inputAlarmsSearch" class="form-input" placeholder="Search alarms, pins, or sensors..." style="font-size: 11px; padding: 6px 10px; width: 100%;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <select id="selectAlarmsSeverity" class="board-select-dropdown" style="font-size: 11px; padding: 5px 10px;">
+                <option value="all">All Severities</option>
+                <option value="critical">Critical Only</option>
+                <option value="warning">Warning Only</option>
+                <option value="info">Info / Operational</option>
+              </select>
+              <button id="btnAcknowledgeAllAlarms" class="btn-outline" style="font-size: 11px; padding: 5px 12px;" title="Mark active alarms as acknowledged">
+                ✓ Acknowledge All
+              </button>
+            </div>
+          </div>
+
+          <!-- Alarms Table -->
+          <div class="alarms-table-wrapper">
+            <table class="alarms-log-table">
+              <thead>
+                <tr>
+                  <th style="width: 85px;">ID</th>
+                  <th style="width: 140px;">Timestamp</th>
+                  <th style="width: 100px;">Category</th>
+                  <th style="width: 85px;">Severity</th>
+                  <th style="width: 160px;">Source Sensor</th>
+                  <th style="width: 130px;">Trigger Value</th>
+                  <th style="width: 110px;">Threshold</th>
+                  <th style="width: 90px;">Status</th>
+                  <th>Incident Details</th>
+                </tr>
+              </thead>
+              <tbody id="alarmsTableBody">
+                <!-- Dynamically populated by app.js / alarmsManager -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 2: CONNECTED DEVICES DOCUMENTATION -->
+        <div id="tabPaneDevicesDoc" style="display: none;">
+          <div style="padding: 12px 14px; background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: var(--radius-md); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--accent-cyan);">
+                ACTIVE HARDWARE MODULE: <span id="docActiveModuleName">Spark Core (STM32F103 / CC3000)</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">
+                Complete pinout, electrical specifications, interface buses, and transfer functions for connected sensors.
+              </div>
+            </div>
+            <span class="metric-badge badge-normal" style="font-size: 10px;">11 LIVE HARDWARE CHANNELS</span>
+          </div>
+
+          <!-- Devices Table -->
+          <div style="overflow-x: auto; max-height: 440px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md);">
+            <table class="pin-matrix-table" style="width: 100%; font-size: 11px; border-collapse: collapse;">
+              <thead>
+                <tr style="background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                  <th style="padding: 10px 12px; text-align: left;">Sensor / Actuator</th>
+                  <th style="padding: 10px 12px; text-align: left;">MCU Pin</th>
+                  <th style="padding: 10px 12px; text-align: left;">Interface / Bus</th>
+                  <th style="padding: 10px 12px; text-align: left;">Voltage Level</th>
+                  <th style="padding: 10px 12px; text-align: left;">Transfer Formula / Output Range</th>
+                  <th style="padding: 10px 12px; text-align: left;">Functional Role &amp; Datasheet Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong style="color: #00f2fe;">HC-SR04 Ultrasonic Sonar</strong></td>
+                  <td><span class="module-pin-chip">D0 Trig / D1 Echo</span></td>
+                  <td>Digital GPIO Pulse</td>
+                  <td>5V Tolerant (3.3V Trig / 5V Echo)</td>
+                  <td><code>distance = (duration_us / 58.0) cm</code> (2cm – 400cm)</td>
+                  <td>High-frequency 40kHz acoustic sonar transceiver. Distance threshold &lt;20cm triggers proximity breach siren.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #10b981;">IR Intrusion Receiver</strong></td>
+                  <td><span class="module-pin-chip">D6</span></td>
+                  <td>Digital Input (Active-LOW)</td>
+                  <td>5V Tolerant (Pull-Up to 3.3V)</td>
+                  <td><code>HIGH = 3.28V (Clear)</code> &bull; <code>LOW = 0.04V (Broken)</code></td>
+                  <td>Infrared optical tripwire beam sensor. Interruption immediately triggers microsecond intrusion breach alarm.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #60a5fa;">PIR Motion Sensor</strong></td>
+                  <td><span class="module-pin-chip">D3</span></td>
+                  <td>Digital Input (TTL)</td>
+                  <td>3.3V Logic / Dry Contact</td>
+                  <td><code>HIGH = 3.30V (Motion)</code> &bull; <code>LOW = 0.04V (Idle)</code></td>
+                  <td>Passive infrared motion detector (HC-SR501 / 12V dry contact). 110° wide-angle human thermal detection.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #f59e0b;">LM35 Precision Centigrade</strong></td>
+                  <td><span class="module-pin-chip">A2</span></td>
+                  <td>Analog ADC Channel</td>
+                  <td>0 – 3.3V Analog (12-bit ADC)</td>
+                  <td><code>Temp_C = (V_ADC / 0.010V)</code> &bull; 10mV / °C</td>
+                  <td>Calibrated linear Celsius analog temperature sensor IC. Accurate to ±0.5°C over -55°C to +150°C.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #38bdf8;">DHT11 Digital Temp &amp; Hum</strong></td>
+                  <td><span class="module-pin-chip">D4</span></td>
+                  <td>Single-Wire Bidirectional</td>
+                  <td>3.3V / 5V (10k Pull-up)</td>
+                  <td><code>20% – 90% RH (±5%)</code> &bull; <code>0°C – 50°C (±2°C)</code></td>
+                  <td>Digital relative humidity and temperature sensor. Sampled every 2.5s via precise microsecond handshake timing.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #fbbf24;">LDR Photoresistor</strong></td>
+                  <td><span class="module-pin-chip">A1</span></td>
+                  <td>Analog ADC Voltage Divider</td>
+                  <td>0 – 3.3V (0 – 4095 ADC)</td>
+                  <td><code>Lux ≈ (ADC_Val / 4)</code> (0 – 1024 Lux)</td>
+                  <td>Light-dependent cadmium-sulfide resistor. Monitors ambient room illumination, sunlight, and blackout conditions.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #a78bfa;">Rotary Potentiometer</strong></td>
+                  <td><span class="module-pin-chip">A0</span></td>
+                  <td>Analog ADC Channel</td>
+                  <td>0 – 3.3V (0 – 4095 ADC)</td>
+                  <td><code>Angle = (ADC / 4095) * 360°</code> &bull; 0 – 100%</td>
+                  <td>10kΩ linear rotary potentiometer. Controls alarm sensitivity, tone pitch frequency, and radar heading angle.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #ec4899;">Alarm Buzzer Sounder</strong></td>
+                  <td><span class="module-pin-chip">D5</span></td>
+                  <td>Digital Output / PWM Audio</td>
+                  <td>5V Transistor Switch (S8050)</td>
+                  <td><code>400 Hz – 4500 Hz</code> Tone Modulation</td>
+                  <td>Onboard active sounder driven by NPN transistor. Plays melodic welcome chimes, motion notices, and intrusion sirens.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #34d399;">RGB Multi-Color LED</strong></td>
+                  <td><span class="module-pin-chip">A5, A6, A7</span></td>
+                  <td>Digital Output Tri-Channel</td>
+                  <td>3.3V / 5V Logic (Current Limiting)</td>
+                  <td><code>Red (A5)</code>, <code>Green (A6)</code>, <code>Blue (A7)</code></td>
+                  <td>External 3-color status indicator. Green = Room Secure; Blue = Motion / IR Active; Red = Proximity Breach.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #60a5fa;">Onboard Heartbeat LED</strong></td>
+                  <td><span class="module-pin-chip">D7</span></td>
+                  <td>Digital GPIO Output</td>
+                  <td>3.3V Logic Onboard</td>
+                  <td><code>5s Sync Beacon</code> &bull; <code>10Hz Siren Strobe</code></td>
+                  <td>Spark Core native blue LED. Pulses green/blue every 5 seconds to confirm cloud connection; flashes rapidly during alert.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color: #f43f5e;">Push Button SW1 (Mute)</strong></td>
+                  <td><span class="module-pin-chip">D2</span></td>
+                  <td>Digital Input (Active-LOW)</td>
+                  <td>3.3V Internal Pull-Up</td>
+                  <td><code>LOW (0V) = Pressed</code> &bull; <code>HIGH = Released</code></td>
+                  <td>Hardware mute and silence button. Instantly silences buzzer alarms and acknowledges active security events.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
