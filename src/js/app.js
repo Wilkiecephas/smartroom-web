@@ -4237,34 +4237,31 @@ class SmartRoomApp {
     const hwMasterBadge = document.getElementById('hwMasterStatusBadge');
     const hwPulse = document.getElementById('hwPulseIndicator');
     if (hwMasterBadge) {
-      if (isBreach && isMotion) {
-        hwMasterBadge.textContent = '🚨 MULTI-SENSOR TRIGGER: PROXIMITY & INTRUSION • SIREN FLASHING';
+      if (isBreach) {
+        hwMasterBadge.textContent = '🚨 PROXIMITY BREACH (<20cm) • SENSOR BOARD RED';
         hwMasterBadge.className = 'metric-badge badge-danger';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
-      } else if (isBreach) {
-        hwMasterBadge.textContent = '🚨 ULTRASONIC BREACH (<20cm) • MULTI-COLOR SIREN FLASHING';
-        hwMasterBadge.className = 'metric-badge badge-danger';
-        if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
-      } else if (isMotion) {
-        hwMasterBadge.textContent = isIrTriggered ? '🚨 IR INTRUSION DETECTED (D6) • SIREN FLASHING' : '🏃 MOTION / ROTATION DETECTED • SIREN FLASHING';
+      } else if (isMotion || isIrTriggered) {
+        hwMasterBadge.textContent = isIrTriggered ? '🚨 IR INTRUSION DETECTED (D6) • SENSOR BOARD BLUE' : '🏃 PIR MOTION DETECTED • SENSOR BOARD BLUE';
         hwMasterBadge.className = 'metric-badge badge-warning';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator alert';
       } else {
-        hwMasterBadge.textContent = 'ALL HARDWARE CLEAR • 5s GREEN BEACON ACTIVE';
+        hwMasterBadge.textContent = 'ROOM SECURE • SENSOR BOARD GREEN • SPARK CORE CYAN';
         hwMasterBadge.className = 'metric-badge badge-normal';
         if (hwPulse) hwPulse.className = 'hw-pulse-indicator';
       }
     }
 
-    // 2. LED Status Boxes
+    // 2. Sensor Board RGB Status LEDs & D7 Onboard LED
+    // Sensor board lights only change: RED on breach, BLUE on motion/IR, GREEN on safe
     const boxRed = document.getElementById('ledBoxRed');
     const dotRed = document.getElementById('ledDotRed');
     const txtRed = document.getElementById('ledStateRedText');
     if (boxRed && dotRed && txtRed) {
-      if (isBreach || isMotion) {
+      if (isBreach) {
         boxRed.className = 'hw-led-box active-red';
         dotRed.className = 'hw-led-dot red active pulse';
-        txtRed.textContent = 'SIREN STROBE';
+        txtRed.textContent = 'BREACH ACTIVE';
         txtRed.style.color = 'var(--accent-rose)';
       } else {
         boxRed.className = 'hw-led-box';
@@ -4278,16 +4275,16 @@ class SmartRoomApp {
     const dotGreen = document.getElementById('ledDotGreen');
     const txtGreen = document.getElementById('ledStateGreenText');
     if (boxGreen && dotGreen && txtGreen) {
-      if (!isBreach && !isMotion) {
-        boxGreen.className = 'hw-led-box active-green';
-        dotGreen.className = 'hw-led-dot green active pulse';
-        txtGreen.textContent = '5s BEACON PULSE';
-        txtGreen.style.color = 'var(--accent-emerald)';
-      } else {
+      if (!isBreach && !isMotion && !isIrTriggered) {
         boxGreen.className = 'hw-led-box active-green';
         dotGreen.className = 'hw-led-dot green active';
-        txtGreen.textContent = 'SIREN STROBE';
+        txtGreen.textContent = 'ROOM SECURE';
         txtGreen.style.color = 'var(--accent-emerald)';
+      } else {
+        boxGreen.className = 'hw-led-box';
+        dotGreen.className = 'hw-led-dot green';
+        txtGreen.textContent = 'OFF';
+        txtGreen.style.color = 'var(--text-dim)';
       }
     }
 
@@ -4295,10 +4292,10 @@ class SmartRoomApp {
     const dotBlue = document.getElementById('ledDotBlue');
     const txtBlue = document.getElementById('ledStateBlueText');
     if (boxBlue && dotBlue && txtBlue) {
-      if (isBreach || isMotion) {
+      if ((isMotion || isIrTriggered) && !isBreach) {
         boxBlue.className = 'hw-led-box active-blue';
         dotBlue.className = 'hw-led-dot blue active pulse';
-        txtBlue.textContent = 'SIREN STROBE';
+        txtBlue.textContent = 'MOTION ACTIVE';
         txtBlue.style.color = 'var(--accent-cyan)';
       } else {
         boxBlue.className = 'hw-led-box';
@@ -4312,15 +4309,20 @@ class SmartRoomApp {
     const dotD7 = document.getElementById('ledDotD7');
     const txtD7 = document.getElementById('ledStateD7Text');
     if (boxD7 && dotD7 && txtD7) {
-      if (isBreach || isMotion) {
+      if (isBreach) {
+        boxD7.className = 'hw-led-box active-red';
+        dotD7.className = 'hw-led-dot red active pulse';
+        txtD7.textContent = '5Hz SIREN STROBE';
+        txtD7.style.color = 'var(--accent-rose)';
+      } else if (isMotion || isIrTriggered) {
         boxD7.className = 'hw-led-box active-blue';
-        dotD7.className = 'hw-led-dot blue active pulse';
-        txtD7.textContent = 'SIREN 10Hz STROBE';
+        dotD7.className = 'hw-led-dot blue active';
+        txtD7.textContent = 'MOTION BLINK';
         txtD7.style.color = 'var(--accent-cyan)';
       } else {
         boxD7.className = 'hw-led-box';
         dotD7.className = 'hw-led-dot blue active pulse';
-        txtD7.textContent = '5s BEACON SYNC';
+        txtD7.textContent = '1Hz HEARTBEAT';
         txtD7.style.color = 'var(--text-main)';
       }
     }
@@ -4406,57 +4408,89 @@ class SmartRoomApp {
       rawMotionMask: data.rawMotionMask
     });
 
-    // Record categorized alarms
+    // Edge-triggered categorized alarm recording (prevents event flood & UI freeze)
+    this.alarmStateCache = this.alarmStateCache || {};
+
     if (isIrTriggered) {
-      alarmsManager.recordAlarm({
-        category: 'intrusion',
-        severity: 'critical',
-        sensorName: 'IR Intrusion Receiver',
-        pin: 'D6',
-        triggerVal: '0.04V (Active Low)',
-        threshold: '> 2.50V (Beam Clear)',
-        description: 'Infrared optical barrier interrupted. Room boundary tripwire breached.'
-      });
+      if (!this.alarmStateCache.ir) {
+        this.alarmStateCache.ir = true;
+        alarmsManager.recordAlarm({
+          category: 'intrusion',
+          severity: 'critical',
+          sensorName: 'IR Intrusion Receiver',
+          pin: 'D6',
+          triggerVal: '0.04V (Active Low)',
+          threshold: '> 2.50V (Beam Clear)',
+          description: 'Infrared optical barrier interrupted. Room boundary tripwire breached.'
+        });
+      }
     } else {
-      alarmsManager.resolveRecentAlarm('IR Intrusion Receiver', 'intrusion');
+      if (this.alarmStateCache.ir) {
+        this.alarmStateCache.ir = false;
+        alarmsManager.resolveRecentAlarm('IR Intrusion Receiver', 'intrusion');
+      }
     }
 
     if (isBreach) {
-      alarmsManager.recordAlarm({
-        category: 'proximity',
-        severity: 'critical',
-        sensorName: 'HC-SR04 Ultrasonic Sonar',
-        pin: 'D0 / D1',
-        triggerVal: `${(data.distance || 15).toFixed(1)} cm`,
-        threshold: '< 20.0 cm',
-        description: 'Proximity violation within 20cm perimeter zone.'
-      });
+      if (!this.alarmStateCache.breach) {
+        this.alarmStateCache.breach = true;
+        alarmsManager.recordAlarm({
+          category: 'proximity',
+          severity: 'critical',
+          sensorName: 'HC-SR04 Ultrasonic Sonar',
+          pin: 'D0 / D1',
+          triggerVal: `${(data.distance || 15).toFixed(1)} cm`,
+          threshold: '< 20.0 cm',
+          description: 'Proximity violation within 20cm perimeter zone.'
+        });
+      }
     } else {
-      alarmsManager.resolveRecentAlarm('HC-SR04 Ultrasonic Sonar', 'proximity');
+      if (this.alarmStateCache.breach) {
+        this.alarmStateCache.breach = false;
+        alarmsManager.resolveRecentAlarm('HC-SR04 Ultrasonic Sonar', 'proximity');
+      }
     }
 
-    if (isMotion && !isBreach && !isIrTriggered) {
-      alarmsManager.recordAlarm({
-        category: 'intrusion',
-        severity: 'warning',
-        sensorName: 'PIR Motion Sensor',
-        pin: 'D3',
-        triggerVal: '3.30V (Active High)',
-        threshold: '0.00V (Idle)',
-        description: 'Thermal human motion detected by wide-angle PIR sensor.'
-      });
+    const isPirOnly = isMotion && !isBreach && !isIrTriggered;
+    if (isPirOnly) {
+      if (!this.alarmStateCache.pir) {
+        this.alarmStateCache.pir = true;
+        alarmsManager.recordAlarm({
+          category: 'intrusion',
+          severity: 'warning',
+          sensorName: 'PIR Motion Sensor',
+          pin: 'D3',
+          triggerVal: '3.30V (Active High)',
+          threshold: '0.00V (Idle)',
+          description: 'Thermal human motion detected by wide-angle PIR sensor.'
+        });
+      }
+    } else {
+      if (this.alarmStateCache.pir) {
+        this.alarmStateCache.pir = false;
+        alarmsManager.resolveRecentAlarm('PIR Motion Sensor', 'intrusion');
+      }
     }
 
-    if (lmVal > 30) {
-      alarmsManager.recordAlarm({
-        category: 'environmental',
-        severity: 'warning',
-        sensorName: 'LM35 Precision Temp',
-        pin: 'A2',
-        triggerVal: `${lmVal.toFixed(1)}°C (${lmVolt}V)`,
-        threshold: '> 30.0°C',
-        description: 'Elevated ambient temperature on analog LM35 sensor channel.'
-      });
+    const isLmHigh = lmVal > 30;
+    if (isLmHigh) {
+      if (!this.alarmStateCache.lm) {
+        this.alarmStateCache.lm = true;
+        alarmsManager.recordAlarm({
+          category: 'environmental',
+          severity: 'warning',
+          sensorName: 'LM35 Precision Temp',
+          pin: 'A2',
+          triggerVal: `${lmVal.toFixed(1)}°C (${lmVolt}V)`,
+          threshold: '> 30.0°C',
+          description: 'Elevated ambient temperature on analog LM35 sensor channel.'
+        });
+      }
+    } else {
+      if (this.alarmStateCache.lm) {
+        this.alarmStateCache.lm = false;
+        alarmsManager.resolveRecentAlarm('LM35 Precision Temp', 'environmental');
+      }
     }
 
     // 4. Update Metric Cards
