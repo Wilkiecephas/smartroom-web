@@ -34,7 +34,7 @@ export const SUPPORTED_CONNECTION_METHODS = [
 export const PRESET_DEVICES = [
   {
     id: 'dev_spark_core_primary',
-    name: 'Spark Core (Master Chamber)',
+    name: 'sparkcore WIFI with arduino UNO',
     type: 'spark_core',
     boardProfileId: 'spark_core',
     connectionMethod: 'particle_cloud',
@@ -222,6 +222,10 @@ class DeviceRegistry {
               // Self-heal: update any stale Spark Core device credentials for owner
               parsed.forEach(dev => {
                 if (dev.type === 'spark_core') {
+                  if (dev.name === 'Spark Core (Master Chamber)' || dev.name === 'Spark Core' || !dev.name) {
+                    dev.name = 'sparkcore WIFI with arduino UNO';
+                    modified = true;
+                  }
                   if (!dev.credentials || dev.credentials.deviceId === '53ff6e066667574849402567' || !dev.credentials.deviceId) {
                     dev.credentials = {
                       deviceId: '54ff74066678574924331067',

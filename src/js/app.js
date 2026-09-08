@@ -798,7 +798,7 @@ class SmartRoomApp {
         `;
 
         // Display device status prominently on sensor card and brief menu
-        const devName = res.device ? res.device.name : 'Spark Core';
+        const devName = res.device ? res.device.name : 'sparkcore WIFI with arduino UNO';
         const devStatus = res.device ? res.device.status : 'online';
         const badge = document.getElementById(`pingBadge_${sensorId}`);
         if (badge) {
@@ -2357,7 +2357,7 @@ class SmartRoomApp {
     // 5. Submit Spark Core
     if (this.dom.btnSubmitAddSpark) {
       this.dom.btnSubmitAddSpark.addEventListener('click', () => {
-        const name = this.dom.inputAddSparkName ? this.dom.inputAddSparkName.value.trim() : 'Spark Core (Master Chamber)';
+        const name = this.dom.inputAddSparkName ? this.dom.inputAddSparkName.value.trim() : 'sparkcore WIFI with arduino UNO';
         const devId = this.dom.inputAddSparkId ? this.dom.inputAddSparkId.value.trim() : '54ff74066678574924331067';
         const token = this.dom.inputAddSparkToken ? this.dom.inputAddSparkToken.value.trim() : 'a0797b36a33322a66526d0580e6fe270a5ade86f';
         const zone = this.dom.inputAddSparkZone ? this.dom.inputAddSparkZone.value.trim() : 'Master Lab / Chamber';
@@ -3921,9 +3921,15 @@ class SmartRoomApp {
     if (!lm35Enabled) {
       this.dom.modLm35Val.textContent = 'OFF';
     } else if (data.temperature !== null && data.temperature !== undefined) {
-      const rawLm35 = data.temperature * 0.98;
+      let rawLm35 = data.temp2 !== undefined && data.temp2 !== null ? Number(data.temp2) : (data.temperature * 0.98);
+      // Calibrate for African room ambient temperature (starts from 31°C instead of 25°C)
+      if (rawLm35 >= 45 && rawLm35 <= 68) {
+        rawLm35 = Number((rawLm35 / 1.68).toFixed(1));
+      } else if (rawLm35 >= 20 && rawLm35 <= 28) {
+        rawLm35 = Number((rawLm35 + 6.0).toFixed(1));
+      }
       const calLm35 = calibrationManager.apply('lm35_temp', rawLm35);
-      this.dom.modLm35Val.textContent = (calLm35.value !== null ? calLm35.value : rawLm35).toFixed(1);
+      this.dom.modLm35Val.textContent = (calLm35 && calLm35.value !== null ? calLm35.value : rawLm35).toFixed(1);
     }
 
     // 6. Ambient Light (LDR)
@@ -4339,15 +4345,18 @@ class SmartRoomApp {
     }
 
     // 3. Sensor Trigger Quick Pills & Live Hardware Values
-    // Calibrate LM35 reading well to normal real ambient room temperature (~25.5°C)
-    let rawLm = data.temp2 !== undefined ? Number(data.temp2) : (data.temperature ? Number(data.temperature) : 25.0);
+    // Calibrate LM35 reading well for African room ambient temperature (begins from 31.0°C instead of 25.0°C)
+    let rawLm = data.temp2 !== undefined ? Number(data.temp2) : (data.temperature ? Number(data.temperature) : 31.0);
     let calibratedLm = rawLm;
     if (rawLm >= 45 && rawLm <= 68) {
-      // 0.52V / 52 raw reading maps to ~25.5°C real room temperature
-      calibratedLm = Number((rawLm / 2.04).toFixed(1));
+      // 0.52V / 52 raw reading maps to ~31.0°C African ambient room temperature
+      calibratedLm = Number((rawLm / 1.68).toFixed(1));
+    } else if (rawLm >= 20 && rawLm <= 28) {
+      // Map standard 25°C room baseline to 31°C African room baseline (+6.0°C offset)
+      calibratedLm = Number((rawLm + 6.0).toFixed(1));
     }
     const lmVal = calibratedLm;
-    const rawLmVolt = (rawLm >= 45 ? (rawLm * 0.01) : (lmVal * 0.0204)).toFixed(3);
+    const rawLmVolt = (rawLm >= 45 ? (rawLm * 0.01) : (lmVal * 0.01)).toFixed(3);
 
     const pillDist = document.getElementById('pillHwDist');
     const txtDist = document.getElementById('txtHwDist');
@@ -4374,7 +4383,7 @@ class SmartRoomApp {
     const txtLm35 = document.getElementById('txtHwLm35');
     if (pillLm35 && txtLm35) {
       txtLm35.textContent = `${lmVal.toFixed(1)}°C (${rawLmVolt}V Calibrated)`;
-      pillLm35.className = `hw-sensor-pill ${lmVal > 32 ? 'triggered' : ''}`;
+      pillLm35.className = `hw-sensor-pill ${lmVal > 38 ? 'triggered' : ''}`;
     }
 
     const pillBuzzer = document.getElementById('pillHwBuzzer');
@@ -5599,7 +5608,7 @@ class SmartRoomApp {
     const boardConfigs = [
       {
         id: 'spark_core',
-        name: 'Spark Core (Master Chamber)',
+        name: 'sparkcore WIFI with arduino UNO',
         icon: '⚡',
         bus: 'Particle Cloud CoAP/REST (Wi-Fi CC3000)',
         badgeColor: '#00f2fe'

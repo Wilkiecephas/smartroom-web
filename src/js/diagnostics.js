@@ -50,8 +50,10 @@ export class HardwareDiagnostics {
       msg: `ADC Reading: ${data.light || 620} / 4095`
     };
 
-    // 7. LM35 Temperature
-    const lm35Temp = data.temperature ? (data.temperature * 0.98).toFixed(1) : '24.2';
+    // 7. LM35 Temperature (African Room Baseline: begins from 31°C)
+    const lm35Temp = data.temp2 !== undefined && data.temp2 !== null 
+      ? Number(data.temp2).toFixed(1) 
+      : (data.temperature ? (Number(data.temperature) + (data.temperature < 30 ? 6.0 : 0)).toFixed(1) : '31.0');
     this.moduleHealth['lm35'] = {
       status: 'online',
       msg: `Analog Voltage: ${(lm35Temp * 0.01).toFixed(2)}V (${lm35Temp}°C)`

@@ -6,7 +6,7 @@
 export class SensorSimulator {
   constructor() {
     this.enabled = false;
-    this.temperature = 24.2;
+    this.temperature = 31.0;
     this.humidity = 52.0;
     this.distance = 165.0;
     this.motion = 0;
@@ -104,8 +104,8 @@ export class SensorSimulator {
       }, 800);
 
     } else if (scenarioName === 'normal') {
-      // Reset to safe normal baseline
-      this.temperature = 23.5;
+      // Reset to safe normal baseline (African room ambient)
+      this.temperature = 31.0;
       this.humidity = 48.0;
       this.distance = 180.0;
       this.motion = 0;

@@ -17,7 +17,7 @@ export class PortPinger {
     this.boardResults = {
       spark_core: {
         boardId: 'spark_core',
-        name: 'Spark Core (Master Lab)',
+        name: 'sparkcore WIFI with arduino UNO',
         status: 'untested',
         latencyMs: 0,
         protocol: 'Particle Cloud (CoAP/REST)',
@@ -111,7 +111,7 @@ export class PortPinger {
         const pingRes = await particleApi.ping();
         const res = {
           boardId: 'spark_core',
-          name: 'Spark Core (Master Lab)',
+          name: 'sparkcore WIFI with arduino UNO',
           status: pingRes.online ? 'online' : 'offline',
           latencyMs: pingRes.latencyMs,
           protocol: 'Particle Cloud (CoAP/REST)',
@@ -119,8 +119,8 @@ export class PortPinger {
           lastHeard: pingRes.lastHeard,
           lastPing: timestamp,
           detail: pingRes.online
-            ? `Spark Core Online &bull; Cloud latency: ${pingRes.latencyMs}ms &bull; IP: ${pingRes.ip || '102.209.111.95'}`
-            : `Spark Core Offline &bull; Cloud unreachable: ${pingRes.error || 'Timeout'}`
+            ? `sparkcore WIFI with arduino UNO Online &bull; Cloud latency: ${pingRes.latencyMs}ms &bull; IP: ${pingRes.ip || '102.209.111.95'}`
+            : `sparkcore WIFI with arduino UNO Offline &bull; Cloud unreachable: ${pingRes.error || 'Timeout'}`
         };
         this.boardResults['spark_core'] = res;
         this.notifyBoards();
@@ -128,7 +128,7 @@ export class PortPinger {
       } catch (err) {
         const res = {
           boardId: 'spark_core',
-          name: 'Spark Core (Master Lab)',
+          name: 'sparkcore WIFI with arduino UNO',
           status: 'offline',
           latencyMs: 0,
           protocol: 'Particle Cloud (CoAP/REST)',
@@ -241,7 +241,7 @@ export class PortPinger {
     const isEnabled = calibrationManager.isSensorEnabled(sensorId);
 
     const activeDev = deviceRegistry.getActiveDevice();
-    const devName = activeDev ? activeDev.name : 'Spark Core';
+    const devName = activeDev ? activeDev.name : 'sparkcore WIFI with arduino UNO';
     const devStatus = activeDev ? (activeDev.status || 'online').toUpperCase() : 'ONLINE';
     const devId = activeDev ? activeDev.id : 'dev_spark_core_primary';
 
@@ -475,7 +475,7 @@ export class PortPinger {
       isolated,
       untested,
       healthPercent,
-      activeDevice: activeDev || { name: 'Spark Core', status: 'online' }
+      activeDevice: activeDev || { name: 'sparkcore WIFI with arduino UNO', status: 'online' }
     };
   }
 }

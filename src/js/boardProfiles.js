@@ -6,7 +6,7 @@
 export const BOARD_PROFILES = {
   'spark_core': {
     id: 'spark_core',
-    name: 'Spark Core (Particle)',
+    name: 'sparkcore WIFI with arduino UNO',
     family: 'Particle / Spark',
     arch: 'ARM Cortex-M3 (STM32F103CB)',
     voltage: '3.3V (5V Tolerant I/O)',

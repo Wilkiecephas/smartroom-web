@@ -32,7 +32,8 @@ export class ParticleApi {
 
     // Retain last known good readings to avoid telemetry drops during transient network jitters
     this.lastGoodReadings = {
-      temperature: 24.0,
+      temperature: 31.0,
+      temp2: 31.0,
       humidity: 55.0,
       distance: 24.0,
       motion: 0,
@@ -86,10 +87,10 @@ export class ParticleApi {
         const retryData = await retryRes.json();
         return {
           online: !!retryData.connected,
-          name: retryData.name || 'Spark Core',
+          name: retryData.name || 'sparkcore WIFI with arduino UNO',
           lastHeard: retryData.last_heard,
           ip: retryData.last_ip_address,
-          platform: retryData.platform_id === 0 ? 'Spark Core' : 'Particle',
+          platform: retryData.platform_id === 0 ? 'sparkcore WIFI with arduino UNO' : 'Particle',
           functions: retryData.functions || [],
           variables: retryData.variables || {}
         };
@@ -99,10 +100,10 @@ export class ParticleApi {
       const data = await res.json();
       return {
         online: !!data.connected,
-        name: data.name || 'Spark Core',
+        name: data.name || 'sparkcore WIFI with arduino UNO',
         lastHeard: data.last_heard,
         ip: data.last_ip_address,
-        platform: data.platform_id === 0 ? 'Spark Core' : 'Particle',
+        platform: data.platform_id === 0 ? 'sparkcore WIFI with arduino UNO' : 'Particle',
         functions: data.functions || [],
         variables: data.variables || {}
       };
@@ -118,12 +119,12 @@ export class ParticleApi {
       const latency = Math.round(performance.now() - t0);
       return {
         boardId: 'spark_core',
-        name: status.name || 'Spark Core (Wi-Fi CC3000)',
+        name: status.name || 'sparkcore WIFI with arduino UNO',
         online: !!status.online,
         latencyMs: latency,
         lastHeard: status.lastHeard || null,
         ip: status.ip || '102.209.111.95',
-        platform: 'Spark Core (STM32F103 + CC3000)',
+        platform: 'sparkcore WIFI with arduino UNO',
         bus: 'Particle Cloud CoAP/REST',
         error: status.error || null
       };
@@ -131,7 +132,7 @@ export class ParticleApi {
       const latency = Math.round(performance.now() - t0);
       return {
         boardId: 'spark_core',
-        name: 'Spark Core',
+        name: 'sparkcore WIFI with arduino UNO',
         online: false,
         latencyMs: latency,
         bus: 'Particle Cloud CoAP/REST',
@@ -194,10 +195,12 @@ export class ParticleApi {
       const cardinalBearing = cardinalDirs[Math.floor((headingDeg + 11.25) / 22.5) % 16];
 
       // Secondary Temp (LM35 A2) & Aux Analog Channels
-      let temperature2 = temp2 !== null ? Number(temp2) : (this.lastGoodReadings.temp2 || 25.5);
-      // Calibrate if received in raw uncalibrated shield format (~45-65°C raw 0.52V -> ~25.5°C real temp)
-      if (temperature2 >= 45 && temperature2 <= 65) {
-        temperature2 = Number((temperature2 / 2.04).toFixed(1));
+      let temperature2 = temp2 !== null ? Number(temp2) : (this.lastGoodReadings.temp2 || 31.0);
+      // Calibrate for African room ambient temperature (starts from 31.0°C instead of 25.0°C)
+      if (temperature2 >= 45 && temperature2 <= 68) {
+        temperature2 = Number((temperature2 / 1.68).toFixed(1));
+      } else if (temperature2 >= 20 && temperature2 <= 28) {
+        temperature2 = Number((temperature2 + 6.0).toFixed(1));
       }
       const auxAnalog3 = aux3 !== null ? Number(aux3) : (this.lastGoodReadings.aux3 || 2200);
       const auxAnalog4 = aux4 !== null ? Number(aux4) : (this.lastGoodReadings.aux4 || 1600);

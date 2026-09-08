@@ -93,13 +93,13 @@ export const SENSOR_CALIBRATION_DEFAULTS = {
   lm35_temp: {
     name: 'LM35 Precision Temperature',
     unit: '°C',
-    offset: 0.0,
+    offset: 6.0,
     gain: 1.0,
     enabled: true,
-    min: -10,
+    min: 0,
     max: 100,
     step: 0.1,
-    twoPoint: { raw1: 0, act1: 0, raw2: 100, act2: 100 }
+    twoPoint: { raw1: 25, act1: 31, raw2: 100, act2: 106 }
   },
   potentiometer: {
     name: 'Rotary Potentiometer',
@@ -135,7 +135,11 @@ class CalibrationManager {
       if (typeof localStorage !== 'undefined') {
         const saved = localStorage.getItem(this.storageKey);
         if (saved) {
-          return { ...JSON.parse(JSON.stringify(SENSOR_CALIBRATION_DEFAULTS)), ...JSON.parse(saved) };
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.lm35_temp && (parsed.lm35_temp.offset === 0.0 || parsed.lm35_temp.offset === undefined)) {
+            parsed.lm35_temp.offset = 6.0;
+          }
+          return { ...JSON.parse(JSON.stringify(SENSOR_CALIBRATION_DEFAULTS)), ...parsed };
         }
       }
     } catch (e) {

@@ -108,7 +108,7 @@
           <label style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Device / Tech:</label>
           <select id="selectBoardProfile" class="board-select-dropdown" title="Select Connected Hardware, Drone or Controller Profile">
             <optgroup label="Particle / Spark">
-              <option value="spark_core" selected>Spark Core (STM32F103)</option>
+              <option value="spark_core" selected>sparkcore WIFI with arduino UNO</option>
             </optgroup>
             <optgroup label="Drones, Robotics & Industry">
               <option value="drone_mavlink">🛸 Drone Autopilot (PX4 / ArduPilot / MAVLink)</option>
@@ -145,7 +145,7 @@
         <div class="header-board-status-container" style="display: flex; align-items: center; gap: 6px;">
           <div id="headerBoardStatusBadge" class="header-board-status-badge online" title="Current Controller Online Status & Ping Latency">
             <span class="status-dot"></span>
-            <span id="headerBoardStatusText">Spark Core: ONLINE</span>
+            <span id="headerBoardStatusText">sparkcore WIFI with arduino UNO: ONLINE</span>
             <span id="headerBoardLatencyText" class="header-latency-pill">988ms</span>
           </div>
           <button id="btnHeaderPingBoard" class="btn-compact-action ping-btn" style="padding: 5px 9px; font-size: 11px;" title="Ping Active Controller Latency">
@@ -438,7 +438,7 @@
             <div class="hw-sensor-pill" id="pillHwDist">📡 HC-SR04: <span id="txtHwDist">223 cm (Normal)</span></div>
             <div class="hw-sensor-pill" id="pillHwIr">👁️ IR D6: <span id="txtHwIr">Beam Active (Auto-Retrigger)</span></div>
             <div class="hw-sensor-pill" id="pillHwPir">🏃 PIR D3: <span id="txtHwPir">Standby</span></div>
-            <div class="hw-sensor-pill" id="pillHwLm35">🌡️ LM35 A2: <span id="txtHwLm35">25.5°C (0.520V Calibrated)</span></div>
+            <div class="hw-sensor-pill" id="pillHwLm35">🌡️ LM35 A2: <span id="txtHwLm35">31.0°C (0.310V Calibrated)</span></div>
             <div class="hw-sensor-pill" id="pillHwTemp">🌡️ DHT11: <span id="txtHwTemp">29.0°C / 54%</span></div>
             <div class="hw-sensor-pill" id="pillHwLdr">☀️ LDR A1: <span id="txtHwLdr">💡 Ambient</span></div>
             <div class="hw-sensor-pill" id="pillHwPot">🎛️ POT A0: <span id="txtHwPot">50%</span></div>
@@ -458,7 +458,7 @@
           <div class="brief-summary-content">
             <div class="summary-line">
               <span class="lbl">Device:</span>
-              <span id="briefDevStatus" class="val val-online">Spark Core (ONLINE)</span>
+              <span id="briefDevStatus" class="val val-online">sparkcore WIFI with arduino UNO (ONLINE)</span>
             </div>
             <div class="summary-line">
               <span class="lbl">Pings:</span>
@@ -532,7 +532,7 @@
 
         <div class="blank-workspace-footer">
           <span>Need Wilkie's master hardware station?</span>
-          <button id="blankBtnSwitchWilkie" class="btn-text-link" type="button">👑 Switch to Wilkie (Master Station &bull; Spark Core Active)</button>
+          <button id="blankBtnSwitchWilkie" class="btn-text-link" type="button">👑 Switch to Wilkie (Master Station &bull; sparkcore WIFI with arduino UNO Active)</button>
         </div>
       </div>
 
@@ -863,7 +863,7 @@
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span class="active-device-name" id="activeDeviceName">Spark Core (Master Chamber)</span>
+            <span class="active-device-name" id="activeDeviceName">sparkcore WIFI with arduino UNO</span>
             <span class="active-device-status-badge online" id="activeDeviceStatusBadge">CONNECTED &bull; LIVE STREAM</span>
             <span class="active-device-type-tag" id="activeDeviceTypeTag">Particle Cloud</span>
           </div>
@@ -1447,8 +1447,8 @@
                 </div>
               </div>
               <div class="module-value-row">
-                <span class="module-value-num" id="modLm35Val">23.8</span> <span style="color: var(--text-muted);">°C</span>
-                <span style="font-size: 11px; color: var(--text-dim); margin-left: 8px;">(238 mV)</span>
+                <span class="module-value-num" id="modLm35Val">31.0</span> <span style="color: var(--text-muted);">°C</span>
+                <span style="font-size: 11px; color: var(--text-dim); margin-left: 8px;">(310 mV)</span>
               </div>
               <div class="module-instruction-preview" id="instPreviewLm35">
                 Precision Celsius sensor. Produces linear 10mV/°C on analog pin.
@@ -1732,7 +1732,7 @@
           <div class="account-info">
             <div class="account-name" id="accountProfileName">Wilkie (Master Owner)</div>
             <div class="account-email" id="accountProfileEmail">wilk@tekstepapps.org</div>
-            <div class="account-badge" id="accountProfileBadge">⚡ Master Station &bull; Spark Core Active</div>
+            <div class="account-badge" id="accountProfileBadge">⚡ Master Station &bull; sparkcore WIFI with arduino UNO Active</div>
           </div>
         </div>
 
@@ -1745,7 +1745,7 @@
               <span class="user-pill-icon">👑</span>
               <strong>Wilkie (Primary Owner)</strong>
             </div>
-            <p>Master account pre-configured with Spark Core (Master Chamber) running live telemetry and all preset sensors.</p>
+            <p>Master account pre-configured with sparkcore WIFI with arduino UNO running live telemetry and all preset sensors.</p>
             <button id="btnSwitchToWilkie" class="btn-secondary small" type="button">Switch to Wilkie</button>
           </div>
 
@@ -2573,7 +2573,7 @@
       </div>
 
       <div class="modal-tabs" style="flex-wrap: wrap;">
-        <button class="modal-tab-btn active" data-tab="tabAddSpark">⚡ Spark Core (User Hardware)</button>
+        <button class="modal-tab-btn active" data-tab="tabAddSpark">⚡ sparkcore WIFI with arduino UNO (User Hardware)</button>
         <button class="modal-tab-btn" data-tab="tabAddVirtual">💻 Virtual Simulation Device</button>
         <button class="modal-tab-btn" data-tab="tabAddSerial">🔌 USB Serial COM Port</button>
         <button class="modal-tab-btn" data-tab="tabAddBle">🦷 Web Bluetooth (BLE)</button>
@@ -2588,16 +2588,16 @@
       <div id="tabAddSpark" class="tab-content-pane active">
         <div style="padding: 14px; background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.3); border-radius: var(--radius-md); margin-bottom: 16px;">
           <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px;">
-            <span>🌟</span> Primary User Hardware &bull; Particle Spark Core
+            <span>🌟</span> Primary User Hardware &bull; sparkcore WIFI with arduino UNO
           </div>
           <div style="font-size: 12px; color: var(--text-main); line-height: 1.5;">
-            Your Spark Core (Master Chamber) credentials are ready. Connect directly via the Particle Cloud API to stream 9-in-1 sensor readings.
+            Your sparkcore WIFI with arduino UNO credentials are ready. Connect directly via the Particle Cloud API to stream 9-in-1 sensor readings.
           </div>
         </div>
 
         <div class="form-group" style="margin-bottom: 12px;">
           <label class="form-label">Device Nickname / Label:</label>
-          <input type="text" id="inputAddSparkName" class="form-input" value="Spark Core (Master Chamber)">
+          <input type="text" id="inputAddSparkName" class="form-input" value="sparkcore WIFI with arduino UNO">
         </div>
 
         <div class="two-point-grid" style="gap: 12px; margin-bottom: 12px;">
@@ -2621,7 +2621,7 @@
             📋 View Particle Firmware &amp; Guide
           </button>
           <button id="btnSubmitAddSpark" class="btn-primary" style="background: linear-gradient(135deg, #00f2fe, #4facfe); color: #040914; font-weight: 700; padding: 10px 20px;">
-            ⚡ Connect My Spark Core Hardware
+            ⚡ Connect My sparkcore WIFI with arduino UNO Hardware
           </button>
         </div>
       </div>
@@ -3088,7 +3088,7 @@
 
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
         <div style="font-size: 13px; color: var(--text-muted);">
-          Target Device: <strong id="addSensorTargetDeviceName" style="color: var(--accent-cyan); font-weight: 700;">Spark Core</strong>
+          Target Device: <strong id="addSensorTargetDeviceName" style="color: var(--accent-cyan); font-weight: 700;">sparkcore WIFI with arduino UNO</strong>
         </div>
         <div style="position: relative; max-width: 280px; width: 100%;">
           <input type="text" id="inputSearchSensors" class="form-input" placeholder="Search sensors or bus..." style="padding: 6px 12px 6px 30px; font-size: 12px;">
@@ -3198,7 +3198,7 @@
         <div class="sensor-health-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px;">
           <div class="ext-stat-box" style="padding: 10px;">
             <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Target Controller</span>
-            <strong id="dedicatedDevName" style="color: var(--accent-cyan); font-size: 13px; margin-top: 2px;">Spark Core (STM32F103)</strong>
+            <strong id="dedicatedDevName" style="color: var(--accent-cyan); font-size: 13px; margin-top: 2px;">sparkcore WIFI with arduino UNO</strong>
             <span id="dedicatedDevStatusBadge" class="badge badge-normal" style="font-size: 9px; align-self: flex-start; margin-top: 4px;">ONLINE &bull; PARTICLE CLOUD</span>
           </div>
           <div class="ext-stat-box" style="padding: 10px;">
@@ -3539,7 +3539,7 @@
         <div id="autoGatherResultsState">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
             <div>
-              <div style="font-size: 13px; font-weight: 700; color: #10b981;">Target Board: <span id="autoGatherBoardName">Spark Core (STM32F103)</span></div>
+              <div style="font-size: 13px; font-weight: 700; color: #10b981;">Target Board: <span id="autoGatherBoardName">sparkcore WIFI with arduino UNO</span></div>
               <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;" id="autoGatherSummaryText">Discovered 7 active sensor lines &bull; All signals verified healthy.</div>
             </div>
             <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 700;">AUTO-DETECTED</span>
