@@ -184,9 +184,11 @@ export class WebSerialManager {
 
   parseSerialLine(line) {
     // Check if line contains telemetry JSON like: {"temp":24,"hum":55,"dist":180,...}
-    if (line.startsWith('{') && line.endsWith('}')) {
+    const startIdx = line.indexOf('{');
+    const endIdx = line.lastIndexOf('}');
+    if (startIdx !== -1 && endIdx > startIdx) {
       try {
-        const json = JSON.parse(line);
+        const json = JSON.parse(line.substring(startIdx, endIdx + 1));
 
         // Normalize compact Spark Core USB serial keys → full dashboard-compatible field names
         const rawMotion  = json.motion  ?? json.rawMotionMask ?? 0;
@@ -242,11 +244,16 @@ export class WebSerialManager {
 
         if (window.smartRoomApp && window.smartRoomApp.updateDashboard) {
           window.smartRoomApp.updateDashboard(normalized);
-          // Relay to Supabase Realtime — all remote browsers update instantly
-          const boardId = json.device_id || json.deviceId || (window.smartRoomApp.activeBoardId || 'spark_core');
-          import('./supabaseClient.js').then(({ supabaseService }) => {
-            supabaseService.insertTelemetry(boardId, normalized);
-          }).catch(() => {});
+          // Relay to Supabase Realtime (throttled to max once every 2s or on security event)
+          const now = Date.now();
+          const shouldRelay = isProximity || isMotionActive || !this._lastSupabaseRelay || (now - this._lastSupabaseRelay > 2000);
+          if (shouldRelay) {
+            this._lastSupabaseRelay = now;
+            const boardId = json.device_id || json.deviceId || (window.smartRoomApp.activeBoardId || 'spark_core');
+            import('./supabaseClient.js').then(({ supabaseService }) => {
+              supabaseService.insertTelemetry(boardId, normalized);
+            }).catch(() => {});
+          }
         }
       } catch (_) {}
     }

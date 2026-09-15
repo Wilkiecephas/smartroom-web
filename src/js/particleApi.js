@@ -73,19 +73,26 @@ export class ParticleApi {
   }
 
   async getDeviceStatus() {
+    const now = performance.now();
+    // Circuit breaker: if device was offline recently (within 25s), don't block poll loop with repeated timeouts
+    if (this._lastStatusCheck && (now - this._lastStatusCheck < 25000) && (!this._cachedStatus || !this._cachedStatus.online)) {
+      return this._cachedStatus;
+    }
+    this._lastStatusCheck = now;
+
     try {
       const url = `${this.baseUrl}/${this.deviceId}?access_token=${this.token}`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      const res = await fetch(url, { signal: AbortSignal.timeout(1800) });
       
       if (res.status === 400 || res.status === 401) {
         // Auto-heal invalid token
         console.warn('[ParticleApi] Invalid credentials detected. Auto-recovering to verified defaults...');
         this.resetToDefaultCredentials();
         const retryUrl = `${this.baseUrl}/${this.deviceId}?access_token=${this.token}`;
-        const retryRes = await fetch(retryUrl, { signal: AbortSignal.timeout(6000) });
+        const retryRes = await fetch(retryUrl, { signal: AbortSignal.timeout(1800) });
         if (!retryRes.ok) throw new Error(`HTTP ${retryRes.status}`);
         const retryData = await retryRes.json();
-        return {
+        const result = {
           online: !!retryData.connected,
           name: retryData.name || 'sparkcore WIFI with arduino UNO',
           lastHeard: retryData.last_heard,
@@ -94,11 +101,13 @@ export class ParticleApi {
           functions: retryData.functions || [],
           variables: retryData.variables || {}
         };
+        this._cachedStatus = result;
+        return result;
       }
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      return {
+      const result = {
         online: !!data.connected,
         name: data.name || 'sparkcore WIFI with arduino UNO',
         lastHeard: data.last_heard,
@@ -107,8 +116,12 @@ export class ParticleApi {
         functions: data.functions || [],
         variables: data.variables || {}
       };
+      this._cachedStatus = result;
+      return result;
     } catch (err) {
-      return { online: false, error: err.message };
+      const failResult = { online: false, error: err.message };
+      this._cachedStatus = failResult;
+      return failResult;
     }
   }
 
@@ -256,7 +269,7 @@ export class ParticleApi {
     }
   }
 
-  async callFunction(functionName, argument, retryCount = 1) {
+  async callFunction(functionName, argument, retryCount = 0) {
     for (let attempt = 0; attempt <= retryCount; attempt++) {
       try {
         const url = `${this.baseUrl}/${this.deviceId}/${functionName}`;
@@ -269,7 +282,7 @@ export class ParticleApi {
             access_token: this.token,
             args: argument
           }),
-          signal: AbortSignal.timeout(7000)
+          signal: AbortSignal.timeout(2200)
         });
 
         if (!res.ok) {
@@ -281,10 +294,10 @@ export class ParticleApi {
         return { success: true, return_value: data.return_value };
       } catch (err) {
         if (attempt === retryCount) {
-          console.warn(`[ParticleApi] Function ${functionName} failed after retries:`, err.message);
+          console.warn(`[ParticleApi] Function ${functionName} failed:`, err.message);
           return { success: false, error: err.message };
         }
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 400));
       }
     }
   }

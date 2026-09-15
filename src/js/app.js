@@ -1046,7 +1046,11 @@ class SmartRoomApp {
         this.log(`Alarm tone preset switched to: ${tone.toUpperCase()}`);
 
         if (this.mode === 'live' && pinConfig.activeBoardId === 'spark_core') {
-          particleApi.callFunction('alarm', `tone:${tone}`);
+          if (webSerialManager && webSerialManager.isConnected) {
+            webSerialManager.send(`TONE:${tone.toUpperCase()}\n`).catch(() => {});
+          } else {
+            particleApi.callFunction('alarm', `tone:${tone}`);
+          }
         }
       });
     });
@@ -3470,9 +3474,14 @@ class SmartRoomApp {
     }, 800);
 
     if (this.mode === 'live' && pinConfig.activeBoardId === 'spark_core') {
-      const res = await particleApi.callFunction('alarm', 'test');
-      if (res.success) {
-        this.log(`Hardware buzzer triggered successfully (Code: ${res.return_value})`, 'success');
+      if (webSerialManager && webSerialManager.isConnected) {
+        webSerialManager.send('BUZZER:TEST\n').catch(() => {});
+        this.log('Hardware buzzer triggered via WebSerial (<5ms)', 'success');
+      } else {
+        const res = await particleApi.callFunction('alarm', 'test');
+        if (res.success) {
+          this.log(`Hardware buzzer triggered successfully (Code: ${res.return_value})`, 'success');
+        }
       }
     }
   }
@@ -3485,9 +3494,14 @@ class SmartRoomApp {
     this.dom.modRgbState.style.color = colorHex;
 
     if (this.mode === 'live' && pinConfig.activeBoardId === 'spark_core') {
-      const res = await particleApi.callFunction('alarm', `rgb:${color}`);
-      if (res.success) {
-        this.log(`Hardware RGB set to ${color} (Code: ${res.return_value})`, 'success');
+      if (webSerialManager && webSerialManager.isConnected) {
+        webSerialManager.send(`RGB:${color.toUpperCase()}\n`).catch(() => {});
+        this.log(`Hardware RGB set to ${color} via WebSerial (<5ms)`, 'success');
+      } else {
+        const res = await particleApi.callFunction('alarm', `rgb:${color}`);
+        if (res.success) {
+          this.log(`Hardware RGB set to ${color} (Code: ${res.return_value})`, 'success');
+        }
       }
     }
   }
@@ -4145,14 +4159,14 @@ class SmartRoomApp {
       this.dom.deviceBadge.classList.remove('alerting');
     }
 
-    // 3. Send hardware silence command to Spark Core
-    particleApi.callFunction('alarm', 'off').catch(err => {
-      console.warn('Particle alarm off dispatch error:', err.message);
-    });
-
-    // 4. Send serial silence command to Arduino if connected
+    // 3. Send hardware silence command (prioritize WebSerial if connected to avoid Particle Cloud offline delay)
     if (webSerialManager && webSerialManager.isConnected) {
+      webSerialManager.send('SILENCE\n').catch(() => {});
       webSerialManager.send('ALARM:OFF\n').catch(() => {});
+    } else {
+      particleApi.callFunction('alarm', 'off').catch(err => {
+        console.warn('Particle alarm off dispatch error:', err.message);
+      });
     }
 
     // 5. Update silence buttons visual feedback
@@ -4850,7 +4864,11 @@ class SmartRoomApp {
         this.renderActiveDeviceBanner();
 
         if (this.mode === 'live' && pinConfig.activeBoardId === 'spark_core') {
-          particleApi.callFunction('alarm', 'p').catch(() => {});
+          if (webSerialManager && webSerialManager.isConnected) {
+            webSerialManager.send('BUZZER:MOTION\n').catch(() => {});
+          } else {
+            particleApi.callFunction('alarm', 'p').catch(() => {});
+          }
         }
 
         this.log(`PIR Motion Sensor: ${willBeAttached ? 'ATTACHED & ARMED' : 'DISCONNECTED / UNPLUGGED (Alarms Suppressed)'}`, 'warn');

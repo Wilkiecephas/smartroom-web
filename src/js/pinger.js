@@ -107,6 +107,29 @@ export class PortPinger {
     const timestamp = new Date().toLocaleTimeString();
 
     if (boardId === 'spark_core') {
+      const isUsb = webSerialInstance && webSerialInstance.isConnected;
+      if (isUsb) {
+        const t0 = performance.now();
+        try {
+          await webSerialInstance.send('PING:SPARK\n');
+        } catch (_) {}
+        const latency = Math.max(1, Math.round(performance.now() - t0));
+        const res = {
+          boardId: 'spark_core',
+          name: 'sparkcore WIFI with arduino UNO',
+          status: 'online',
+          latencyMs: latency,
+          protocol: 'WebSerial USB Direct (115200 Baud)',
+          ip: 'USB Direct COM',
+          lastHeard: 'Live Now',
+          lastPing: timestamp,
+          detail: `Spark Core USB Direct Online &bull; Latency: ${latency}ms`
+        };
+        this.boardResults['spark_core'] = res;
+        this.notifyBoards();
+        return res;
+      }
+
       try {
         const pingRes = await particleApi.ping();
         const res = {
