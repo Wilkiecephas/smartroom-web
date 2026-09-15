@@ -16,6 +16,8 @@ export const DEFAULT_HOME_CONFIG = {
   thingspeakChannelId: '3475948',
   thingspeakWriteKey: '2W20O13FTT3CIUD3',
   thingspeakReadKey: '',
+  supabaseUrl: 'https://uisoefefhzmqihyrocxr.supabase.co',
+  supabaseAnonKey: 'sb_publishable_ZK5fvXgV5RElQwpUSNkF5w_ih6PmLIi',
   autoPublish: true,
   publishIntervalSec: 15 // ThingSpeak free-tier minimum is 15 seconds
 };

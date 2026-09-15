@@ -14,6 +14,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { homeConfig, DEFAULT_HOME_CONFIG } from './homeConfig.js';
 
 // Local storage keys
 const STORAGE_CONFIG_URL = 'sr_supabase_url_v1';
@@ -77,8 +78,8 @@ create policy "Users can delete own devices" on public.devices for delete using 
 
 class SupabaseService {
   constructor() {
-    this.url = this._load(STORAGE_CONFIG_URL, '');
-    this.anonKey = this._load(STORAGE_CONFIG_KEY, '');
+    this.url = this._load(STORAGE_CONFIG_URL, '') || (homeConfig?.config?.supabaseUrl || '') || (DEFAULT_HOME_CONFIG?.supabaseUrl || '');
+    this.anonKey = this._load(STORAGE_CONFIG_KEY, '') || (homeConfig?.config?.supabaseAnonKey || '') || (DEFAULT_HOME_CONFIG?.supabaseAnonKey || '');
     this.currentUser = this._loadActiveUser();
     this.supabase = null;
     this.listeners = new Set();
@@ -426,19 +427,121 @@ class SupabaseService {
   }
 
   /**
-   * Delete a device from Supabase Database
+   * Insert a live sensor telemetry snapshot into Supabase.
+   * Called by the browser whenever ThingSpeak/USB/Serial delivers new data.
+   * All other connected browsers receive the row instantly via Realtime.
    */
-  async deleteDeviceFromCloud(deviceId) {
+  async insertTelemetry(deviceId, snapshot) {
     if (!this.isConfigured() || !this.supabase) return false;
     try {
-      const { error } = await this.supabase.from('devices').delete().eq('id', deviceId);
+      const { error } = await this.supabase.from('telemetry').insert({
+        device_id:   deviceId,
+        temperature: snapshot.temperature ?? null,
+        humidity:    snapshot.humidity    ?? null,
+        distance:    snapshot.distance    ?? null,
+        motion:      snapshot.rawMotionMask ?? snapshot.motion ?? null,
+        light:       snapshot.light       ?? null,
+        pot:         snapshot.pot         ?? null,
+        temp2:       snapshot.temp2       ?? null,
+        recorded_at: new Date().toISOString()
+      });
       if (error) throw error;
       return true;
     } catch (err) {
-      console.warn('[Supabase DB] Failed to delete device:', err.message);
+      console.warn('[Supabase Telemetry] Insert failed:', err.message);
       return false;
     }
+  }
+
+  /**
+   * Subscribe to live telemetry via Supabase Realtime WebSocket.
+   * The callback fires instantly whenever any browser (or server) inserts a row.
+   * @param {string} deviceId  - filter to this device (e.g. 'spark_core')
+   * @param {function} onData  - called with the normalized sensor snapshot
+   * @returns {function} unsubscribe function
+   */
+  subscribeToTelemetry(deviceId, onData) {
+    if (!this.isConfigured() || !this.supabase) {
+      console.warn('[Supabase Realtime] Not configured — skipping subscription.');
+      return () => {};
+    }
+
+    const isWildcard = !deviceId || deviceId === '*';
+    const filterProps = isWildcard ? {} : { filter: `device_id=eq.${deviceId}` };
+
+    const channel = this.supabase
+      .channel(`telemetry:${deviceId || 'all'}`)
+      .on(
+        'postgres_changes',
+        {
+          event:  'INSERT',
+          schema: 'public',
+          table:  'telemetry',
+          ...filterProps
+        },
+        (payload) => {
+          const row = payload.new;
+          if (!row) return;
+
+          // Rebuild full dashboard-compatible snapshot from DB row
+          const rawMotion = row.motion ?? 0;
+          const distVal   = row.distance ?? 0;
+          const lightVal  = row.light    ?? 800;
+          const potVal    = row.pot      ?? 2048;
+
+          const isMotionActive      = (rawMotion & 1)    !== 0;
+          const isProximity         = (rawMotion & 2)    !== 0 || (distVal > 0 && distVal < 20);
+          const isBuzzerOn          = (rawMotion & 4)    !== 0 || isProximity;
+          const isLedD7On           = (rawMotion & 8)    !== 0 || isProximity || isMotionActive;
+          const isLedRedOn          = (rawMotion & 16)   !== 0 || isProximity;
+          const isLedGreenOn        = (rawMotion & 32)   !== 0 || (!isProximity && !isMotionActive);
+          const isLedBlueOn         = (rawMotion & 64)   !== 0 || (isMotionActive && !isProximity);
+          const isIrBroken          = (rawMotion & 128)  !== 0;
+          const isPirTriggered      = (rawMotion & 256)  !== 0;
+          const isRotationTriggered = (rawMotion & 512)  !== 0;
+          const isLdrShadow         = (rawMotion & 1024) !== 0;
+          const isNight             = isLdrShadow || lightVal < 350;
+
+          const headingDeg      = Math.min(359, Math.max(0, Math.round((potVal / 4095) * 360)));
+          const cardinalDirs    = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+          const cardinalBearing = cardinalDirs[Math.floor((headingDeg + 11.25) / 22.5) % 16];
+
+          onData({
+            deviceId:    row.device_id,
+            temperature: row.temperature ?? 31,
+            humidity:    row.humidity    ?? 50,
+            distance:    distVal,
+            motion:      isMotionActive ? 1 : 0,
+            rawMotionMask: rawMotion,
+            isProximity, isBuzzerOn, isLedD7On, isLedRedOn,
+            isLedGreenOn, isLedBlueOn, isIrBroken, isPirTriggered,
+            isRotationTriggered, isLdrShadow, isNight,
+            light:         lightVal,
+            pot:           potVal,
+            direction:     headingDeg,
+            cardinalBearing,
+            temp2:         row.temp2 ?? row.temperature ?? 31,
+            aux3:          2200,
+            aux4:          1600,
+            timestamp:     Date.now()
+          });
+        }
+      )
+      .subscribe();
+
+    console.log(`[Supabase Realtime] Subscribed to telemetry for device: ${deviceId || 'ALL'}`);
+
+    // Return unsubscribe function
+    return () => {
+      this.supabase.removeChannel(channel);
+    };
   }
 }
 
 export const supabaseService = new SupabaseService();
+
+if (typeof window !== 'undefined') {
+  window.supabaseService = supabaseService;
+  window.setSupabaseConfig = (url, anonKey) => supabaseService.setConfig(url, anonKey);
+}
+

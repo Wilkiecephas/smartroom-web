@@ -3678,6 +3678,12 @@ class SmartRoomApp {
     this.mode = mode;
     if (this.pollInterval) clearInterval(this.pollInterval);
 
+    // Tear down any existing Supabase Realtime subscription
+    if (this._unsubscribeRealtime) {
+      this._unsubscribeRealtime();
+      this._unsubscribeRealtime = null;
+    }
+
     if (mode === 'live') {
       this.dom.btnModeLive.classList.add('active');
       this.dom.btnModeSim.classList.remove('active');
@@ -3685,6 +3691,18 @@ class SmartRoomApp {
       this.dom.simControls.style.display = 'none';
       sensorSimulator.enabled = false;
       this.log(`Mode: LIVE HARDWARE (${pinConfig.getActiveBoard().name})`, 'success');
+
+      // Subscribe to Supabase Realtime — instant push for any connected board
+      this._unsubscribeRealtime = supabaseService.subscribeToTelemetry(
+        '*',
+        (snapshot) => {
+          this.updateDashboard(snapshot);
+          const boardName = (snapshot.deviceId || pinConfig.getActiveBoard().name).toUpperCase();
+          this.dom.deviceStatusText.textContent = `${boardName} (REALTIME ⚡)`;
+          this.dom.deviceBadge.style.borderColor = 'rgba(139, 92, 246, 0.6)';
+          this.dom.deviceBadge.style.color = '#a78bfa';
+        }
+      );
 
       this.pollLiveSensors();
       this.pollInterval = setInterval(() => this.pollLiveSensors(), 3000);
@@ -3730,32 +3748,115 @@ class SmartRoomApp {
       return;
     }
 
-    // 2. Target Controller: Spark Core (Particle Cloud API)
-    const status = await particleApi.getDeviceStatus();
-    if (!status.online) {
-      this.dom.deviceStatusText.textContent = 'SPARK CORE (RECONNECTING)';
-      this.dom.deviceBadge.className = 'device-status-badge';
-      this.dom.deviceBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-      this.dom.deviceBadge.style.color = '#ef4444';
+    // 2. Target Controller: Spark Core
 
-      // Use cached/fallback readings so dashboard never empties or freezes
+    // 2a. USB Serial bypass — if physically connected via USB, skip everything else.
+    //     Live JSON data arrives via parseSerialLine() → updateDashboard().
+    if (webSerialManager.isConnected) {
+      this.dom.deviceStatusText.textContent = 'SPARK CORE (USB DIRECT)';
+      this.dom.deviceBadge.className = 'device-status-badge';
+      this.dom.deviceBadge.style.borderColor = 'rgba(0, 230, 118, 0.5)';
+      this.dom.deviceBadge.style.color = '#00e676';
+      return; // data flows through webSerial.js parseSerialLine → updateDashboard
+    }
+
+    // 2b. Particle Cloud path — try first (still works if quota resets or on another account)
+    let cloudOnline = false;
+    try {
+      const status = await particleApi.getDeviceStatus();
+      cloudOnline = !!status.online;
+    } catch (_) {
+      cloudOnline = false;
+    }
+
+    if (cloudOnline) {
+      this.dom.deviceStatusText.textContent = 'SPARK CORE (CLOUD)';
+      this.dom.deviceBadge.className = 'device-status-badge';
+      this.dom.deviceBadge.style.borderColor = '';
+      this.dom.deviceBadge.style.color = '';
+
       const data = await particleApi.readAllSensors();
-      if (data) {
-        this.updateDashboard(data);
-      }
+      if (data) this.updateDashboard(data);
       return;
     }
 
-    this.dom.deviceStatusText.textContent = 'SPARK CORE ONLINE';
-    this.dom.deviceBadge.className = 'device-status-badge';
-    this.dom.deviceBadge.style.borderColor = '';
-    this.dom.deviceBadge.style.color = '';
+    // 2c. Auto-fallback: ThingSpeak direct WiFi feed (SYSTEM_MODE MANUAL firmware)
+    //     Activated automatically when Particle Cloud is offline or quota exhausted.
+    try {
+      const tsData = await thingspeakApi.getLatestFeed();
+      if (tsData && tsData.temperature !== null) {
+        // Normalize ThingSpeak fields → full dashboard-compatible object
+        const rawMotion = tsData.motion ?? 0;
+        const distVal   = tsData.distance ?? 0;
+        const lightVal  = tsData.light ?? 800;
+        const potVal    = tsData.pot ?? 2048;
 
-    const data = await particleApi.readAllSensors();
-    if (data) {
-      this.updateDashboard(data);
-    }
+        const isMotionActive      = (rawMotion & 1)    !== 0;
+        const isProximity         = (rawMotion & 2)    !== 0 || (distVal > 0 && distVal < 20);
+        const isBuzzerOn          = (rawMotion & 4)    !== 0 || isProximity;
+        const isLedD7On           = (rawMotion & 8)    !== 0 || isProximity || isMotionActive;
+        const isLedRedOn          = (rawMotion & 16)   !== 0 || isProximity;
+        const isLedGreenOn        = (rawMotion & 32)   !== 0 || (!isProximity && !isMotionActive);
+        const isLedBlueOn         = (rawMotion & 64)   !== 0 || (isMotionActive && !isProximity);
+        const isIrBroken          = (rawMotion & 128)  !== 0;
+        const isPirTriggered      = (rawMotion & 256)  !== 0;
+        const isRotationTriggered = (rawMotion & 512)  !== 0;
+        const isLdrShadow         = (rawMotion & 1024) !== 0;
+        const isNight             = isLdrShadow || lightVal < 350;
+
+        const headingDeg      = Math.min(359, Math.max(0, Math.round((potVal / 4095) * 360)));
+        const cardinalDirs    = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+        const cardinalBearing = cardinalDirs[Math.floor((headingDeg + 11.25) / 22.5) % 16];
+
+        const normalized = {
+          temperature:        tsData.temperature ?? 31,
+          humidity:           tsData.humidity    ?? 50,
+          distance:           distVal,
+          motion:             isMotionActive ? 1 : 0,
+          rawMotionMask:      rawMotion,
+          isProximity,
+          isBuzzerOn,
+          isLedD7On,
+          isLedRedOn,
+          isLedGreenOn,
+          isLedBlueOn,
+          isIrBroken,
+          isPirTriggered,
+          isRotationTriggered,
+          isLdrShadow,
+          isNight,
+          light:              lightVal,
+          pot:                potVal,
+          direction:          headingDeg,
+          cardinalBearing,
+          temp2:              tsData.temp2 ?? tsData.temperature ?? 31,
+          aux3:               2200,
+          aux4:               1600,
+          timestamp:          Date.now()
+        };
+
+        this.dom.deviceStatusText.textContent = 'SPARK CORE (THINGSPEAK LIVE)';
+        this.dom.deviceBadge.className = 'device-status-badge';
+        this.dom.deviceBadge.style.borderColor = 'rgba(255, 165, 0, 0.5)';
+        this.dom.deviceBadge.style.color = '#ff9800';
+        this.updateDashboard(normalized);
+
+        // Relay to Supabase Realtime — pushes to all other connected browsers instantly
+        supabaseService.insertTelemetry('spark_core', normalized);
+
+        return;
+      }
+    } catch (_) {}
+
+    // 2d. All paths failed — show offline state, retain last known readings
+    this.dom.deviceStatusText.textContent = 'SPARK CORE (OFFLINE)';
+    this.dom.deviceBadge.className = 'device-status-badge';
+    this.dom.deviceBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+    this.dom.deviceBadge.style.color = '#ef4444';
+    const fallback = await particleApi.readAllSensors(); // returns cached last-good readings
+    if (fallback) this.updateDashboard(fallback);
   }
+
 
   updateDashboard(data) {
     if (!data) return;

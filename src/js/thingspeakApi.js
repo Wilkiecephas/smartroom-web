@@ -50,19 +50,24 @@ export class ThingSpeakApi {
    */
   async getLatestFeed() {
     try {
-      const keyParam = this.readKey ? `?api_key=${this.readKey}` : '';
+      // Use readKey if set, otherwise fall back to writeKey (ThingSpeak accepts write key for reads)
+      const apiKey = this.readKey || this.writeKey;
+      const keyParam = apiKey ? `?api_key=${apiKey}` : '';
       const url = `${this.baseUrl}/channels/${this.channelId}/feeds/last.json${keyParam}`;
       const res = await fetch(url, { signal: AbortSignal.timeout(4500) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
+
       return {
         temperature: data.field1 ? parseFloat(data.field1) : null,
-        humidity: data.field2 ? parseFloat(data.field2) : null,
-        distance: data.field3 ? parseFloat(data.field3) : null,
-        motion: data.field4 ? parseInt(data.field4, 10) : null,
-        light: data.field5 ? parseInt(data.field5, 10) : null,
-        createdAt: data.created_at
+        humidity:    data.field2 ? parseFloat(data.field2) : null,
+        distance:    data.field3 ? parseFloat(data.field3) : null,
+        motion:      data.field4 ? parseInt(data.field4, 10) : null,
+        light:       data.field5 ? parseInt(data.field5, 10) : null,
+        pot:         data.field6 ? parseInt(data.field6, 10) : null,
+        temp2:       data.field7 ? parseFloat(data.field7) : null,
+        createdAt:   data.created_at
       };
     } catch (err) {
       return null;

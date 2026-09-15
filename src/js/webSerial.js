@@ -183,12 +183,70 @@ export class WebSerialManager {
   }
 
   parseSerialLine(line) {
-    // Check if line contains telemetry JSON like: {"temp":24.5,"hum":55,"dist":180}
+    // Check if line contains telemetry JSON like: {"temp":24,"hum":55,"dist":180,...}
     if (line.startsWith('{') && line.endsWith('}')) {
       try {
         const json = JSON.parse(line);
+
+        // Normalize compact Spark Core USB serial keys → full dashboard-compatible field names
+        const rawMotion  = json.motion  ?? json.rawMotionMask ?? 0;
+        const distVal    = json.dist    ?? json.distance ?? 0;
+        const lightVal   = json.light   ?? 800;
+        const potVal     = json.pot     ?? 2048;
+
+        // Unpack bitmask fields (mirrors particleApi.js readAllSensors logic)
+        const isMotionActive    = (rawMotion & 1)   !== 0;
+        const isProximity       = (rawMotion & 2)   !== 0 || (distVal > 0 && distVal < 20);
+        const isBuzzerOn        = (rawMotion & 4)   !== 0 || isProximity;
+        const isLedD7On         = (rawMotion & 8)   !== 0 || isProximity || isMotionActive;
+        const isLedRedOn        = (rawMotion & 16)  !== 0 || isProximity;
+        const isLedGreenOn      = (rawMotion & 32)  !== 0 || (!isProximity && !isMotionActive);
+        const isLedBlueOn       = (rawMotion & 64)  !== 0 || (isMotionActive && !isProximity);
+        const isIrBroken        = (rawMotion & 128) !== 0;
+        const isPirTriggered    = (rawMotion & 256) !== 0;
+        const isRotationTriggered = (rawMotion & 512) !== 0;
+        const isLdrShadow       = (rawMotion & 1024) !== 0;
+        const isNight           = isLdrShadow || lightVal < 350;
+
+        // Potentiometer heading direction
+        const headingDeg = Math.min(359, Math.max(0, Math.round((potVal / 4095) * 360)));
+        const cardinalDirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+        const cardinalBearing = cardinalDirs[Math.floor((headingDeg + 11.25) / 22.5) % 16];
+
+        const normalized = {
+          temperature:        json.temp   ?? json.temperature  ?? 31,
+          humidity:           json.hum    ?? json.humidity     ?? 50,
+          distance:           distVal,
+          motion:             isMotionActive ? 1 : 0,
+          rawMotionMask:      rawMotion,
+          isProximity,
+          isBuzzerOn,
+          isLedD7On,
+          isLedRedOn,
+          isLedGreenOn,
+          isLedBlueOn,
+          isIrBroken,
+          isPirTriggered,
+          isRotationTriggered,
+          isLdrShadow,
+          isNight,
+          light:              lightVal,
+          pot:                potVal,
+          direction:          headingDeg,
+          cardinalBearing,
+          temp2:              json.temp2  ?? json.temperature  ?? 31,
+          aux3:               json.aux3   ?? 2200,
+          aux4:               json.aux4   ?? 1600,
+          timestamp:          Date.now()
+        };
+
         if (window.smartRoomApp && window.smartRoomApp.updateDashboard) {
-          window.smartRoomApp.updateDashboard(json);
+          window.smartRoomApp.updateDashboard(normalized);
+          // Relay to Supabase Realtime — all remote browsers update instantly
+          const boardId = json.device_id || json.deviceId || (window.smartRoomApp.activeBoardId || 'spark_core');
+          import('./supabaseClient.js').then(({ supabaseService }) => {
+            supabaseService.insertTelemetry(boardId, normalized);
+          }).catch(() => {});
         }
       } catch (_) {}
     }
