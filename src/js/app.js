@@ -1385,9 +1385,14 @@ class SmartRoomApp {
         const val = e.target.value;
         if (val === 'webcam') {
           cameraManager.startWebcam();
-        } else if (val === 'esp32_cam') {
-          const url = prompt('Enter ESP32-CAM MJPEG Stream URL:', 'http://192.168.4.1/stream');
-          if (url) cameraManager.startIpStream(url);
+        } else if (val === 'esp32_cam' || val === 'ip_stream') {
+          const ip = this.latestTelemetry?.ip || '192.168.1.50';
+          const defaultUrl = localStorage.getItem('sr_esp32_cam_url') || (this.latestTelemetry?.stream_url || ('http://' + ip + ':81/stream'));
+          const url = prompt('Enter ESP32-CAM MJPEG Stream URL:', defaultUrl);
+          if (url) {
+            localStorage.setItem('sr_esp32_cam_url', url);
+            cameraManager.startIpStream(url);
+          }
         } else if (val === 'test_pattern') {
           cameraManager.startSimulatedPattern('Vision HUD Test Feed');
         }

@@ -97,6 +97,10 @@ export class CameraManager {
     if (this.videoElement) {
       this.videoElement.srcObject = null;
     }
+    if (this.streamImg) {
+      this.streamImg.src = '';
+      this.streamImg = null;
+    }
     if (this.animationFrameId) {
       if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(this.animationFrameId);
       else clearTimeout(this.animationFrameId);
@@ -144,6 +148,10 @@ export class CameraManager {
     // 1. Draw Background / Video Source
     if (this.streamSource === 'webcam' && this.videoElement && this.videoElement.readyState >= 2) {
       ctx.drawImage(this.videoElement, 0, 0, w, h);
+    } else if (this.streamSource === 'ip_stream' && this.streamImg && (this.streamImg.naturalWidth > 0 || this.streamImg.complete)) {
+      try {
+        ctx.drawImage(this.streamImg, 0, 0, w, h);
+      } catch (err) {}
     } else {
       // Draw dynamic synthetic cyber grid & telemetry radar
       const t = Date.now() / 1000;
