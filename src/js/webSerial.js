@@ -183,6 +183,69 @@ export class WebSerialManager {
   }
 
   parseSerialLine(line) {
+    // 1. Support CSV Telemetry & Security Events from STM32 / Arduino
+    if (line.includes('TEMP,') || line.includes('SECURITY,')) {
+      try {
+        const cleanLine = line.replace(/^\[.*?\]\s*/, '').trim();
+        if (cleanLine.startsWith('SECURITY,')) {
+          const secType = cleanLine.split(',')[1] || 'ALERT';
+          if (window.smartRoomApp && window.smartRoomApp.log) {
+            window.smartRoomApp.log('🚨 SECURITY EVENT DETECTED: ' + secType, 'danger');
+          }
+          return;
+        }
+        if (cleanLine.startsWith('TEMP,')) {
+          const parts = cleanLine.split(',');
+          const tVal    = parseFloat(parts[1]) || 28.4;
+          const hVal    = parseFloat(parts[2]) || 67.5;
+          const distVal = parseFloat(parts[3]) || 0;
+          const mVal    = parseInt(parts[4], 10) || 0;
+          const gasVal  = parseFloat(parts[5]) || 69.0;
+          const iVal    = parseFloat(parts[6]) || 0.35;
+          const vVal    = parseFloat(parts[7]) || 24.0;
+          const pVal    = parseFloat(parts[8]) || 0.22;
+          const doorVal = parseInt(parts[9], 10) || 0;
+          const fanVal  = parseInt(parts[10], 10) || 0;
+
+          const isMotionActive = (mVal === 1);
+          const isProximity    = (distVal > 0 && distVal < 25);
+
+          const normalized = {
+            temperature:        tVal,
+            humidity:           hVal,
+            distance:           distVal,
+            motion:             isMotionActive ? 1 : 0,
+            rawMotionMask:      (isMotionActive ? 1 : 0) | (isProximity ? 2 : 0) | (doorVal ? 128 : 0),
+            isProximity,
+            isBuzzerOn:         isProximity || (gasVal > 150),
+            isLedD7On:          isMotionActive,
+            isLedRedOn:         isProximity || (gasVal > 150),
+            isLedGreenOn:       !isProximity,
+            isLedBlueOn:        isMotionActive,
+            isIrBroken:         doorVal === 1,
+            isPirTriggered:     isMotionActive,
+            isRotationTriggered: false,
+            isLdrShadow:        false,
+            isNight:            false,
+            light:              Math.round(gasVal * 10),
+            pot:                Math.round(vVal * 100),
+            direction:          Math.round(pVal * 360),
+            cardinalBearing:    'N',
+            temp2:              tVal,
+            aux3:               Math.round(iVal * 1000),
+            aux4:               Math.round(pVal * 1000),
+            timestamp:          Date.now()
+          };
+
+          if (window.smartRoomApp && window.smartRoomApp.updateDashboard) {
+            window.smartRoomApp.updateDashboard(normalized);
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('CSV serial parse error:', err);
+      }
+    }
     // Check if line contains telemetry JSON like: {"temp":24,"hum":55,"dist":180,...}
     const startIdx = line.indexOf('{');
     const endIdx = line.lastIndexOf('}');
